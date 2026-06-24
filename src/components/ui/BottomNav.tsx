@@ -20,6 +20,7 @@ export default function BottomNav() {
         background: 'var(--surface)',
         borderTop: '2px solid var(--amber)',
         boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       {tabs.map(({ href, label, Icon }) => {
@@ -28,7 +29,7 @@ export default function BottomNav() {
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2"
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
             style={{
               color: active ? 'var(--amber)' : 'var(--muted)',
               borderTop: `2px solid ${active ? 'var(--amber)' : 'transparent'}`,
@@ -36,10 +37,10 @@ export default function BottomNav() {
               textDecoration: 'none',
             }}
           >
-            <Icon size={14} />
+            <Icon size={28} />
             <span style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.5rem',
+              fontSize: '0.65rem',
               letterSpacing: '0.05em',
               lineHeight: 1,
             }}>

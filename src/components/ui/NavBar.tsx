@@ -1,13 +1,26 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavBarProps { queueCount?: number }
 
 export default function NavBar({ queueCount = 0 }: NavBarProps) {
-  const pathname = usePathname()
-  const router   = useRouter()
+  const pathname  = usePathname()
+  const router    = useRouter()
+  const [hidden, setHidden] = useState(false)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    const onScroll = () => {
+      const current = window.scrollY
+      setHidden(current > lastScrollY.current && current > 60)
+      lastScrollY.current = current
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   async function signOut() {
     const supabase = createClient()
@@ -23,7 +36,18 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
   ]
 
   return (
-    <nav style={{ background: 'var(--surface)', borderBottom: '3px solid var(--amber)', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 20px rgba(0,0,0,0.6)' }}>
+    <nav style={{
+      background: 'var(--surface)',
+      borderBottom: '3px solid var(--amber)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      boxShadow: '0 2px 20px rgba(0,0,0,0.6)',
+      transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
+      transition: 'transform 0.25s ease',
+    }}>
       <div className="flex items-center justify-between px-5 max-w-screen-xl mx-auto" style={{ height: '58px' }}>
 
         {/* Logo + LED counter */}
