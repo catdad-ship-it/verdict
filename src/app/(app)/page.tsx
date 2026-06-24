@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Shuffle, Plus, TrendingUp } from 'lucide-react'
+import { Dice5, Plus, TrendingUp } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
@@ -96,13 +96,15 @@ export default function HomePage() {
         <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>MY QUEUE</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
-            className="vcr-btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-            <Shuffle size={14} /> SPIN THE WHEEL
+            className="vcr-btn-ghost" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem 0.5rem' }}>
+            <Dice5 size={16} />
           </button>
-          <button onClick={() => setShowSearch(true)}
-            className="vcr-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-            <Plus size={14} /> ADD TITLE
-          </button>
+          <div className="hidden md:block">
+            <button onClick={() => setShowSearch(true)}
+              className="vcr-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <Plus size={14} /> ADD TITLE
+            </button>
+          </div>
         </div>
       </div>
 
@@ -193,6 +195,11 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* FAB — mobile only, hidden on md+ */}
+      <button onClick={() => setShowSearch(true)} className="vcr-fab md:hidden" aria-label="Add title">
+        <Plus size={22} />
+      </button>
 
       {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} onPick={() => {}} />}
       {postWatch && (
