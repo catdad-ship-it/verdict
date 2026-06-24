@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <NavBar queueCount={count ?? 0} />
-      <div style={{ height: '58px' }} />
+      <div style={{ height: 'calc(58px + env(safe-area-inset-top))' }} />
       <main className="max-w-screen-xl mx-auto px-5 pt-8 pb-36 md:pb-8">
         {children}
       </main>

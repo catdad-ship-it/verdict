@@ -47,6 +47,7 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
       boxShadow: '0 2px 20px rgba(0,0,0,0.6)',
       transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
       transition: 'transform 0.25s ease',
+      paddingTop: 'env(safe-area-inset-top)',
     }}>
       <div className="flex items-center justify-between px-5 max-w-screen-xl mx-auto" style={{ height: '58px' }}>
 
