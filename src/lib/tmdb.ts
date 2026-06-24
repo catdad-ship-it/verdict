@@ -153,7 +153,7 @@ export async function discoverMovies(genreIds: number[], excludeIds: number[]): 
   })
   return data.results
     .filter((d: TMDBMovieResult) => !excludeIds.includes(d.id))
-    .slice(0, 20)
+    .slice(0, 30)
     .map((d: TMDBMovieResult) => ({
       id: d.id,
       title: d.title,

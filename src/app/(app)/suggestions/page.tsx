@@ -1,9 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Zap } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import type { PostWatchAnswers } from '@/lib/types'
+
+const VISIBLE = 12
 
 interface Movie {
   id: number; title: string; posterPath: string | null
@@ -13,18 +15,38 @@ interface Movie {
 }
 
 export default function SuggestionsPage() {
-  const [movies, setMovies]       = useState<Movie[]>([])
+  const [pool, setPool]           = useState<Movie[]>([])   // all fetched
+  const [visible, setVisible]     = useState<Movie[]>([])   // currently shown
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+  const fetchingMore              = useRef(false)
 
   useEffect(() => {
     fetch('/api/suggestions')
       .then(r => r.json())
-      .then(d => setMovies(Array.isArray(d) ? d : []))
+      .then(d => {
+        const all = Array.isArray(d) ? d : []
+        setPool(all)
+        setVisible(all.slice(0, VISIBLE))
+      })
       .finally(() => setLoading(false))
   }, [])
+
+  const fetchMore = async (currentPool: Movie[]) => {
+    if (fetchingMore.current) return
+    fetchingMore.current = true
+    try {
+      const excludeIds = currentPool.map(m => m.id).join(',')
+      const res = await fetch(`/api/suggestions?excludeIds=${excludeIds}`)
+      const data = await res.json()
+      if (Array.isArray(data) && data.length > 0) {
+        setPool(p => [...p, ...data])
+      }
+    } finally {
+      fetchingMore.current = false
+    }
+  }
 
   const addToQueue = async (m: Movie) => {
     await fetch('/api/queue', {
@@ -42,7 +64,18 @@ export default function SuggestionsPage() {
   }
 
   const handleDismiss = (id: number) => {
-    setDismissed(s => new Set([...s, id]))
+    setPool(currentPool => {
+      const nextVisible = visible.filter(m => m.id !== id)
+      const usedIds = new Set([...nextVisible.map(m => m.id), id])
+      const backfill = currentPool.find(m => !usedIds.has(m.id))
+      setVisible(backfill ? [...nextVisible, backfill] : nextVisible)
+
+      const remaining = currentPool.filter(m => !usedIds.has(m.id)).length
+      if (remaining < 6) fetchMore(currentPool)
+
+      return currentPool
+    })
+
     fetch('/api/dismiss', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,7 +111,7 @@ export default function SuggestionsPage() {
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.25rem' }}>
-          {movies.filter(m => !dismissed.has(m.id)).map(m => (
+          {visible.map(m => (
             <VHSCard
               key={m.id}
               tmdbId={m.id} title={m.title} posterPath={m.posterPath}
