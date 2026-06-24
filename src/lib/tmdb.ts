@@ -145,15 +145,25 @@ export async function getMovieRecommendations(tmdbId: number): Promise<Movie[]> 
 }
 
 export async function discoverMovies(genreIds: number[], excludeIds: number[]): Promise<Movie[]> {
-  const data = await get('/discover/movie', {
+  const params = {
     with_genres: genreIds.slice(0, 3).join('|'),
     sort_by: 'vote_average.desc',
     'vote_count.gte': '200',
     without_genres: '99',  // no documentaries in suggestions
-  })
-  return data.results
-    .filter((d: TMDBMovieResult) => !excludeIds.includes(d.id))
-    .slice(0, 30)
+  }
+  // Fetch 3 pages in parallel so we have a deep pool to draw from
+  const [p1, p2, p3] = await Promise.all([
+    get('/discover/movie', { ...params, page: '1' }),
+    get('/discover/movie', { ...params, page: '2' }),
+    get('/discover/movie', { ...params, page: '3' }),
+  ])
+  const combined: TMDBMovieResult[] = [
+    ...p1.results, ...p2.results, ...p3.results,
+  ]
+  const excludeSet = new Set(excludeIds)
+  return combined
+    .filter((d: TMDBMovieResult) => !excludeSet.has(d.id))
+    .slice(0, 60)
     .map((d: TMDBMovieResult) => ({
       id: d.id,
       title: d.title,
