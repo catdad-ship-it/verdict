@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Dice5, Plus, TrendingUp } from 'lucide-react'
+import { Dice3, Plus, TrendingUp } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
@@ -97,7 +97,7 @@ export default function HomePage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
             className="vcr-btn-ghost" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem 0.5rem' }}>
-            <Dice5 size={16} />
+            <Dice3 size={16} />
           </button>
           <div className="hidden md:block">
             <button onClick={() => setShowSearch(true)}
