@@ -21,6 +21,7 @@ export default function BottomNav() {
         borderTop: '2px solid var(--amber)',
         boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        transform: 'translateZ(0)',  // force GPU layer — prevents iOS Safari flicker during scroll
       }}
     >
       {tabs.map(({ href, label, Icon }) => {
