@@ -141,7 +141,7 @@ body::after {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 55;
+  z-index: 9001;
   transition: background 0.12s, transform 0.1s;
 }
 .vcr-fab:hover  { background: linear-gradient(170deg,#D89828,#B07018); }
