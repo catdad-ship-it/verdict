@@ -11,12 +11,13 @@ export async function GET() {
   const [{ data: watched }, { data: queue }, { data: tasteProfile }] = await Promise.all([
     supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating').eq('user_id', user.id),
     supabase.from('queue_items').select('tmdb_id').eq('user_id', user.id),
-    supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).single(),
+    supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
   ])
 
   const watchedIds   = watched?.map(w => w.tmdb_id) ?? []
   const queueIds     = queue?.map(q => q.tmdb_id) ?? []
   const dismissedIds = tasteProfile?.disliked_tmdb_ids ?? []
+  console.log('dismissedIds:', dismissedIds)
 
   const derived = deriveGenrePreferences(
     (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating }))

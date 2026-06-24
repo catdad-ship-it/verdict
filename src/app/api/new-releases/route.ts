@@ -4,41 +4,45 @@ import { createClient } from '@/lib/supabase/server'
 import { SEED_PROFILE, deriveGenrePreferences } from '@/lib/suggestions'
 import { NextResponse } from 'next/server'
 
-async function getUserGenres(): Promise<number[]> {
+async function getUserTaste(): Promise<{ genres: number[]; dismissed: number[] }> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return SEED_PROFILE.topGenreIds
+    if (!user) return { genres: SEED_PROFILE.topGenreIds, dismissed: [] }
 
-    const { data: watched } = await supabase
-      .from('watched_movies')
-      .select('genre_ids, user_rating')
-      .eq('user_id', user.id)
+    const [{ data: watched }, { data: tasteProfile }] = await Promise.all([
+      supabase.from('watched_movies').select('genre_ids, user_rating').eq('user_id', user.id),
+      supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
+    ])
 
     const derived = deriveGenrePreferences(
       (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating }))
     )
-    return derived.length > 0 ? derived : SEED_PROFILE.topGenreIds
+    return {
+      genres: derived.length > 0 ? derived : SEED_PROFILE.topGenreIds,
+      dismissed: tasteProfile?.disliked_tmdb_ids ?? [],
+    }
   } catch {
-    return SEED_PROFILE.topGenreIds
+    return { genres: SEED_PROFILE.topGenreIds, dismissed: [] }
   }
 }
 
 export async function GET() {
   try {
-    const [nowPlaying, upcoming, streaming, preferredGenres] = await Promise.all([
+    const [nowPlaying, upcoming, streaming, taste] = await Promise.all([
       getNowPlaying(),
       getUpcoming(),
       getNewToStreaming(),
-      getUserGenres(),
+      getUserTaste(),
     ])
 
-    const matches = (genreIds: number[]) =>
-      genreIds.some(id => preferredGenres.includes(id))
+    const { genres: preferredGenres, dismissed } = taste
+    const matches = (m: { genreIds: number[]; id: number }) =>
+      m.genreIds.some(id => preferredGenres.includes(id)) && !dismissed.includes(m.id)
 
-    const nowFiltered  = nowPlaying.filter(m => matches(m.genreIds))
-    const soonFiltered = upcoming.filter(m => matches(m.genreIds))
-    const streamFiltered = streaming.filter(m => matches(m.genreIds))
+    const nowFiltered    = nowPlaying.filter(m => matches(m))
+    const soonFiltered   = upcoming.filter(m => matches(m))
+    const streamFiltered = streaming.filter(m => matches(m))
 
     const nowWithRatings = await Promise.all(
       nowFiltered.map(async m => {
