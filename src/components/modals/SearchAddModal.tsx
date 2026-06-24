@@ -36,7 +36,15 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
       const endpoint = type === 'movie' ? `/api/movies/search?q=${encodeURIComponent(q)}` : `/api/shows/search?q=${encodeURIComponent(q)}`
       const res = await fetch(endpoint)
       const data = await res.json()
-      setResults((data ?? []).slice(0, 8))
+      setResults((data ?? []).slice(0, 8).map((item: any) => ({
+        ...item,
+        tmdbId: item.id,
+        releaseYear: item.releaseYear
+          ? String(item.releaseYear)
+          : item.firstAirYear
+          ? String(item.firstAirYear)
+          : undefined,
+      })))
     } finally {
       setLoading(false)
     }
