@@ -1,8 +1,8 @@
 'use client'
 import Image from 'next/image'
-import { Clock, Plus, Check, Tv } from 'lucide-react'
+import { useState } from 'react'
+import { Clock, Plus, Check, Tv, X } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
-import { QueueItem, WatchedMovie } from '@/lib/types'
 
 interface VHSCardProps {
   tmdbId: number
@@ -10,9 +10,10 @@ interface VHSCardProps {
   posterPath: string | null
   mediaType: 'movie' | 'tv'
   runtime?: number | null
-  releaseYear?: number
+  releaseYear?: number | null
   imdbRating?: number | null
   rtScore?: number | null
+  overview?: string | null
   isNew?: boolean
   isSoon?: boolean
   isReddit?: boolean
@@ -29,12 +30,67 @@ interface VHSCardProps {
 
 export default function VHSCard({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
-  imdbRating, rtScore, isNew, isSoon, isReddit, redditVotes,
+  imdbRating, rtScore, overview,
+  isNew, isSoon, isReddit, redditVotes,
   isInQueue, isWatched, currentSeason, totalSeasons,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onClick,
 }: VHSCardProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
+  const [localAdded, setLocalAdded] = useState(false)
+  const [synopsis, setSynopsis] = useState<string | null>(null)
+  const [synopsisOpen, setSynopsisOpen] = useState(false)
+  const [synopsisLoading, setSynopsisLoading] = useState(false)
+
+  const handleAddToQueue = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setLocalAdded(true)
+    onAddToQueue?.()
+  }
+
+  const handleUndoAdd = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setLocalAdded(false)
+    if (onRemoveFromQueue) {
+      onRemoveFromQueue()
+    } else {
+      await fetch('/api/queue', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdbId, mediaType }),
+      })
+    }
+  }
+
+  const handlePosterClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (synopsisOpen) {
+      setSynopsisOpen(false)
+      return
+    }
+    if (overview) {
+      setSynopsis(overview)
+      setSynopsisOpen(true)
+      return
+    }
+    if (synopsis) {
+      setSynopsisOpen(true)
+      return
+    }
+    // Fetch from API
+    setSynopsisLoading(true)
+    setSynopsisOpen(true)
+    try {
+      const data = await fetch(`/api/movie/${tmdbId}`).then(r => r.json())
+      setSynopsis(data.overview ?? 'No synopsis available.')
+    } catch {
+      setSynopsis('No synopsis available.')
+    } finally {
+      setSynopsisLoading(false)
+    }
+  }
+
+  const inQueue = isInQueue || localAdded
 
   return (
     <div
@@ -54,7 +110,8 @@ export default function VHSCard({
       onClick={onClick}
     >
       {/* Poster */}
-      <div className="relative" style={{ aspectRatio: '2/3', background: 'var(--raised)' }}>
+      <div className="relative" style={{ aspectRatio: '2/3', background: 'var(--raised)' }}
+           onClick={handlePosterClick}>
         {imgUrl ? (
           <Image src={imgUrl} alt={title} fill className="object-cover" sizes="160px" />
         ) : (
@@ -69,21 +126,47 @@ export default function VHSCard({
           background: 'linear-gradient(to top, rgba(8,6,4,0.97) 0%, rgba(8,6,4,0.55) 55%, transparent 100%)',
         }} />
 
+        {/* Synopsis overlay */}
+        {synopsisOpen && (
+          <div className="absolute inset-0 z-20 flex flex-col p-3"
+               style={{ background: 'rgba(8,6,4,0.93)', backdropFilter: 'blur(2px)' }}>
+            <button
+              onClick={e => { e.stopPropagation(); setSynopsisOpen(false) }}
+              className="absolute top-2 right-2"
+              style={{ color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+            >
+              <X size={12} />
+            </button>
+            <p className="font-bold mb-1.5" style={{ color: 'var(--amber)', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+              SYNOPSIS
+            </p>
+            {synopsisLoading ? (
+              <p style={{ color: 'var(--cream-dim)', fontSize: '0.62rem', fontFamily: 'var(--font-mono)' }}>LOADING...</p>
+            ) : (
+              <p style={{ color: 'var(--cream)', fontSize: '0.65rem', lineHeight: 1.5, overflow: 'auto' }}>
+                {synopsis}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-          {isNew  && <span className="badge-new">NEW</span>}
-          {isSoon && <span className="badge-soon">SOON</span>}
-          {isReddit && <span className="badge-reddit">r/movies</span>}
-          {mediaType === 'tv' && (
-            <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-sm"
-              style={{ background: 'var(--forest)', color: '#A8C898', fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              <Tv size={8} /> SHOW
-            </span>
-          )}
-        </div>
+        {!synopsisOpen && (
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+            {isNew  && <span className="badge-new">NEW</span>}
+            {isSoon && <span className="badge-soon">SOON</span>}
+            {isReddit && <span className="badge-reddit">r/movies</span>}
+            {mediaType === 'tv' && (
+              <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-sm"
+                style={{ background: 'var(--forest)', color: '#A8C898', fontSize: '0.52rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                <Tv size={8} /> SHOW
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Ratings */}
-        {(imdbRating || rtScore) && (
+        {!synopsisOpen && (imdbRating || rtScore) && (
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
             {imdbRating && (
               <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: '0.6rem', padding: '1px 5px', borderRadius: '1px', letterSpacing: '0.04em' }}>
@@ -99,43 +182,53 @@ export default function VHSCard({
         )}
 
         {/* Title area */}
-        <div className="absolute inset-x-0 bottom-0 p-2.5 z-10">
-          <p className="font-bold text-sm leading-tight mb-0.5" style={{ color: 'var(--cream)', letterSpacing: '0.03em' }}>
-            {title}
-          </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            {releaseYear && <span className="text-xs" style={{ color: 'var(--muted)' }}>{releaseYear}</span>}
-            {runtime && <span className="text-xs" style={{ color: 'var(--muted)' }}>{formatRuntime(runtime)}</span>}
-            {mediaType === 'tv' && currentSeason && totalSeasons && (
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>S{currentSeason}/{totalSeasons}</span>
+        {!synopsisOpen && (
+          <div className="absolute inset-x-0 bottom-0 p-2.5 z-10">
+            <p className="font-bold text-sm leading-tight mb-0.5" style={{ color: 'var(--cream)', letterSpacing: '0.03em' }}>
+              {title}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {releaseYear && <span className="text-xs" style={{ color: 'var(--muted)' }}>{releaseYear}</span>}
+              {runtime && <span className="text-xs" style={{ color: 'var(--muted)' }}>{formatRuntime(runtime)}</span>}
+              {mediaType === 'tv' && currentSeason && totalSeasons && (
+                <span className="text-xs" style={{ color: 'var(--muted)' }}>S{currentSeason}/{totalSeasons}</span>
+              )}
+            </div>
+            {finish && !isSoon && (
+              <div className="flex items-center gap-1 mt-1">
+                <Clock size={9} style={{ color: 'var(--amber)', opacity: 0.8 }} />
+                <span className="text-xs" style={{ color: 'var(--amber)', opacity: 0.8, fontSize: '0.58rem' }}>
+                  Done by {finish.endTime}{finish.isLate ? ' +1' : ''}
+                </span>
+              </div>
+            )}
+            {isReddit && redditVotes && (
+              <p className="text-xs mt-0.5" style={{ color: '#C05830', fontSize: '0.58rem' }}>
+                {redditVotes.toLocaleString()} upvotes
+              </p>
             )}
           </div>
-          {finish && !isSoon && (
-            <div className="flex items-center gap-1 mt-1">
-              <Clock size={9} style={{ color: 'var(--amber)', opacity: 0.8 }} />
-              <span className="text-xs" style={{ color: 'var(--amber)', opacity: 0.8, fontSize: '0.58rem' }}>
-                Done by {finish.endTime}{finish.isLate ? ' +1' : ''}
-              </span>
-            </div>
-          )}
-          {isReddit && redditVotes && (
-            <p className="text-xs mt-0.5" style={{ color: '#C05830', fontSize: '0.58rem' }}>
-              {redditVotes.toLocaleString()} upvotes
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* VHS Footer — tape casing aesthetic */}
+      {/* VHS Footer */}
       <div className="px-2.5 py-2 flex gap-2 items-center relative"
            style={{ background: '#0E0C09', borderTop: '2px solid #1A1610' }}>
-        {/* Tape reel dots */}
         <span className="absolute right-2 bottom-2 text-xs" style={{ color: '#1A1610', letterSpacing: '4px', fontSize: '0.4rem' }}>● ●</span>
 
         {isWatched ? (
           <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'var(--muted)', fontSize: '0.6rem' }}>
             ✓ Watched
           </span>
+        ) : localAdded && !isInQueue ? (
+          <button
+            onClick={handleUndoAdd}
+            className="text-xs font-semibold tracking-widest uppercase flex items-center gap-1 w-full justify-center py-1"
+            style={{ color: 'var(--amber)', fontSize: '0.6rem', background: 'transparent', border: '1px solid var(--amber)', borderRadius: '2px', cursor: 'pointer', opacity: 0.85 }}
+            title="Click to undo"
+          >
+            <Check size={10} /> ADDED
+          </button>
         ) : isInQueue ? (
           <>
             <button onClick={e => { e.stopPropagation(); onMarkWatched?.() }}
@@ -157,8 +250,11 @@ export default function VHSCard({
             NOTIFY ME
           </button>
         ) : (
-          <button onClick={e => { e.stopPropagation(); onAddToQueue?.() }}
-            className="vcr-btn-primary text-xs px-2 py-1 w-full flex items-center justify-center gap-1" style={{ fontSize: '0.62rem' }}>
+          <button
+            onClick={handleAddToQueue}
+            className="vcr-btn-primary text-xs px-2 py-1 w-full flex items-center justify-center gap-1"
+            style={{ fontSize: '0.62rem' }}
+          >
             <Plus size={10} /> QUEUE
           </button>
         )}

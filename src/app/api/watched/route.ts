@@ -20,28 +20,40 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { media_type, ...rest } = body
+  const { media_type, tmdb_id, title, poster_path, genre_ids, runtime,
+          user_rating, what_worked, want_more,
+          status, current_season, total_seasons } = body
 
   if (media_type === 'show') {
-    // Upsert watched_shows
     const { error } = await supabase.from('watched_shows').upsert({
       user_id: user.id,
-      ...rest,
+      tmdb_id, title, poster_path, genre_ids, status,
+      current_season, total_seasons,
+      episode_runtime: runtime ?? null,
     }, { onConflict: 'user_id,tmdb_id' })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('Watched shows insert error:', JSON.stringify(error))
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   } else {
     const { error } = await supabase.from('watched_movies').insert({
       user_id: user.id,
-      ...rest,
+      tmdb_id, title, poster_path, genre_ids, runtime,
+      user_rating,
+      what_worked: what_worked ?? [],
+      want_more_like_this: want_more ?? true,
     })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('Watched movies insert error:', JSON.stringify(error))
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     // Remove from queue
-    if (rest.tmdb_id) {
+    if (tmdb_id) {
       await supabase.from('queue_items')
         .delete()
         .eq('user_id', user.id)
-        .eq('tmdb_id', rest.tmdb_id)
+        .eq('tmdb_id', tmdb_id)
         .eq('media_type', 'movie')
     }
   }

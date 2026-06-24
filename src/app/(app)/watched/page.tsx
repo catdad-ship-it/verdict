@@ -67,7 +67,7 @@ export default function WatchedPage() {
             color: tab === t ? 'var(--bg)' : 'var(--cream-dim)',
             border: 'none', cursor: 'pointer',
           }}>
-            {t === 'movies' ? `▶ MOVIES (${movies.length})` : `📺 SHOWS (${shows.length})`}
+            {t === 'movies' ? `▶ MOVIES (${movies.length})` : `▣ SHOWS (${shows.length})`}
           </button>
         ))}
       </div>

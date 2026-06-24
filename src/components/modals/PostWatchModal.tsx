@@ -111,7 +111,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           <div className="flex gap-2">
             {[
               { val: true,  label: '▶▶ MORE LIKE THIS' },
-              { val: false, label: '⏩ SWITCH IT UP' },
+              { val: false, label: '◀◀ SWITCH IT UP' },
             ].map(({ val, label }) => (
               <button key={String(val)}
                 onClick={() => setWantMore(val)}

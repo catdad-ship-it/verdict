@@ -6,8 +6,9 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface Movie {
-  tmdbId: number; title: string; posterPath: string | null
-  overview?: string; runtime?: number; genres?: number[]
+  id: number; title: string; posterPath: string | null
+  overview?: string; runtime?: number | null; genreIds?: number[]
+  releaseYear?: number | null
   imdbRating?: number | null; rtScore?: number | null
 }
 
@@ -28,9 +29,15 @@ export default function SuggestionsPage() {
     await fetch('/api/queue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdbId: m.tmdbId, mediaType: 'movie', title: m.title, posterPath: m.posterPath, genreIds: m.genres ?? [], runtime: m.runtime, overview: m.overview }),
+      body: JSON.stringify({
+        tmdbId: m.id, mediaType: 'movie', title: m.title,
+        posterPath: m.posterPath, genreIds: m.genreIds ?? [],
+        runtime: m.runtime, releaseYear: m.releaseYear,
+        imdbRating: m.imdbRating, rtScore: m.rtScore,
+        overview: m.overview,
+      }),
     })
-    setAddedIds(s => new Set([...s, m.tmdbId]))
+    setAddedIds(s => new Set([...s, m.id]))
   }
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
@@ -39,8 +46,8 @@ export default function SuggestionsPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        media_type: 'movie', tmdb_id: postWatch.tmdbId, title: postWatch.title,
-        poster_path: postWatch.posterPath, genre_ids: postWatch.genres ?? [],
+        media_type: 'movie', tmdb_id: postWatch.id, title: postWatch.title,
+        poster_path: postWatch.posterPath, genre_ids: postWatch.genreIds ?? [],
         runtime: postWatch.runtime, user_rating: answers.userRating,
         what_worked: answers.whatWorked, want_more: answers.wantMoreLikeThis,
       }),
@@ -63,12 +70,12 @@ export default function SuggestionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.25rem' }}>
           {movies.map(m => (
             <VHSCard
-              key={m.tmdbId}
-              tmdbId={m.tmdbId} title={m.title} posterPath={m.posterPath}
-              mediaType="movie" runtime={m.runtime}
-              imdbRating={m.imdbRating} rtScore={m.rtScore}
-              isInQueue={addedIds.has(m.tmdbId)}
-              onAddToQueue={addedIds.has(m.tmdbId) ? undefined : () => addToQueue(m)}
+              key={m.id}
+              tmdbId={m.id} title={m.title} posterPath={m.posterPath}
+              mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
+              imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
+              isInQueue={addedIds.has(m.id)}
+              onAddToQueue={addedIds.has(m.id) ? undefined : () => addToQueue(m)}
               onMarkWatched={() => setPostWatch(m)}
             />
           ))}
@@ -76,7 +83,7 @@ export default function SuggestionsPage() {
       )}
       {postWatch && (
         <PostWatchModal
-          title={postWatch.title} posterPath={postWatch.posterPath ?? null} mediaType="movie" runtime={postWatch.runtime}
+          title={postWatch.title} posterPath={postWatch.posterPath ?? null} mediaType="movie" runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
         />
       )}

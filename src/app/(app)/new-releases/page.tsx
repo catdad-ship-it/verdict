@@ -6,8 +6,9 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface Movie {
-  tmdbId: number; title: string; posterPath: string | null
-  overview?: string; runtime?: number; genreIds?: number[]
+  id: number; tmdbId?: number; title: string; posterPath: string | null
+  overview?: string; runtime?: number | null; genreIds?: number[]
+  releaseYear?: number | null
   imdbRating?: number | null; rtScore?: number | null
 }
 
@@ -21,8 +22,9 @@ export default function NewReleasesPage() {
     fetch('/api/new-releases')
       .then(r => r.json())
       .then(d => {
-        setNowPlaying((d.nowPlaying ?? []).map((m: any) => ({ ...m, genreIds: m.genres ?? [] })))
-        setUpcoming((d.upcoming ?? []).map((m: any) => ({ ...m, genreIds: m.genres ?? [] })))
+        const map = (m: any) => ({ ...m, tmdbId: m.id, genreIds: m.genreIds ?? [] })
+        setNowPlaying((d.nowPlaying ?? []).map(map))
+        setUpcoming((d.upcoming ?? []).map(map))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -31,7 +33,13 @@ export default function NewReleasesPage() {
     await fetch('/api/queue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdbId: m.tmdbId, mediaType: 'movie', title: m.title, posterPath: m.posterPath, genreIds: m.genreIds ?? [], runtime: m.runtime, overview: m.overview }),
+      body: JSON.stringify({
+        tmdbId: m.tmdbId, mediaType: 'movie', title: m.title,
+        posterPath: m.posterPath, genreIds: m.genreIds ?? [],
+        runtime: m.runtime, releaseYear: m.releaseYear,
+        imdbRating: m.imdbRating, rtScore: m.rtScore,
+        overview: m.overview,
+      }),
     })
   }
 
@@ -61,9 +69,9 @@ export default function NewReleasesPage() {
           {items.map(m => (
             <div key={m.tmdbId} style={{ width: 150, flexShrink: 0 }}>
               <VHSCard
-                tmdbId={m.tmdbId} title={m.title} posterPath={m.posterPath}
-                mediaType="movie" runtime={m.runtime}
-                imdbRating={m.imdbRating} rtScore={m.rtScore}
+                tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
+                mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
+                imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
                 isNew={!soon} isSoon={soon}
                 onAddToQueue={() => addToQueue(m)}
                 onMarkWatched={!soon ? () => setPostWatch(m) : undefined}
@@ -84,7 +92,7 @@ export default function NewReleasesPage() {
       }
       {postWatch && (
         <PostWatchModal
-          title={postWatch.title} posterPath={postWatch.posterPath} mediaType="movie" runtime={postWatch.runtime}
+          title={postWatch.title} posterPath={postWatch.posterPath} mediaType="movie" runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
         />
       )}

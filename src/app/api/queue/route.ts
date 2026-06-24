@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getMovie, getShow } from '@/lib/tmdb'
+import { getRatings } from '@/lib/omdb'
 import { NextRequest, NextResponse } from 'next/server'
 
 function toQueueItem(row: any) {
@@ -14,7 +16,6 @@ function toQueueItem(row: any) {
     imdbRating:  row.imdb_rating ?? null,
     rtScore:     row.rt_score ?? null,
     addedAt:     row.added_at,
-    overview:    row.overview ?? null,
   }
 }
 
@@ -38,23 +39,55 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  // Accept either camelCase or snake_case from callers
   const tmdb_id    = body.tmdb_id    ?? body.tmdbId
   const media_type = body.media_type ?? (body.mediaType === 'tv' ? 'show' : body.mediaType) ?? 'movie'
-  const { title, poster_path, posterPath, genre_ids, genreIds, runtime, overview } = body
+  const { title, poster_path, posterPath, genre_ids, genreIds } = body
+
+  let runtime     = body.runtime     ?? body.runtime     ?? null
+  let releaseYear = body.releaseYear ?? body.release_year ?? null
+  let imdbRating  = body.imdbRating  ?? body.imdb_rating  ?? null
+  let rtScore     = body.rtScore     ?? body.rt_score     ?? null
+
+  // Enrich from TMDB detail if runtime is missing
+  if (!runtime && tmdb_id) {
+    try {
+      if (media_type === 'show') {
+        const detail = await getShow(tmdb_id)
+        runtime     = detail.episodeRuntime ?? null
+        releaseYear = releaseYear ?? detail.firstAirYear ?? null
+      } else {
+        const detail = await getMovie(tmdb_id)
+        runtime     = detail.runtime ?? null
+        releaseYear = releaseYear ?? detail.releaseYear ?? null
+        // Fetch ratings if missing
+        if (!imdbRating && !rtScore && detail.title) {
+          const r = await getRatings(detail.title, detail.releaseYear)
+          imdbRating = r.imdbRating ?? null
+          rtScore    = r.rtScore    ?? null
+        }
+      }
+    } catch {
+      // Non-fatal — proceed with nulls
+    }
+  }
 
   const { error } = await supabase.from('queue_items').upsert({
     user_id: user.id,
     tmdb_id,
     media_type,
     title,
-    poster_path: poster_path ?? posterPath,
-    genre_ids:   genre_ids   ?? genreIds ?? [],
+    poster_path:  poster_path ?? posterPath,
+    genre_ids:    genre_ids   ?? genreIds ?? [],
     runtime,
-    overview,
+    release_year: releaseYear,
+    imdb_rating:  imdbRating,
+    rt_score:     rtScore,
   }, { onConflict: 'user_id,tmdb_id,media_type' })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Queue insert error:', JSON.stringify(error))
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
 

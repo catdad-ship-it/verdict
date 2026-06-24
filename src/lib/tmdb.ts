@@ -4,18 +4,15 @@ const BASE_URL = 'https://api.themoviedb.org/3'
 const IMG_BASE = 'https://image.tmdb.org/t/p'
 const KEY = process.env.TMDB_API_KEY
 
-function headers() {
-  return { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
-}
-
 export function posterUrl(path: string | null, size: 'w342' | 'w500' | 'original' = 'w342') {
   return path ? `${IMG_BASE}/${size}${path}` : null
 }
 
 async function get(path: string, params: Record<string, string> = {}) {
   const url = new URL(`${BASE_URL}${path}`)
+  url.searchParams.set('api_key', KEY ?? '')
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const res = await fetch(url.toString(), { headers: headers(), next: { revalidate: 3600 } })
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
   if (!res.ok) throw new Error(`TMDB ${res.status}: ${path}`)
   return res.json()
 }

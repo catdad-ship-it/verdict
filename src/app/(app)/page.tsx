@@ -9,7 +9,7 @@ import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 interface TrendingItem {
   tmdbId: number; title: string; posterPath: string | null
-  runtime?: number; imdbRating?: number | null; rtScore?: number | null
+  runtime?: number; releaseYear?: number | null; imdbRating?: number | null; rtScore?: number | null
   redditVotes?: number; overview?: string; genreIds?: number[]; mediaType?: string
 }
 
@@ -108,7 +108,7 @@ export default function HomePage() {
 
       {/* Filter/sort bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        {([['all','ALL'],['movie','▶ MOVIES'],['tv','📺 SHOWS']] as const).map(([f, label]) => (
+        {([['all','ALL'],['movie','▶ MOVIES'],['tv','▣ SHOWS']] as const).map(([f, label]) => (
           <button key={f} onClick={() => setFilter(f as any)} style={{
             fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.3rem 0.7rem',
             background: filter === f ? 'var(--amber)' : 'transparent',
@@ -146,8 +146,10 @@ export default function HomePage() {
               posterPath={item.posterPath}
               mediaType={item.mediaType}
               runtime={item.runtime}
+              releaseYear={item.releaseYear}
               imdbRating={item.imdbRating}
               rtScore={item.rtScore}
+              overview={item.overview}
               isInQueue
               onMarkWatched={() => setPostWatch(item)}
               onRemoveFromQueue={() => removeFromQueue(item.tmdbId, item.mediaType)}
@@ -173,8 +175,10 @@ export default function HomePage() {
                     posterPath={item.posterPath}
                     mediaType={item.mediaType === 'show' ? 'tv' : 'movie'}
                     runtime={item.runtime}
+                    releaseYear={item.releaseYear}
                     imdbRating={item.imdbRating}
                     rtScore={item.rtScore}
+                    overview={item.overview}
                     isReddit
                     redditVotes={item.redditVotes}
                     onAddToQueue={() => addToQueue({

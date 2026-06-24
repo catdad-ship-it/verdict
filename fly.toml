@@ -1,4 +1,4 @@
-app = "verdict"
+app = "verdict-bnieman"
 primary_region = "iad"
 
 [build]
