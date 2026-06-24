@@ -59,8 +59,8 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
   return (
     /* Mobile: full screen below safe area. Desktop: centered overlay. */
     <div
-      className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4"
-      style={{ background: 'rgba(0,0,0,0.8)', paddingTop: 'env(safe-area-inset-top)' }}
+      className="fixed inset-0 flex flex-col md:items-center md:justify-center md:p-4"
+      style={{ background: 'rgba(0,0,0,0.8)', paddingTop: 'env(safe-area-inset-top)', zIndex: 60 }}
     >
       <div
         className="flex flex-col flex-1 md:flex-none w-full md:max-w-xl md:rounded"

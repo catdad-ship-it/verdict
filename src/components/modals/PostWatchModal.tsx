@@ -37,8 +37,8 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center md:p-4"
-      style={{ background: 'rgba(0,0,0,0.88)' }}
+      className="fixed inset-0 flex flex-col justify-end md:justify-center md:items-center md:p-4"
+      style={{ background: 'rgba(0,0,0,0.88)', zIndex: 60 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -47,8 +47,8 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           background: 'var(--surface)',
           border: '1px solid var(--amber)',
           boxShadow: '0 30px 70px rgba(0,0,0,0.7), 0 0 40px rgba(192,120,24,0.1)',
-          maxHeight: '92vh',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          maxHeight: '88vh',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
         }}
       >
         {/* Drag handle — mobile only */}
