@@ -39,11 +39,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
       setResults((data ?? []).slice(0, 8).map((item: any) => ({
         ...item,
         tmdbId: item.id,
-        releaseYear: item.releaseYear
-          ? String(item.releaseYear)
-          : item.firstAirYear
-          ? String(item.firstAirYear)
-          : undefined,
+        genres: item.genreIds ?? [],  // numeric IDs for DB; genreNames() strings are display-only
       })))
     } finally {
       setLoading(false)

@@ -7,7 +7,7 @@ function toQueueItem(row: any) {
   return {
     id:          row.id,
     tmdbId:      row.tmdb_id,
-    mediaType:   row.media_type === 'show' ? 'tv' : 'movie',
+    mediaType:   row.media_type === 'movie' ? 'movie' : 'tv',
     title:       row.title,
     posterPath:  row.poster_path,
     genreIds:    row.genre_ids ?? [],
@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const tmdb_id    = body.tmdb_id    ?? body.tmdbId
-  const media_type = body.media_type ?? (body.mediaType === 'tv' ? 'show' : body.mediaType) ?? 'movie'
+  const raw_type   = body.media_type ?? body.mediaType ?? 'movie'
+  const media_type = (raw_type === 'tv' || raw_type === 'show') ? 'tv' : 'movie'
   const { title, poster_path, posterPath, genre_ids, genreIds } = body
 
   let runtime     = body.runtime     ?? body.runtime     ?? null
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
   // Enrich from TMDB detail if runtime is missing
   if (!runtime && tmdb_id) {
     try {
-      if (media_type === 'show') {
+      if (media_type === 'tv') {
         const detail = await getShow(tmdb_id)
         runtime     = detail.episodeRuntime ?? null
         releaseYear = releaseYear ?? detail.firstAirYear ?? null
@@ -98,7 +99,8 @@ export async function DELETE(req: NextRequest) {
 
   const body = await req.json()
   const tmdb_id    = body.tmdb_id    ?? body.tmdbId
-  const media_type = body.media_type ?? (body.mediaType === 'tv' ? 'show' : body.mediaType) ?? 'movie'
+  const raw_del    = body.media_type ?? body.mediaType ?? 'movie'
+  const media_type = (raw_del === 'tv' || raw_del === 'show') ? 'tv' : 'movie'
 
   const { error } = await supabase
     .from('queue_items')
