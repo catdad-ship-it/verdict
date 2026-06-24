@@ -41,9 +41,10 @@ export interface QueueItem {
   posterPath: string | null
   genreIds: number[]
   runtime: number | null
-  releaseYear: number
+  releaseYear: number | null
   imdbRating: number | null
   rtScore: number | null
+  overview?: string | null
   addedAt: string
 }
 
