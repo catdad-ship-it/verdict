@@ -40,13 +40,12 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
       background: 'var(--surface)',
       borderBottom: '3px solid var(--amber)',
       position: 'fixed',
-      top: 0,
+      top: hidden ? '-150px' : 0,
       left: 0,
       right: 0,
       zIndex: 50,
       boxShadow: '0 2px 20px rgba(0,0,0,0.6)',
-      transform: hidden ? 'translateY(-100%)' : 'translateY(0)',
-      transition: 'transform 0.25s ease',
+      transition: 'top 0.25s ease',
       paddingTop: 'env(safe-area-inset-top)',
     }}>
       <div className="flex items-center justify-between px-5 max-w-screen-xl mx-auto" style={{ height: '58px' }}>
