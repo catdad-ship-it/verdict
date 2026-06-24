@@ -13,11 +13,12 @@ interface Movie {
 }
 
 export default function NewReleasesPage() {
-  const [nowPlaying, setNowPlaying] = useState<Movie[]>([])
-  const [upcoming, setUpcoming]     = useState<Movie[]>([])
-  const [streaming, setStreaming]   = useState<Movie[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [postWatch, setPostWatch]   = useState<Movie | null>(null)
+  const [nowPlaying, setNowPlaying]   = useState<Movie[]>([])
+  const [upcoming, setUpcoming]       = useState<Movie[]>([])
+  const [streaming, setStreaming]     = useState<Movie[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [postWatch, setPostWatch]     = useState<Movie | null>(null)
+  const [dismissed, setDismissed]     = useState<Set<number>>(new Set())
 
   useEffect(() => {
     fetch('/api/new-releases')
@@ -45,6 +46,15 @@ export default function NewReleasesPage() {
     })
   }
 
+  const handleDismiss = (m: Movie) => {
+    setDismissed(s => new Set([...s, m.tmdbId!]))
+    fetch('/api/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: m.tmdbId }),
+    })
+  }
+
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
     await fetch('/api/watched', {
@@ -60,37 +70,46 @@ export default function NewReleasesPage() {
     setPostWatch(null)
   }
 
-  const Shelf = ({ title, items, soon, stream }: { title: string; items: Movie[]; soon?: boolean; stream?: boolean }) => (
-    <section style={{ marginBottom: '2.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
-        <Film size={16} color="var(--amber)" />
-        <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>{title}</h2>
-      </div>
-      <div className="hscroll" style={{ overflowX: 'auto', paddingBottom: 8 }}>
-        <div style={{ display: 'flex', gap: '1rem', minWidth: 'max-content' }}>
-          {items.map(m => (
-            <div key={m.tmdbId} style={{ width: 150, flexShrink: 0 }}>
-              <VHSCard
-                tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
-                mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
-                imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
-                isNew={!soon && !stream} isSoon={soon} isStream={stream}
-                onAddToQueue={() => addToQueue(m)}
-                onMarkWatched={!soon ? () => setPostWatch(m) : undefined}
-              />
-            </div>
-          ))}
+  const Shelf = ({ title, items, soon, stream }: { title: string; items: Movie[]; soon?: boolean; stream?: boolean }) => {
+    const visible = items.filter(m => !dismissed.has(m.tmdbId!))
+    if (visible.length === 0) return null
+    return (
+      <section style={{ marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
+          <Film size={16} color="var(--amber)" />
+          <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>{title}</h2>
         </div>
-      </div>
-    </section>
-  )
+        <div className="hscroll" style={{ overflowX: 'auto', paddingBottom: 8 }}>
+          <div style={{ display: 'flex', gap: '1rem', minWidth: 'max-content' }}>
+            {visible.map(m => (
+              <div key={m.tmdbId} style={{ width: 150, flexShrink: 0 }}>
+                <VHSCard
+                  tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
+                  mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
+                  imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
+                  isNew={!soon && !stream} isSoon={soon}
+                  onAddToQueue={() => addToQueue(m)}
+                  onMarkWatched={!soon ? () => setPostWatch(m) : undefined}
+                  onDismiss={() => handleDismiss(m)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 1rem' }}>
       <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, marginBottom: '1.5rem', letterSpacing: 2 }}>NEW RELEASES</h1>
       {loading
         ? <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
-        : <><Shelf title="NOW PLAYING" items={nowPlaying} /><Shelf title="NEW TO STREAMING" items={streaming} stream /><Shelf title="COMING SOON" items={upcoming} soon /></>
+        : <>
+            <Shelf title="NEW TO STREAMING" items={streaming} stream />
+            <Shelf title="NOW PLAYING" items={nowPlaying} />
+            <Shelf title="COMING SOON" items={upcoming} soon />
+          </>
       }
       {postWatch && (
         <PostWatchModal

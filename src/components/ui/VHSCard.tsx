@@ -26,6 +26,7 @@ interface VHSCardProps {
   onAddToQueue?: () => void
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
+  onDismiss?: () => void
   onClick?: () => void
 }
 
@@ -34,7 +35,7 @@ export default function VHSCard({
   imdbRating, rtScore, overview,
   isNew, isSoon, isStream, isReddit, redditVotes,
   isInQueue, isWatched, currentSeason, totalSeasons,
-  onAddToQueue, onMarkWatched, onRemoveFromQueue, onClick,
+  onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
 }: VHSCardProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
@@ -260,6 +261,21 @@ export default function VHSCard({
           </button>
         )}
       </div>
+      {onDismiss && (
+        <button
+          onClick={e => { e.stopPropagation(); onDismiss() }}
+          style={{
+            display: 'block', width: '100%', background: 'none', border: 'none',
+            color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
+            letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer',
+            padding: '4px 0', textAlign: 'center', opacity: 0.5,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}
+        >
+          ✕ not for me
+        </button>
+      )}
     </div>
   )
 }

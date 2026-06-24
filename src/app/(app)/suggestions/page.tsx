@@ -17,6 +17,7 @@ export default function SuggestionsPage() {
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     fetch('/api/suggestions')
@@ -38,6 +39,15 @@ export default function SuggestionsPage() {
       }),
     })
     setAddedIds(s => new Set([...s, m.id]))
+  }
+
+  const handleDismiss = (id: number) => {
+    setDismissed(s => new Set([...s, id]))
+    fetch('/api/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: id }),
+    })
   }
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
@@ -68,7 +78,7 @@ export default function SuggestionsPage() {
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.25rem' }}>
-          {movies.map(m => (
+          {movies.filter(m => !dismissed.has(m.id)).map(m => (
             <VHSCard
               key={m.id}
               tmdbId={m.id} title={m.title} posterPath={m.posterPath}
@@ -77,6 +87,7 @@ export default function SuggestionsPage() {
               isInQueue={addedIds.has(m.id)}
               onAddToQueue={addedIds.has(m.id) ? undefined : () => addToQueue(m)}
               onMarkWatched={() => setPostWatch(m)}
+              onDismiss={() => handleDismiss(m.id)}
             />
           ))}
         </div>
