@@ -34,27 +34,6 @@ body {
   overflow-x: hidden;
 }
 
-/* CRT scanlines */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent 0px, transparent 3px,
-    rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 9000;
-}
-
-/* CRT vignette */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse 100% 90% at 50% 50%,
-    transparent 45%, rgba(0,0,0,0.28) 78%, rgba(0,0,0,0.6) 100%);
-  pointer-events: none;
-  z-index: 8999;
-}
 
 /* LED display font */
 .font-led { font-family: 'Share Tech Mono', 'Courier New', monospace; }
