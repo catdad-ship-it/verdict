@@ -19,7 +19,7 @@ export default function BottomNav() {
       style={{
         background: 'var(--surface)',
         borderTop: '2px solid var(--amber)',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
+        boxShadow: '0 -1px 4px rgba(0,0,0,0.3)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         transform: 'translateZ(0)',  // force GPU layer — prevents iOS Safari flicker during scroll
       }}
