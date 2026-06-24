@@ -28,10 +28,11 @@ interface SuggestionOptions {
   lovedGenreIds: number[]
   watchedIds: number[]
   queueIds: number[]
+  dismissedIds?: number[]
 }
 
 export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movie[]> {
-  const excludeIds = [...opts.watchedIds, ...opts.queueIds, ...SEED_PROFILE.lovedTmdbIds]
+  const excludeIds = [...opts.watchedIds, ...opts.queueIds, ...SEED_PROFILE.lovedTmdbIds, ...(opts.dismissedIds ?? [])]
   const genreIds = opts.lovedGenreIds.length > 0
     ? opts.lovedGenreIds
     : SEED_PROFILE.topGenreIds
