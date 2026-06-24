@@ -94,6 +94,38 @@ export async function getUpcoming(): Promise<Movie[]> {
   }))
 }
 
+
+export async function getNewToStreaming(): Promise<Movie[]> {
+  // Movies released in the last 120 days now available on major streaming platforms
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 120)
+  const dateStr = cutoff.toISOString().split('T')[0]
+
+  const data = await get('/discover/movie', {
+    watch_region: 'US',
+    with_watch_monetization_types: 'flatrate',
+    // Netflix=8, Prime=9, Disney+=337, Hulu=15, Max=1899, Peacock=386, Paramount+=531
+    with_watch_providers: '8|9|337|15|1899|386|531',
+    'primary_release_date.gte': dateStr,
+    sort_by: 'popularity.desc',
+    'vote_count.gte': '20',
+  })
+  return (data.results ?? []).slice(0, 12).map((d: TMDBMovieResult) => ({
+    id: d.id,
+    title: d.title,
+    posterPath: d.poster_path,
+    backdropPath: null,
+    overview: d.overview,
+    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
+    runtime: null,
+    genreIds: d.genre_ids ?? [],
+    genres: genreNames(d.genre_ids ?? []),
+    imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
+    rtScore: null,
+    mediaType: 'movie' as const,
+  }))
+}
+
 export async function getMovieRecommendations(tmdbId: number): Promise<Movie[]> {
   const data = await get(`/movie/${tmdbId}/recommendations`)
   return data.results.slice(0, 10).map((d: TMDBMovieResult) => ({

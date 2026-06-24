@@ -15,6 +15,7 @@ interface Movie {
 export default function NewReleasesPage() {
   const [nowPlaying, setNowPlaying] = useState<Movie[]>([])
   const [upcoming, setUpcoming]     = useState<Movie[]>([])
+  const [streaming, setStreaming]   = useState<Movie[]>([])
   const [loading, setLoading]       = useState(true)
   const [postWatch, setPostWatch]   = useState<Movie | null>(null)
 
@@ -25,6 +26,7 @@ export default function NewReleasesPage() {
         const map = (m: any) => ({ ...m, tmdbId: m.id, genreIds: m.genreIds ?? [] })
         setNowPlaying((d.nowPlaying ?? []).map(map))
         setUpcoming((d.upcoming ?? []).map(map))
+        setStreaming((d.streaming ?? []).map(map))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -58,7 +60,7 @@ export default function NewReleasesPage() {
     setPostWatch(null)
   }
 
-  const Shelf = ({ title, items, soon }: { title: string; items: Movie[]; soon?: boolean }) => (
+  const Shelf = ({ title, items, soon, stream }: { title: string; items: Movie[]; soon?: boolean; stream?: boolean }) => (
     <section style={{ marginBottom: '2.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
         <Film size={16} color="var(--amber)" />
@@ -72,7 +74,7 @@ export default function NewReleasesPage() {
                 tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
                 mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
                 imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
-                isNew={!soon} isSoon={soon}
+                isNew={!soon && !stream} isSoon={soon} isStream={stream}
                 onAddToQueue={() => addToQueue(m)}
                 onMarkWatched={!soon ? () => setPostWatch(m) : undefined}
               />
@@ -88,7 +90,7 @@ export default function NewReleasesPage() {
       <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, marginBottom: '1.5rem', letterSpacing: 2 }}>NEW RELEASES</h1>
       {loading
         ? <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
-        : <><Shelf title="NOW PLAYING" items={nowPlaying} /><Shelf title="COMING SOON" items={upcoming} soon /></>
+        : <><Shelf title="NOW PLAYING" items={nowPlaying} /><Shelf title="NEW TO STREAMING" items={streaming} stream /><Shelf title="COMING SOON" items={upcoming} soon /></>
       }
       {postWatch && (
         <PostWatchModal
