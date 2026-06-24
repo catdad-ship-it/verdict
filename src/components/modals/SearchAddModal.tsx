@@ -57,36 +57,52 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div style={{ background: 'var(--surface)', border: '2px solid var(--amber)', borderRadius: 4, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+    /* Mobile: full screen below safe area. Desktop: centered overlay. */
+    <div
+      className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4"
+      style={{ background: 'rgba(0,0,0,0.8)', paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div
+        className="flex flex-col flex-1 md:flex-none w-full md:max-w-xl md:rounded"
+        style={{
+          background: 'var(--surface)',
+          border: '2px solid var(--amber)',
+          maxHeight: '100%',
+        }}
+      >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '1rem', borderBottom: '1px solid var(--amber-dim)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '1rem', borderBottom: '1px solid var(--amber-dim)', flexShrink: 0 }}>
           <Search size={16} color="var(--amber)" />
           <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 14, flex: 1 }}>SEARCH &amp; ADD TO QUEUE</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cream-dim)' }}><X size={18} /></button>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cream-dim)', padding: '4px' }}
+          >
+            <X size={22} />
+          </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--amber-dim)' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--amber-dim)', flexShrink: 0 }}>
           {(['movie', 'show'] as const).map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); setResults([]) }}
               style={{
-                flex: 1, padding: '0.6rem', background: tab === t ? 'var(--amber)' : 'transparent',
+                flex: 1, padding: '0.75rem', background: tab === t ? 'var(--amber)' : 'transparent',
                 color: tab === t ? 'var(--bg)' : 'var(--cream-dim)',
-                border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12,
+                border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
-              {t === 'show' && <Tv size={12} />}
+              {t === 'show' && <Tv size={13} />}
               {t === 'movie' ? '▶ MOVIES' : '📺 TV SHOWS'}
             </button>
           ))}
         </div>
 
         {/* Input */}
-        <div style={{ padding: '0.75rem 1rem' }}>
+        <div style={{ padding: '0.75rem 1rem', flexShrink: 0 }}>
           <input
             autoFocus
             value={query}
@@ -94,8 +110,8 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
             placeholder={tab === 'movie' ? 'Search movies...' : 'Search TV shows...'}
             style={{
               width: '100%', background: 'var(--bg)', border: '1px solid var(--amber-dim)',
-              color: 'var(--cream)', padding: '0.5rem 0.75rem', borderRadius: 2,
-              fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none',
+              color: 'var(--cream)', padding: '0.65rem 0.75rem', borderRadius: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 15, outline: 'none',
               boxSizing: 'border-box',
             }}
           />
@@ -110,19 +126,19 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
           )}
           {!loading && results.map(item => (
             <div key={item.tmdbId} style={{
-              display: 'flex', gap: 12, padding: '0.75rem 1rem',
+              display: 'flex', gap: 12, padding: '0.875rem 1rem',
               borderBottom: '1px solid rgba(192,120,24,0.1)',
               alignItems: 'center',
             }}>
-              <div style={{ width: 40, height: 60, flexShrink: 0, background: 'var(--bg)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+              <div style={{ width: 44, height: 66, flexShrink: 0, background: 'var(--bg)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
                 {item.posterPath
                   ? <Image src={posterUrl(item.posterPath)!} alt={item.title} fill style={{ objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Tv size={16} color="var(--amber-dim)" /></div>
                 }
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: 'var(--cream)', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                <div style={{ color: 'var(--cream-dim)', fontSize: 11, fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                <div style={{ color: 'var(--cream)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                <div style={{ color: 'var(--cream-dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 3 }}>
                   {item.releaseYear}
                   {item.imdbRating && <span style={{ marginLeft: 8, color: 'var(--amber)' }}>★ {item.imdbRating}</span>}
                 </div>
@@ -131,9 +147,9 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
                 onClick={() => handleAdd(item)}
                 disabled={adding === item.tmdbId}
                 className="vcr-btn"
-                style={{ fontSize: 11, padding: '0.35rem 0.7rem', display: 'flex', alignItems: 'center', gap: 4 }}
+                style={{ fontSize: 12, padding: '0.5rem 0.85rem', display: 'flex', alignItems: 'center', gap: 4 }}
               >
-                <Plus size={12} />
+                <Plus size={13} />
                 {adding === item.tmdbId ? '...' : 'ADD'}
               </button>
             </div>

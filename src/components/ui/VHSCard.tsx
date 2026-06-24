@@ -214,7 +214,7 @@ export default function VHSCard({
       </div>
 
       {/* VHS Footer */}
-      <div className="px-2.5 py-2 flex gap-2 items-center relative"
+      <div className="px-2.5 py-2.5 flex gap-2 items-center relative"
            style={{ background: '#0E0C09', borderTop: '2px solid #1A1610' }}>
         <span className="absolute right-2 bottom-2 text-xs" style={{ color: '#1A1610', letterSpacing: '4px', fontSize: '0.4rem' }}>● ●</span>
 
@@ -225,7 +225,7 @@ export default function VHSCard({
         ) : localAdded && !isInQueue ? (
           <button
             onClick={handleUndoAdd}
-            className="text-xs font-semibold tracking-widest uppercase flex items-center gap-1 w-full justify-center py-1"
+            className="text-xs font-semibold tracking-widest uppercase flex items-center gap-1 w-full justify-center py-2"
             style={{ color: 'var(--amber)', fontSize: '0.6rem', background: 'transparent', border: '1px solid var(--amber)', borderRadius: '2px', cursor: 'pointer', opacity: 0.85 }}
             title="Click to undo"
           >
@@ -234,12 +234,12 @@ export default function VHSCard({
         ) : isInQueue ? (
           <>
             <button onClick={e => { e.stopPropagation(); onMarkWatched?.() }}
-              className="vcr-btn text-xs px-2 py-1 flex-1" style={{ fontSize: '0.62rem' }}>
+              className="vcr-btn text-xs px-2 py-2 flex-1" style={{ fontSize: '0.62rem' }}>
               ✓ WATCHED
             </button>
             {onRemoveFromQueue && (
               <button onClick={e => { e.stopPropagation(); onRemoveFromQueue?.() }}
-                className="flex items-center justify-center w-7 h-7 rounded-sm"
+                className="flex items-center justify-center w-9 h-9 rounded-sm"
                 style={{ background: 'var(--raised)', border: '1px solid var(--border)', color: 'var(--muted)' }}
                 title="Remove from queue">
                 ✕
@@ -248,13 +248,13 @@ export default function VHSCard({
           </>
         ) : isSoon ? (
           <button onClick={e => { e.stopPropagation(); onAddToQueue?.() }}
-            className="vcr-btn text-xs px-2 py-1 w-full" style={{ fontSize: '0.62rem' }}>
+            className="vcr-btn text-xs px-2 py-2 w-full" style={{ fontSize: '0.62rem' }}>
             NOTIFY ME
           </button>
         ) : (
           <button
             onClick={handleAddToQueue}
-            className="vcr-btn-primary text-xs px-2 py-1 w-full flex items-center justify-center gap-1"
+            className="vcr-btn-primary text-xs px-2 py-2 w-full flex items-center justify-center gap-1"
             style={{ fontSize: '0.62rem' }}
           >
             <Plus size={10} /> QUEUE
@@ -268,7 +268,7 @@ export default function VHSCard({
             display: 'block', width: '100%', background: 'none', border: 'none',
             color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
             letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer',
-            padding: '4px 0', textAlign: 'center', opacity: 0.5,
+            padding: '12px 0', textAlign: 'center', opacity: 0.5,
           }}
           onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}
