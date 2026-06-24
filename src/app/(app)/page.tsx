@@ -96,15 +96,11 @@ export default function HomePage() {
         <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>MY QUEUE</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
-            className="vcr-btn-ghost" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem 0.5rem' }}>
-            <Dice3 size={16} />
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
+            <Dice3 size={26} />
           </button>
-          <div className="hidden md:block">
-            <button onClick={() => setShowSearch(true)}
-              className="vcr-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-              <Plus size={14} /> ADD TITLE
-            </button>
-          </div>
         </div>
       </div>
 
@@ -197,7 +193,7 @@ export default function HomePage() {
       )}
 
       {/* FAB — mobile only, hidden on md+ */}
-      <button onClick={() => setShowSearch(true)} className="vcr-fab md:hidden" aria-label="Add title">
+      <button onClick={() => setShowSearch(true)} className="vcr-fab" aria-label="Add title">
         <Plus size={22} />
       </button>
 
