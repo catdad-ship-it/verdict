@@ -14,9 +14,13 @@ interface Movie {
   imdbRating?: number | null; rtScore?: number | null
 }
 
+interface SuggestState {
+  pool: Movie[]    // all fetched, not yet shown
+  visible: Movie[] // currently on screen
+}
+
 export default function SuggestionsPage() {
-  const [pool, setPool]           = useState<Movie[]>([])   // all fetched
-  const [visible, setVisible]     = useState<Movie[]>([])   // currently shown
+  const [state, setState]         = useState<SuggestState>({ pool: [], visible: [] })
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
@@ -25,23 +29,21 @@ export default function SuggestionsPage() {
   useEffect(() => {
     fetch('/api/suggestions')
       .then(r => r.json())
-      .then(d => {
+      .then((d: Movie[]) => {
         const all = Array.isArray(d) ? d : []
-        setPool(all)
-        setVisible(all.slice(0, VISIBLE))
+        setState({ pool: all.slice(VISIBLE), visible: all.slice(0, VISIBLE) })
       })
       .finally(() => setLoading(false))
   }, [])
 
-  const fetchMore = async (currentPool: Movie[]) => {
+  const fetchMore = async (allSeenIds: number[]) => {
     if (fetchingMore.current) return
     fetchingMore.current = true
     try {
-      const excludeIds = currentPool.map(m => m.id).join(',')
-      const res = await fetch(`/api/suggestions?excludeIds=${excludeIds}`)
-      const data = await res.json()
+      const res = await fetch(`/api/suggestions?excludeIds=${allSeenIds.join(',')}`)
+      const data: Movie[] = await res.json()
       if (Array.isArray(data) && data.length > 0) {
-        setPool(p => [...p, ...data])
+        setState(s => ({ ...s, pool: [...s.pool, ...data] }))
       }
     } finally {
       fetchingMore.current = false
@@ -64,16 +66,22 @@ export default function SuggestionsPage() {
   }
 
   const handleDismiss = (id: number) => {
-    setPool(currentPool => {
+    setState(({ pool, visible }) => {
       const nextVisible = visible.filter(m => m.id !== id)
-      const usedIds = new Set([...nextVisible.map(m => m.id), id])
-      const backfill = currentPool.find(m => !usedIds.has(m.id))
-      setVisible(backfill ? [...nextVisible, backfill] : nextVisible)
+      const backfill    = pool[0] ?? null
+      const nextPool    = backfill ? pool.slice(1) : pool
 
-      const remaining = currentPool.filter(m => !usedIds.has(m.id)).length
-      if (remaining < 6) fetchMore(currentPool)
+      // Fetch more when pool is running low
+      if (nextPool.length < 6) {
+        const allSeen = [...nextVisible, ...nextPool].map(m => m.id)
+        allSeen.push(id)
+        fetchMore(allSeen)
+      }
 
-      return currentPool
+      return {
+        pool:    nextPool,
+        visible: backfill ? [...nextVisible, backfill] : nextVisible,
+      }
     })
 
     fetch('/api/dismiss', {
@@ -111,7 +119,7 @@ export default function SuggestionsPage() {
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.25rem' }}>
-          {visible.map(m => (
+          {state.visible.map(m => (
             <VHSCard
               key={m.id}
               tmdbId={m.id} title={m.title} posterPath={m.posterPath}
