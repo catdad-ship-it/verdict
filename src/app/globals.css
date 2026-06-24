@@ -127,7 +127,7 @@ body::after {
 .vcr-fab {
   position: fixed;
   right: 1.25rem;
-  bottom: calc(58px + env(safe-area-inset-bottom) + 14px);
+  bottom: calc(58px + env(safe-area-inset-bottom) + 24px);
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -135,7 +135,7 @@ body::after {
   border: 1px solid #C88020;
   border-bottom-color: #603808;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 2px 0 #3A2008,
-              0 4px 12px rgba(0,0,0,0.5), 0 0 18px rgba(192,120,24,0.35);
+              0 4px 12px rgba(0,0,0,0.5);
   color: #0D0B07;
   display: flex;
   align-items: center;
