@@ -59,8 +59,12 @@ export async function searchMovies(query: string): Promise<Movie[]> {
 }
 
 export async function getNowPlaying(): Promise<Movie[]> {
-  const data = await get('/movie/now_playing', { region: 'US' })
-  return data.results.slice(0, 12).map((d: TMDBMovieResult) => ({
+  const [p1, p2] = await Promise.all([
+    get('/movie/now_playing', { region: 'US', page: '1' }),
+    get('/movie/now_playing', { region: 'US', page: '2' }),
+  ])
+  const results: TMDBMovieResult[] = [...(p1.results ?? []), ...(p2.results ?? [])]
+  return results.slice(0, 40).map((d: TMDBMovieResult) => ({
     id: d.id,
     title: d.title,
     posterPath: d.poster_path,
@@ -77,8 +81,12 @@ export async function getNowPlaying(): Promise<Movie[]> {
 }
 
 export async function getUpcoming(): Promise<Movie[]> {
-  const data = await get('/movie/upcoming', { region: 'US' })
-  return data.results.slice(0, 8).map((d: TMDBMovieResult) => ({
+  const [p1, p2] = await Promise.all([
+    get('/movie/upcoming', { region: 'US', page: '1' }),
+    get('/movie/upcoming', { region: 'US', page: '2' }),
+  ])
+  const results: TMDBMovieResult[] = [...(p1.results ?? []), ...(p2.results ?? [])]
+  return results.slice(0, 40).map((d: TMDBMovieResult) => ({
     id: d.id,
     title: d.title,
     posterPath: d.poster_path,
@@ -110,7 +118,24 @@ export async function getNewToStreaming(): Promise<Movie[]> {
     sort_by: 'popularity.desc',
     'vote_count.gte': '20',
   })
-  return (data.results ?? []).slice(0, 12).map((d: TMDBMovieResult) => ({
+  const [p2, p3] = await Promise.all([
+    get('/discover/movie', {
+      watch_region: 'US', with_watch_monetization_types: 'flatrate',
+      with_watch_providers: '8|9|337|15|1899|386|531',
+      'primary_release_date.gte': dateStr,
+      sort_by: 'popularity.desc', 'vote_count.gte': '20', page: '2',
+    }),
+    get('/discover/movie', {
+      watch_region: 'US', with_watch_monetization_types: 'flatrate',
+      with_watch_providers: '8|9|337|15|1899|386|531',
+      'primary_release_date.gte': dateStr,
+      sort_by: 'popularity.desc', 'vote_count.gte': '20', page: '3',
+    }),
+  ])
+  const allResults: TMDBMovieResult[] = [
+    ...(data.results ?? []), ...(p2.results ?? []), ...(p3.results ?? []),
+  ]
+  return allResults.slice(0, 60).map((d: TMDBMovieResult) => ({
     id: d.id,
     title: d.title,
     posterPath: d.poster_path,
