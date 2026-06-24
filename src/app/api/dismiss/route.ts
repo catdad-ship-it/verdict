@@ -24,7 +24,6 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     })
     if (upsertError) console.error('dismiss upsert error:', JSON.stringify(upsertError))
-    else console.log('dismissed tmdb_id:', tmdb_id, '| total dismissed:', current.length + 1)
   }
 
   return NextResponse.json({ ok: true })

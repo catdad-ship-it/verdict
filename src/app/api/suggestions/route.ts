@@ -17,7 +17,6 @@ export async function GET() {
   const watchedIds   = watched?.map(w => w.tmdb_id) ?? []
   const queueIds     = queue?.map(q => q.tmdb_id) ?? []
   const dismissedIds = tasteProfile?.disliked_tmdb_ids ?? []
-  console.log('dismissedIds:', dismissedIds)
 
   const derived = deriveGenrePreferences(
     (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating }))
