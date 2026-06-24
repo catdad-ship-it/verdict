@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import NavBar from '@/components/ui/NavBar'
+import BottomNav from '@/components/ui/BottomNav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -16,9 +17,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen">
       <NavBar queueCount={count ?? 0} />
-      <main className="max-w-screen-xl mx-auto px-5 py-8">
+      <main className="max-w-screen-xl mx-auto px-5 pt-8 pb-24 md:pb-8">
         {children}
       </main>
+      <BottomNav />
     </div>
   )
 }
