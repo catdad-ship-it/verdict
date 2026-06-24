@@ -156,7 +156,6 @@ export default function VHSCard({
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
             {isNew   && <span className="badge-new">NEW</span>}
             {isSoon  && <span className="badge-soon">SOON</span>}
-            {isStream && <span className="badge-soon" style={{ background: 'rgba(30,80,180,0.85)', color: '#a8c8ff' }}>▶ STREAMING</span>}
             {isReddit && <span className="badge-reddit">r/movies</span>}
             {mediaType === 'tv' && (
               <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-sm"
