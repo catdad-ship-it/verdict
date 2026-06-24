@@ -24,11 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9000,
           background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)',
         }} />
-        {/* CRT vignette — z-index 8999 */}
-        <div style={{
-          position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 8999,
-          background: 'radial-gradient(ellipse 100% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.28) 78%, rgba(0,0,0,0.6) 100%)',
-        }} />
+        {/* CRT vignette — temporarily disabled to test FAB blur */}
         {children}
       </body>
     </html>
