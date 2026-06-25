@@ -65,7 +65,7 @@ export default function SuggestionsPage() {
     setAddedIds(s => new Set([...s, m.id]))
   }
 
-  const handleDismiss = (id: number) => {
+  const handleDismiss = (id: number, genreIds: number[]) => {
     setState(({ pool, visible }) => {
       const nextVisible = visible.filter(m => m.id !== id)
       const backfill    = pool[0] ?? null
@@ -87,7 +87,7 @@ export default function SuggestionsPage() {
     fetch('/api/dismiss', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: id }),
+      body: JSON.stringify({ tmdb_id: id, genre_ids: genreIds }),
     })
   }
 
@@ -128,7 +128,7 @@ export default function SuggestionsPage() {
               isInQueue={addedIds.has(m.id)}
               onAddToQueue={addedIds.has(m.id) ? undefined : () => addToQueue(m)}
               onMarkWatched={() => setPostWatch(m)}
-              onDismiss={() => handleDismiss(m.id)}
+              onDismiss={() => handleDismiss(m.id, m.genreIds ?? [])}
             />
           ))}
         </div>

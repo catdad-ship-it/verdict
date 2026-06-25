@@ -20,8 +20,12 @@ async function getUserTaste(): Promise<{ genres: number[]; dismissed: number[] }
       [],
       [],
     )
+    const sortedGenres = Object.entries(derived)
+      .filter(([, s]) => s > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([id]) => parseInt(id))
     return {
-      genres: derived.length > 0 ? derived : SEED_PROFILE.topGenreIds,
+      genres: sortedGenres.length > 0 ? sortedGenres : SEED_PROFILE.topGenreIds,
       dismissed: tasteProfile?.disliked_tmdb_ids ?? [],
     }
   } catch {

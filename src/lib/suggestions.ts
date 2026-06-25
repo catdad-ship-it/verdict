@@ -23,7 +23,7 @@ export const SEED_PROFILE = {
 }
 
 interface SuggestionOptions {
-  lovedGenreIds: number[]
+  genreScores: Record<number, number>
   watchedIds: number[]
   queueIds: number[]
   dismissedIds?: number[]
@@ -38,16 +38,22 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     ...(opts.dismissedIds ?? []),
   ])
 
-  const genreIds = opts.lovedGenreIds.length > 0
-    ? opts.lovedGenreIds
+  const sortedGenreIds = Object.entries(opts.genreScores).length > 0
+    ? Object.entries(opts.genreScores)
+        .filter(([, s]) => s > 0)
+        .sort(([, a], [, b]) => b - a)
+        .map(([id]) => parseInt(id))
     : SEED_PROFILE.topGenreIds
 
   // Fetch Discover results + TMDB recommendations from top-rated movies in parallel
   const topRatedIds = (opts.topRatedMovieIds ?? []).slice(0, 5) // cap at 5 API calls
   const [discoverResults, ...recArrays] = await Promise.all([
-    discoverMovies(genreIds, [...excludeSet]),
+    discoverMovies(sortedGenreIds, [...excludeSet]),
     ...topRatedIds.map(id => getMovieRecommendations(id).catch(() => [] as Movie[])),
   ])
+
+  // Track which movies came from direct recommendations (stronger signal → small boost)
+  const recIdSet = new Set(recArrays.flat().map(m => m.id))
 
   // Merge discover + recommendations, deduplicate, filter exclusions
   const seen = new Set<number>()
@@ -59,15 +65,26 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     }
   }
 
-  return merged.slice(0, 60)
+  // Score each movie by genre overlap with user preferences, sort best-first
+  return merged
+    .map(m => {
+      const genreScore = m.genreIds.reduce((sum, gId) => sum + (opts.genreScores[gId] ?? 0), 0)
+      const score = recIdSet.has(m.id) ? genreScore * 1.2 : genreScore
+      return { m, score }
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 60)
+    .map(({ m }) => m)
 }
 
-// Derive genre preferences from watched movies, queue items, and watched shows
+// Derive genre preferences from watched movies, queue items, watched shows, and dismissals.
+// Returns a score map: genreId → score (higher = stronger preference, negative = disliked).
 export function deriveGenrePreferences(
-  watchedMovies: { genreIds: number[]; userRating: number | null; wantMoreLikeThis?: boolean | null }[],
-  queueItems:    { genreIds: number[] }[],
-  watchedShows:  { genreIds: number[] }[],
-): number[] {
+  watchedMovies:      { genreIds: number[]; userRating: number | null; wantMoreLikeThis?: boolean | null }[],
+  queueItems:         { genreIds: number[] }[],
+  watchedShows:       { genreIds: number[] }[],
+  dismissedGenreIds?: number[],
+): Record<number, number> {
   const scores: Record<number, number> = {}
 
   // Watched + rated movies: strong signal
@@ -103,8 +120,11 @@ export function deriveGenrePreferences(
     }
   }
 
-  return Object.entries(scores)
-    .filter(([, score]) => score > 0)
-    .sort(([, a], [, b]) => b - a)
-    .map(([id]) => parseInt(id))
+  // Dismissed movies: each genre occurrence is a mild negative signal (-0.3).
+  // Signal only accumulates through repeated dismissals of the same genre.
+  for (const gId of (dismissedGenreIds ?? [])) {
+    scores[gId] = (scores[gId] ?? 0) - 0.3
+  }
+
+  return scores
 }

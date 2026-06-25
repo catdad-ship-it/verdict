@@ -21,27 +21,33 @@ export async function GET(req: NextRequest) {
     supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating, want_more_like_this').eq('user_id', user.id),
     supabase.from('queue_items').select('tmdb_id, genre_ids').eq('user_id', user.id),
     supabase.from('watched_shows').select('tmdb_id, genre_ids').eq('user_id', user.id),
-    supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
+    supabase.from('taste_profiles').select('disliked_tmdb_ids, dismissed_genre_ids').eq('id', user.id).maybeSingle(),
   ])
 
   const watchedIds   = watched?.map(w => w.tmdb_id) ?? []
   const queueIds     = queue?.map(q => q.tmdb_id) ?? []
-  const dismissedIds = tasteProfile?.disliked_tmdb_ids ?? []
+  const dismissedIds      = tasteProfile?.disliked_tmdb_ids ?? []
+  const dismissedGenreIds = tasteProfile?.dismissed_genre_ids ?? []
 
   // Top-rated movies (4-5 stars) where user wants more like it — used for TMDB recs
   const topRatedMovieIds = (watched ?? [])
     .filter(w => w.user_rating != null && w.user_rating >= 4 && w.want_more_like_this !== false)
     .map(w => w.tmdb_id)
 
-  const derived = deriveGenrePreferences(
+  const derivedScores = deriveGenrePreferences(
     (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating, wantMoreLikeThis: w.want_more_like_this })),
     (queue ?? []).map(q => ({ genreIds: q.genre_ids ?? [] })),
     (watchedShows ?? []).map(s => ({ genreIds: s.genre_ids ?? [] })),
+    dismissedGenreIds,
   )
-  const genreIds = derived.length > 0 ? derived : SEED_PROFILE.topGenreIds
+
+  // Fall back to seed profile if no history, converting ordered IDs to decreasing scores
+  const genreScores = Object.keys(derivedScores).length > 0
+    ? derivedScores
+    : Object.fromEntries(SEED_PROFILE.topGenreIds.map((id, i) => [id, SEED_PROFILE.topGenreIds.length - i]))
 
   const movies = await getMovieSuggestions({
-    lovedGenreIds: genreIds,
+    genreScores,
     watchedIds,
     queueIds,
     dismissedIds: [...dismissedIds, ...extraExclude],

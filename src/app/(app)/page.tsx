@@ -192,10 +192,12 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* FAB — mobile only, hidden on md+ */}
-      <button onClick={() => setShowSearch(true)} className="vcr-fab" aria-label="Add title">
-        <Plus size={22} />
-      </button>
+      {/* FAB — mobile only, hidden on md+ and when any modal is open */}
+      {!postWatch && !showSpin && !showSearch && (
+        <button onClick={() => setShowSearch(true)} className="vcr-fab" aria-label="Add title">
+          <Plus size={22} />
+        </button>
+      )}
 
       {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} onPick={() => {}} />}
       {postWatch && (
