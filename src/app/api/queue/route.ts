@@ -30,7 +30,56 @@ export async function GET() {
     .eq('user_id', user.id)
     .order('added_at', { ascending: false })
 
-  return NextResponse.json((data ?? []).map(toQueueItem))
+  const rows = data ?? []
+
+  // Backfill runtime for items that are missing it
+  const missing = rows.filter(r => r.runtime == null)
+  if (missing.length > 0) {
+    await Promise.all(
+      missing.map(async row => {
+        try {
+          const media_type = row.media_type === 'tv' ? 'tv' : 'movie'
+          let runtime: number | null = null
+          let releaseYear: number | null = row.release_year ?? null
+          let imdbRating: number | null = row.imdb_rating ?? null
+          let rtScore: number | null = row.rt_score ?? null
+
+          if (media_type === 'tv') {
+            const detail = await getShow(row.tmdb_id)
+            runtime = detail.episodeRuntime ?? null
+            releaseYear = releaseYear ?? detail.firstAirYear ?? null
+          } else {
+            const detail = await getMovie(row.tmdb_id)
+            runtime = detail.runtime ?? null
+            releaseYear = releaseYear ?? detail.releaseYear ?? null
+            if (!imdbRating && !rtScore && detail.title) {
+              const r = await getRatings(detail.title, detail.releaseYear)
+              imdbRating = r.imdbRating ?? null
+              rtScore = r.rtScore ?? null
+            }
+          }
+
+          // Update the row in DB so we only pay this cost once
+          await supabase.from('queue_items').update({
+            runtime,
+            release_year: releaseYear,
+            imdb_rating: imdbRating,
+            rt_score: rtScore,
+          }).eq('id', row.id)
+
+          // Mutate in-place so this response already has the data
+          row.runtime = runtime
+          row.release_year = releaseYear
+          row.imdb_rating = imdbRating
+          row.rt_score = rtScore
+        } catch {
+          // Non-fatal — leave null
+        }
+      })
+    )
+  }
+
+  return NextResponse.json(rows.map(toQueueItem))
 }
 
 export async function POST(req: NextRequest) {
