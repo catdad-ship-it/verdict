@@ -22,6 +22,24 @@ export const SEED_PROFILE = {
   dislikedTmdbIds: [],
 }
 
+// Fisher-Yates in-place shuffle
+function shuffleArray<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+// Shuffle within score tiers so the same movies don't always appear first
+function shuffleWithinTiers<T extends { score: number }>(scored: T[], bucketSize = 8): T[] {
+  const result: T[] = []
+  for (let i = 0; i < scored.length; i += bucketSize) {
+    result.push(...shuffleArray(scored.slice(i, i + bucketSize)))
+  }
+  return result
+}
+
 interface SuggestionOptions {
   genreScores: Record<number, number>
   watchedIds: number[]
@@ -45,8 +63,10 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
         .map(([id]) => parseInt(id))
     : SEED_PROFILE.topGenreIds
 
-  // Fetch Discover results + TMDB recommendations from top-rated movies in parallel
-  const topRatedIds = (opts.topRatedMovieIds ?? []).slice(0, 5) // cap at 5 API calls
+  // Shuffle top-rated seeds so different movies drive recs on each load
+  const shuffledTopRated = shuffleArray([...(opts.topRatedMovieIds ?? [])])
+  const topRatedIds = shuffledTopRated.slice(0, 5) // cap at 5 API calls
+
   const [discoverResults, ...recArrays] = await Promise.all([
     discoverMovies(sortedGenreIds, [...excludeSet]),
     ...topRatedIds.map(id => getMovieRecommendations(id).catch(() => [] as Movie[])),
@@ -65,8 +85,8 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     }
   }
 
-  // Score each movie by genre overlap with user preferences, sort best-first
-  return merged
+  // Score each movie, sort best-first, then shuffle within tiers for variety
+  const scored = merged
     .map(m => {
       const genreScore = m.genreIds.reduce((sum, gId) => sum + (opts.genreScores[gId] ?? 0), 0)
       const score = recIdSet.has(m.id) ? genreScore * 1.2 : genreScore
@@ -74,13 +94,28 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, 60)
-    .map(({ m }) => m)
+
+  return shuffleWithinTiers(scored).map(({ m }) => m)
+}
+
+// whatWorked tags → TMDB genre ID boosts
+// Applied when a liked movie had that tag — amplifies the associated genres
+const TAG_GENRE_BOOSTS: Record<string, number[]> = {
+  'Tension':     [53, 27],           // Thriller, Horror
+  'Visuals':     [878, 28, 12],      // Sci-Fi, Action, Adventure
+  'The Concept': [878, 9648, 14],    // Sci-Fi, Mystery, Fantasy
+  'The Cast':    [18, 80],           // Drama, Crime
+  'The Pacing':  [53, 28],           // Thriller, Action
+  'The Ending':  [9648, 53],         // Mystery, Thriller
+  'Dialogue':    [18, 80, 35],       // Drama, Crime, Comedy
+  'The Score':   [10752, 18, 878],   // War, Drama, Sci-Fi
+  'The Story':   [18, 80, 9648],     // Drama, Crime, Mystery
 }
 
 // Derive genre preferences from watched movies, queue items, watched shows, and dismissals.
 // Returns a score map: genreId → score (higher = stronger preference, negative = disliked).
 export function deriveGenrePreferences(
-  watchedMovies:      { genreIds: number[]; userRating: number | null; wantMoreLikeThis?: boolean | null }[],
+  watchedMovies:      { genreIds: number[]; userRating: number | null; wantMoreLikeThis?: boolean | null; whatWorked?: string[] | null }[],
   queueItems:         { genreIds: number[] }[],
   watchedShows:       { genreIds: number[] }[],
   dismissedGenreIds?: number[],
@@ -103,6 +138,16 @@ export function deriveGenrePreferences(
     }
     for (const gId of m.genreIds) {
       scores[gId] = (scores[gId] ?? 0) + weight
+    }
+
+    // whatWorked tags: secondary genre boost for liked movies (rating >= 3)
+    if (m.userRating >= 3 && m.whatWorked?.length) {
+      for (const tag of m.whatWorked) {
+        const boostIds = TAG_GENRE_BOOSTS[tag] ?? []
+        for (const gId of boostIds) {
+          scores[gId] = (scores[gId] ?? 0) + 0.3
+        }
+      }
     }
   }
 

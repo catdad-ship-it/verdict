@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getMovieSuggestions, deriveGenrePreferences, SEED_PROFILE } from '@/lib/suggestions'
 import { getRatings } from '@/lib/omdb'
+import { TMDB_GENRES } from '@/lib/types'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     { data: watchedShows },
     { data: tasteProfile },
   ] = await Promise.all([
-    supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating, want_more_like_this').eq('user_id', user.id),
+    supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating, want_more_like_this, what_worked').eq('user_id', user.id),
     supabase.from('queue_items').select('tmdb_id, genre_ids').eq('user_id', user.id),
     supabase.from('watched_shows').select('tmdb_id, genre_ids').eq('user_id', user.id),
     supabase.from('taste_profiles').select('disliked_tmdb_ids, dismissed_genre_ids').eq('id', user.id).maybeSingle(),
@@ -35,7 +36,12 @@ export async function GET(req: NextRequest) {
     .map(w => w.tmdb_id)
 
   const derivedScores = deriveGenrePreferences(
-    (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating, wantMoreLikeThis: w.want_more_like_this })),
+    (watched ?? []).map(w => ({
+      genreIds: w.genre_ids ?? [],
+      userRating: w.user_rating,
+      wantMoreLikeThis: w.want_more_like_this,
+      whatWorked: w.what_worked ?? [],
+    })),
     (queue ?? []).map(q => ({ genreIds: q.genre_ids ?? [] })),
     (watchedShows ?? []).map(s => ({ genreIds: s.genre_ids ?? [] })),
     dismissedGenreIds,
@@ -45,6 +51,14 @@ export async function GET(req: NextRequest) {
   const genreScores = Object.keys(derivedScores).length > 0
     ? derivedScores
     : Object.fromEntries(SEED_PROFILE.topGenreIds.map((id, i) => [id, SEED_PROFILE.topGenreIds.length - i]))
+
+  // Top genre names for dynamic subtitle (top 4 positive genres)
+  const topGenreNames = Object.entries(genreScores)
+    .filter(([, s]) => s > 0)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 4)
+    .map(([id]) => TMDB_GENRES[parseInt(id)])
+    .filter(Boolean)
 
   const movies = await getMovieSuggestions({
     genreScores,
@@ -61,5 +75,5 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  return NextResponse.json(withRatings)
+  return NextResponse.json({ movies: withRatings, topGenreNames })
 }

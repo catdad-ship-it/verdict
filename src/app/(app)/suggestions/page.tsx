@@ -15,12 +15,13 @@ interface Movie {
 }
 
 interface SuggestState {
-  pool: Movie[]    // all fetched, not yet shown
-  visible: Movie[] // currently on screen
+  pool: Movie[]           // all fetched, not yet shown
+  visible: Movie[]        // currently on screen
+  topGenreNames: string[] // derived from taste profile
 }
 
 export default function SuggestionsPage() {
-  const [state, setState]         = useState<SuggestState>({ pool: [], visible: [] })
+  const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
@@ -29,9 +30,10 @@ export default function SuggestionsPage() {
   useEffect(() => {
     fetch('/api/suggestions')
       .then(r => r.json())
-      .then((d: Movie[]) => {
-        const all = Array.isArray(d) ? d : []
-        setState({ pool: all.slice(VISIBLE), visible: all.slice(0, VISIBLE) })
+      .then((d: { movies: Movie[]; topGenreNames: string[] } | Movie[]) => {
+        const movies = Array.isArray(d) ? d : (d.movies ?? [])
+        const topGenreNames = Array.isArray(d) ? [] : (d.topGenreNames ?? [])
+        setState({ pool: movies.slice(VISIBLE), visible: movies.slice(0, VISIBLE), topGenreNames })
       })
       .finally(() => setLoading(false))
   }, [])
@@ -41,8 +43,9 @@ export default function SuggestionsPage() {
     fetchingMore.current = true
     try {
       const res = await fetch(`/api/suggestions?excludeIds=${allSeenIds.join(',')}`)
-      const data: Movie[] = await res.json()
-      if (Array.isArray(data) && data.length > 0) {
+      const d: { movies: Movie[]; topGenreNames: string[] } | Movie[] = await res.json()
+      const data = Array.isArray(d) ? d : (d.movies ?? [])
+      if (data.length > 0) {
         setState(s => ({ ...s, pool: [...s.pool, ...data] }))
       }
     } finally {
@@ -66,7 +69,7 @@ export default function SuggestionsPage() {
   }
 
   const handleDismiss = (id: number, genreIds: number[]) => {
-    setState(({ pool, visible }) => {
+    setState(({ pool, visible, topGenreNames }) => {
       const nextVisible = visible.filter(m => m.id !== id)
       const backfill    = pool[0] ?? null
       const nextPool    = backfill ? pool.slice(1) : pool
@@ -81,6 +84,7 @@ export default function SuggestionsPage() {
       return {
         pool:    nextPool,
         visible: backfill ? [...nextVisible, backfill] : nextVisible,
+        topGenreNames,
       }
     })
 
@@ -113,7 +117,9 @@ export default function SuggestionsPage() {
         <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>SUGGESTED FOR YOU</h1>
       </div>
       <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: '1.5rem', fontFamily: 'var(--font-mono)' }}>
-        Based on your taste profile — thrillers, crime, drama, action.
+        {state.topGenreNames.length > 0
+          ? `Based on your taste profile — ${state.topGenreNames.map(g => g.toLowerCase()).join(', ')}.`
+          : 'Based on your taste profile.'}
       </p>
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
