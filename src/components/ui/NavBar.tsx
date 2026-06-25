@@ -33,6 +33,7 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
     { href: '/new-releases',  label: 'NEW RELEASES' },
     { href: '/suggestions',   label: 'SUGGESTIONS' },
     { href: '/watched',       label: 'WATCHED' },
+    { href: '/stats',         label: 'STATS' },
   ]
 
   return (

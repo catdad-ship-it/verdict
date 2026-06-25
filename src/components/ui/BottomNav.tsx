@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Film, Lightbulb, Eye } from 'lucide-react'
+import { Home, Film, Lightbulb, Eye, BarChart2 } from 'lucide-react'
 
 const tabs = [
   { href: '/',             label: 'QUEUE',   Icon: Home      },
   { href: '/new-releases', label: 'NEW',     Icon: Film      },
   { href: '/suggestions',  label: 'IDEAS',   Icon: Lightbulb },
   { href: '/watched',      label: 'WATCHED', Icon: Eye       },
+  { href: '/stats',        label: 'STATS',   Icon: BarChart2 },
 ]
 
 export default function BottomNav() {
