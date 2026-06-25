@@ -269,29 +269,55 @@ export default function HomePage() {
 
               {/* Custom lists */}
               {lists.map(l => (
-                <div key={l.id} style={{ display: 'flex', alignItems: 'center' }}>
-                  <button
-                    onClick={() => switchList(l.id)}
-                    style={{
-                      flex: 1, textAlign: 'left', padding: '0.75rem 1rem',
-                      fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
-                      background: activeList === l.id ? 'rgba(192,120,24,0.1)' : 'transparent',
-                      color: activeList === l.id ? 'var(--amber)' : 'var(--cream)',
-                      border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                    }}
-                  >
-                    {activeList === l.id && <Check size={12} />}
-                    {l.name.toUpperCase()}
-                  </button>
-                  <button
-                    onClick={() => deleteList(l.id)}
-                    title="Delete list"
-                    style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                <div key={l.id} style={{ display: 'flex', alignItems: 'center', borderTop: '1px solid var(--border)' }}>
+                  {pendingDelete === l.id ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 1rem', gap: 8 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f87171', letterSpacing: 1 }}>
+                        DELETE {l.name.toUpperCase()}?
+                      </span>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          onClick={() => { deleteList(l.id); setPendingDelete(null) }}
+                          style={{
+                            fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.25rem 0.6rem',
+                            background: '#f87171', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontWeight: 700,
+                          }}
+                        >YES</button>
+                        <button
+                          onClick={() => setPendingDelete(null)}
+                          style={{
+                            fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.25rem 0.6rem',
+                            background: 'var(--raised)', color: 'var(--cream-dim)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer',
+                          }}
+                        >NO</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => switchList(l.id)}
+                        style={{
+                          flex: 1, textAlign: 'left', padding: '0.75rem 1rem',
+                          fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
+                          background: activeList === l.id ? 'rgba(192,120,24,0.1)' : 'transparent',
+                          color: activeList === l.id ? 'var(--amber)' : 'var(--cream)',
+                          border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                        }}
+                      >
+                        {activeList === l.id && <Check size={12} />}
+                        {l.name.toUpperCase()}
+                      </button>
+                      <button
+                        onClick={() => setPendingDelete(l.id)}
+                        title="Delete list"
+                        style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
 
