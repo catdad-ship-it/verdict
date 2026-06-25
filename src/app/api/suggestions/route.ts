@@ -12,9 +12,15 @@ export async function GET(req: NextRequest) {
   const extraExclude = (req.nextUrl.searchParams.get('excludeIds') ?? '')
     .split(',').filter(Boolean).map(Number)
 
-  const [{ data: watched }, { data: queue }, { data: tasteProfile }] = await Promise.all([
-    supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating').eq('user_id', user.id),
-    supabase.from('queue_items').select('tmdb_id').eq('user_id', user.id),
+  const [
+    { data: watched },
+    { data: queue },
+    { data: watchedShows },
+    { data: tasteProfile },
+  ] = await Promise.all([
+    supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating, want_more_like_this').eq('user_id', user.id),
+    supabase.from('queue_items').select('tmdb_id, genre_ids').eq('user_id', user.id),
+    supabase.from('watched_shows').select('tmdb_id, genre_ids').eq('user_id', user.id),
     supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
   ])
 
@@ -22,8 +28,15 @@ export async function GET(req: NextRequest) {
   const queueIds     = queue?.map(q => q.tmdb_id) ?? []
   const dismissedIds = tasteProfile?.disliked_tmdb_ids ?? []
 
+  // Top-rated movies (4-5 stars) where user wants more like it — used for TMDB recs
+  const topRatedMovieIds = (watched ?? [])
+    .filter(w => w.user_rating != null && w.user_rating >= 4 && w.want_more_like_this !== false)
+    .map(w => w.tmdb_id)
+
   const derived = deriveGenrePreferences(
-    (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating }))
+    (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating, wantMoreLikeThis: w.want_more_like_this })),
+    (queue ?? []).map(q => ({ genreIds: q.genre_ids ?? [] })),
+    (watchedShows ?? []).map(s => ({ genreIds: s.genre_ids ?? [] })),
   )
   const genreIds = derived.length > 0 ? derived : SEED_PROFILE.topGenreIds
 
@@ -32,6 +45,7 @@ export async function GET(req: NextRequest) {
     watchedIds,
     queueIds,
     dismissedIds: [...dismissedIds, ...extraExclude],
+    topRatedMovieIds,
   })
 
   const withRatings = await Promise.all(

@@ -1,4 +1,4 @@
-import { discoverMovies } from './tmdb'
+import { discoverMovies, getMovieRecommendations } from './tmdb'
 import { Movie } from './types'
 
 // Brady's pre-seeded taste profile
@@ -19,9 +19,7 @@ export const SEED_PROFILE = {
     278,    // Shawshank
     792293, // Three Billboards
   ],
-  dislikedTmdbIds: [
-    // Didn't rate well - nothing to exclude specifically yet
-  ],
+  dislikedTmdbIds: [],
 }
 
 interface SuggestionOptions {
@@ -29,30 +27,79 @@ interface SuggestionOptions {
   watchedIds: number[]
   queueIds: number[]
   dismissedIds?: number[]
+  topRatedMovieIds?: number[]   // movies rated 4-5 stars — used for TMDB recommendations
 }
 
 export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movie[]> {
-  const excludeIds = [...opts.watchedIds, ...opts.queueIds, ...SEED_PROFILE.lovedTmdbIds, ...(opts.dismissedIds ?? [])]
+  const excludeSet = new Set([
+    ...opts.watchedIds,
+    ...opts.queueIds,
+    ...SEED_PROFILE.lovedTmdbIds,
+    ...(opts.dismissedIds ?? []),
+  ])
+
   const genreIds = opts.lovedGenreIds.length > 0
     ? opts.lovedGenreIds
     : SEED_PROFILE.topGenreIds
 
-  const movies = await discoverMovies(genreIds, excludeIds)
-  return movies
+  // Fetch Discover results + TMDB recommendations from top-rated movies in parallel
+  const topRatedIds = (opts.topRatedMovieIds ?? []).slice(0, 5) // cap at 5 API calls
+  const [discoverResults, ...recArrays] = await Promise.all([
+    discoverMovies(genreIds, [...excludeSet]),
+    ...topRatedIds.map(id => getMovieRecommendations(id).catch(() => [] as Movie[])),
+  ])
+
+  // Merge discover + recommendations, deduplicate, filter exclusions
+  const seen = new Set<number>()
+  const merged: Movie[] = []
+  for (const m of [...discoverResults, ...recArrays.flat()]) {
+    if (!excludeSet.has(m.id) && !seen.has(m.id)) {
+      seen.add(m.id)
+      merged.push(m)
+    }
+  }
+
+  return merged.slice(0, 60)
 }
 
-// Derive genre preferences from a user's watched + rated movies
+// Derive genre preferences from watched movies, queue items, and watched shows
 export function deriveGenrePreferences(
-  watchedMovies: { genreIds: number[]; userRating: number | null }[]
+  watchedMovies: { genreIds: number[]; userRating: number | null; wantMoreLikeThis?: boolean | null }[],
+  queueItems:    { genreIds: number[] }[],
+  watchedShows:  { genreIds: number[] }[],
 ): number[] {
   const scores: Record<number, number> = {}
 
+  // Watched + rated movies: strong signal
+  // loved + want more (4-5) = +2, loved + switch it up = +0.5
+  // liked + want more (3) = +1, liked + switch it up = 0
+  // disliked (1-2) = -1 regardless
   for (const m of watchedMovies) {
     if (!m.userRating) continue
-    // Weight: loved (4-5) = +2, liked (3) = +1, disliked (1-2) = -1
-    const weight = m.userRating >= 4 ? 2 : m.userRating === 3 ? 1 : -1
+    let weight: number
+    if (m.userRating >= 4) {
+      weight = m.wantMoreLikeThis === false ? 0.5 : 2
+    } else if (m.userRating === 3) {
+      weight = m.wantMoreLikeThis === false ? 0 : 1
+    } else {
+      weight = -1
+    }
     for (const gId of m.genreIds) {
       scores[gId] = (scores[gId] ?? 0) + weight
+    }
+  }
+
+  // Queue items: intent signal, lighter weight
+  for (const q of queueItems) {
+    for (const gId of q.genreIds) {
+      scores[gId] = (scores[gId] ?? 0) + 0.5
+    }
+  }
+
+  // Watched shows: completion signal, flat +1
+  for (const s of watchedShows) {
+    for (const gId of s.genreIds) {
+      scores[gId] = (scores[gId] ?? 0) + 1
     }
   }
 
