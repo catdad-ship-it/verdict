@@ -257,7 +257,7 @@ export default function VHSCard({
             className="vcr-btn-primary text-xs px-2 py-2 w-full flex items-center justify-center gap-1"
             style={{ fontSize: '0.62rem' }}
           >
-            <Plus size={10} /> QUEUE
+            <Plus size={10} /> ADD
           </button>
         )}
       </div>

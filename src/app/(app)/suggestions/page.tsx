@@ -2,8 +2,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { Zap } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
+import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import type { PostWatchAnswers } from '@/lib/types'
+
+interface UserList { id: string; name: string }
 
 const VISIBLE = 12
 
@@ -25,9 +28,12 @@ export default function SuggestionsPage() {
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
+  const [lists, setLists]         = useState<UserList[]>([])
+  const [pendingAdd, setPendingAdd] = useState<Movie | null>(null)
   const fetchingMore              = useRef(false)
 
   useEffect(() => {
+    fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
     fetch('/api/suggestions')
       .then(r => r.json())
       .then((d: { movies: Movie[]; topGenreNames: string[] } | Movie[]) => {
@@ -53,17 +59,24 @@ export default function SuggestionsPage() {
     }
   }
 
-  const addToQueue = async (m: Movie) => {
-    await fetch('/api/queue', {
+  const handlePickList = async (listId: 'queue' | string) => {
+    const m = pendingAdd
+    if (!m) return
+    setPendingAdd(null)
+
+    const body = {
+      tmdbId: m.id, mediaType: 'movie', title: m.title,
+      posterPath: m.posterPath, genreIds: m.genreIds ?? [],
+      runtime: m.runtime, releaseYear: m.releaseYear,
+      imdbRating: m.imdbRating, rtScore: m.rtScore,
+      overview: m.overview,
+    }
+
+    const url = listId === 'queue' ? '/api/queue' : `/api/lists/${listId}/items`
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tmdbId: m.id, mediaType: 'movie', title: m.title,
-        posterPath: m.posterPath, genreIds: m.genreIds ?? [],
-        runtime: m.runtime, releaseYear: m.releaseYear,
-        imdbRating: m.imdbRating, rtScore: m.rtScore,
-        overview: m.overview,
-      }),
+      body: JSON.stringify(body),
     })
     setAddedIds(s => new Set([...s, m.id]))
   }
@@ -132,7 +145,7 @@ export default function SuggestionsPage() {
               mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
               imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
               isInQueue={addedIds.has(m.id)}
-              onAddToQueue={addedIds.has(m.id) ? undefined : () => addToQueue(m)}
+              onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
               onMarkWatched={() => setPostWatch(m)}
               onDismiss={() => handleDismiss(m.id, m.genreIds ?? [])}
             />
@@ -143,6 +156,13 @@ export default function SuggestionsPage() {
         <PostWatchModal
           title={postWatch.title} posterPath={postWatch.posterPath ?? null} mediaType="movie" runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
+        />
+      )}
+      {pendingAdd && (
+        <ListPickerSheet
+          lists={lists}
+          onPick={handlePickList}
+          onClose={() => setPendingAdd(null)}
         />
       )}
     </div>
