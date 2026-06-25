@@ -163,6 +163,7 @@ export default function SuggestionsPage() {
           lists={lists}
           onPick={handlePickList}
           onClose={() => setPendingAdd(null)}
+          onListCreated={l => setLists(prev => [...prev, l])}
         />
       )}
     </div>
