@@ -306,7 +306,7 @@ export default function HomePage() {
                       style={{
                         flex: 1, background: 'var(--raised)', border: '1px solid var(--amber-dim)',
                         borderRadius: 2, color: 'var(--cream)', fontFamily: 'var(--font-mono)',
-                        fontSize: 12, padding: '0.3rem 0.5rem', outline: 'none',
+                        fontSize: 16, padding: '0.3rem 0.5rem', outline: 'none',
                       }}
                     />
                     <button
