@@ -16,7 +16,9 @@ async function getUserTaste(): Promise<{ genres: number[]; dismissed: number[] }
     ])
 
     const derived = deriveGenrePreferences(
-      (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating }))
+      (watched ?? []).map(w => ({ genreIds: w.genre_ids ?? [], userRating: w.user_rating })),
+      [],
+      [],
     )
     return {
       genres: derived.length > 0 ? derived : SEED_PROFILE.topGenreIds,
