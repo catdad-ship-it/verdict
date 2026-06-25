@@ -41,12 +41,14 @@ export default function HomePage() {
   const [filter, setFilter]         = useState<'all' | 'movie' | 'tv'>('all')
   const [sort, setSort]             = useState<'added' | 'runtime' | 'title'>('added')
   const [addTarget, setAddTarget]   = useState<ActiveList>('queue')
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
         setShowSelector(false)
+        setPendingDelete(null)
       }
     }
     document.addEventListener('mousedown', handler)
