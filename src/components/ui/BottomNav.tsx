@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { Home, Film, Lightbulb, Eye, BarChart2 } from 'lucide-react'
 
 const tabs = [
-  { href: '/',             label: 'QUEUE',   Icon: Home      },
+  { href: '/',             label: 'LISTS',   Icon: Home      },
   { href: '/new-releases', label: 'NEW',     Icon: Film      },
   { href: '/suggestions',  label: 'IDEAS',   Icon: Lightbulb },
   { href: '/watched',      label: 'WATCHED', Icon: Eye       },
