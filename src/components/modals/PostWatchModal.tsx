@@ -49,7 +49,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           background: 'var(--surface)',
           border: '1px solid var(--amber)',
           boxShadow: '0 30px 70px rgba(0,0,0,0.7), 0 0 40px rgba(192,120,24,0.1)',
-          maxHeight: '88vh',
+          maxHeight: '88dvh',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
         }}
       >
@@ -152,14 +152,18 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
+              onFocus={e => {
+                // Give keyboard time to appear, then scroll into view
+                setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 350)
+              }}
               placeholder="What stood out? Any quick thoughts..."
               rows={2}
               style={{
                 width: '100%', background: 'var(--card)',
                 border: '1px solid var(--border)', borderRadius: 3,
                 color: 'var(--cream)', fontFamily: 'var(--font-mono)',
-                fontSize: 13, padding: '0.6rem 0.75rem', outline: 'none',
-                resize: 'vertical', lineHeight: 1.5,
+                fontSize: 16, padding: '0.6rem 0.75rem', outline: 'none',
+                resize: 'none', lineHeight: 1.5,
               }}
             />
           </div>

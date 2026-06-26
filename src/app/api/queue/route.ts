@@ -32,8 +32,8 @@ export async function GET() {
 
   const rows = data ?? []
 
-  // Backfill runtime for items that are missing it
-  const missing = rows.filter(r => r.runtime == null)
+  // Backfill runtime AND ratings for items missing either
+  const missing = rows.filter(r => r.runtime == null || (r.media_type !== 'tv' && r.imdb_rating == null))
   if (missing.length > 0) {
     await Promise.all(
       missing.map(async row => {
