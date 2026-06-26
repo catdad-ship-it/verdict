@@ -10,11 +10,12 @@ interface Props {
   year?: number
   mediaType: 'movie' | 'tv'
   seasonNumber?: number
+  isRewatch?: boolean
   onSave: (answers: PostWatchAnswers) => void
   onClose: () => void
 }
 
-export default function PostWatchModal({ title, runtime, year, mediaType, seasonNumber, onSave, onClose }: Props) {
+export default function PostWatchModal({ title, runtime, year, mediaType, seasonNumber, isRewatch, onSave, onClose }: Props) {
   const [rating, setRating]     = useState(0)
   const [hovered, setHovered]   = useState(0)
   const [worked, setWorked]     = useState<string[]>([])
@@ -68,7 +69,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                  style={{ background: 'var(--raised)', minHeight: '72px' }}>🎬</div>
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--amber)' }}>
-                {mediaType === 'tv' ? '◼ SEASON ENDED' : '◼ TAPE ENDED'}
+                {isRewatch ? '◼ TAPE REWOUND' : mediaType === 'tv' ? '◼ SEASON ENDED' : '◼ TAPE ENDED'}
               </p>
               <h3 className="font-bold text-lg leading-tight" style={{ color: 'var(--cream)' }}>{title}</h3>
               {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>

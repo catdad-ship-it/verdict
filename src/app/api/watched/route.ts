@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const { media_type, tmdb_id, title, poster_path, genre_ids, runtime,
-          user_rating, what_worked, want_more, notes,
+          user_rating, what_worked, want_more, notes, is_rewatch,
           status, current_season, total_seasons } = body
 
   if (media_type === 'show') {
@@ -43,14 +43,15 @@ export async function POST(req: NextRequest) {
       what_worked: what_worked ?? [],
       want_more_like_this: want_more ?? true,
       notes: notes ?? null,
+      is_rewatch: is_rewatch ?? false,
     })
     if (error) {
       console.error('Watched movies insert error:', JSON.stringify(error))
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Remove from queue
-    if (tmdb_id) {
+    // Remove from queue (only on first watch)
+    if (tmdb_id && !is_rewatch) {
       await supabase.from('queue_items')
         .delete()
         .eq('user_id', user.id)

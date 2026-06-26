@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
@@ -334,6 +334,19 @@ export default function HomePage() {
                       >
                         {activeList === l.id && <Check size={12} />}
                         {l.name.toUpperCase()}
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(`${window.location.origin}/share/${l.id}`)
+                            .catch(() => {})
+                          window.open(`/share/${l.id}`, '_blank', 'noopener')
+                        }}
+                        title="Share list"
+                        style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                      >
+                        <Share2 size={12} />
                       </button>
                       <button
                         onClick={() => setPendingDelete(l.id)}
