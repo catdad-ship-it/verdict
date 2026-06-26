@@ -4,14 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 import { SEED_PROFILE, deriveGenrePreferences } from '@/lib/suggestions'
 import { NextResponse } from 'next/server'
 
-async function getUserTaste(): Promise<{ genres: number[]; dismissed: number[] }> {
+async function getUserTaste(): Promise<{ genres: number[]; exclude: Set<number> }> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { genres: SEED_PROFILE.topGenreIds, dismissed: [] }
+    if (!user) return { genres: SEED_PROFILE.topGenreIds, exclude: new Set() }
 
-    const [{ data: watched }, { data: tasteProfile }] = await Promise.all([
-      supabase.from('watched_movies').select('genre_ids, user_rating').eq('user_id', user.id),
+    const [{ data: watched }, { data: queue }, { data: tasteProfile }] = await Promise.all([
+      supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating').eq('user_id', user.id),
+      supabase.from('queue_items').select('tmdb_id').eq('user_id', user.id),
       supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
     ])
 
@@ -24,12 +25,19 @@ async function getUserTaste(): Promise<{ genres: number[]; dismissed: number[] }
       .filter(([, s]) => s > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([id]) => parseInt(id))
+
+    const exclude = new Set<number>([
+      ...(watched ?? []).map(w => w.tmdb_id),
+      ...(queue ?? []).map(q => q.tmdb_id),
+      ...(tasteProfile?.disliked_tmdb_ids ?? []),
+    ])
+
     return {
       genres: sortedGenres.length > 0 ? sortedGenres : SEED_PROFILE.topGenreIds,
-      dismissed: tasteProfile?.disliked_tmdb_ids ?? [],
+      exclude,
     }
   } catch {
-    return { genres: SEED_PROFILE.topGenreIds, dismissed: [] }
+    return { genres: SEED_PROFILE.topGenreIds, exclude: new Set() }
   }
 }
 
@@ -42,9 +50,9 @@ export async function GET() {
       getUserTaste(),
     ])
 
-    const { genres: preferredGenres, dismissed } = taste
+    const { genres: preferredGenres, exclude } = taste
     const matches = (m: { genreIds: number[]; id: number }) =>
-      m.genreIds.some(id => preferredGenres.includes(id)) && !dismissed.includes(m.id)
+      m.genreIds.some(id => preferredGenres.includes(id)) && !exclude.has(m.id)
 
     const nowFiltered    = nowPlaying.filter(m => matches(m))
     const soonFiltered   = upcoming.filter(m => matches(m))
