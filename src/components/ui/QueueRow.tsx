@@ -32,24 +32,33 @@ export default function QueueRow({
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
 
-  const [expanded, setExpanded]         = useState(false)
+  const [expanded, setExpanded]           = useState(false)
   const [synopsis, setSynopsis]         = useState<string | null>(overview ?? null)
   const [synopsisLoading, setSynopsisLoading] = useState(false)
   const [trailerLoading, setTrailerLoading]   = useState(false)
   const [removing, setRemoving]               = useState(false)
+  const [providers, setProviders]             = useState<{ providerId: number; providerName: string; logoPath: string }[] | null>(null)
 
   const handleExpand = async () => {
     const next = !expanded
     setExpanded(next)
-    // Lazy-fetch synopsis if not in props
-    if (next && !synopsis) {
-      setSynopsisLoading(true)
-      try {
-        const path = mediaType === 'tv' ? `/api/show/${tmdbId}` : `/api/movie/${tmdbId}`
-        const data = await fetch(path).then(r => r.json())
-        setSynopsis(data.overview ?? null)
-      } catch { /* non-fatal */ }
-      finally { setSynopsisLoading(false) }
+    // Lazy-fetch synopsis + providers if not already loaded
+    if (next) {
+      if (!synopsis) {
+        setSynopsisLoading(true)
+        try {
+          const p = mediaType === 'tv' ? `/api/show/${tmdbId}` : `/api/movie/${tmdbId}`
+          const data = await fetch(p).then(r => r.json())
+          setSynopsis(data.overview ?? null)
+        } catch { /* non-fatal */ }
+        finally { setSynopsisLoading(false) }
+      }
+      if (providers === null) {
+        fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
+          .then(r => r.json())
+          .then(d => setProviders(d.providers ?? []))
+          .catch(() => setProviders([]))
+      }
     }
   }
 
@@ -185,6 +194,38 @@ export default function QueueRow({
           ) : (
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>No description available.</p>
           )}
+          {/* Where to watch */}
+          {providers !== null && (
+            <div style={{ marginBottom: 10 }}>
+              {providers.length > 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>STREAMING:</span>
+                  {providers.slice(0, 4).map(p => (
+                    <div key={p.providerId} title={p.providerName} style={{
+                      width: 24, height: 24, borderRadius: 4, overflow: 'hidden',
+                      position: 'relative', flexShrink: 0,
+                      border: '1px solid rgba(255,255,255,0.1)',
+                    }}>
+                      <img
+                        src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
+                        alt={p.providerName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  ))}
+                  {providers.length > 4 && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>+{providers.length - 4}</span>
+                  )}
+                </div>
+              ) : (
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>NOT STREAMING IN US</span>
+              )}
+            </div>
+          )}
+          {providers === null && (
+            <div style={{ marginBottom: 10, height: 10 }} />
+          )}
+
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={handleTrailer}
