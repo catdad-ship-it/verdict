@@ -2,8 +2,11 @@ app = "verdict-bnieman"
 primary_region = "iad"
 
 [build]
-  # Supabase env vars are set via: fly secrets set NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-  # Never commit secrets here.
+  # NEXT_PUBLIC_ vars must be build-time args so Next.js can bake them into the bundle.
+  # These are publishable keys — safe to expose publicly per Supabase docs.
+  [build.args]
+    NEXT_PUBLIC_SUPABASE_URL = "https://xdwitnnqkzxhrboczjdu.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_TaVws2SsGgfd9Wk_LLLgnQ_Fiogkg_N"
 
 [env]
   PORT = "3000"
