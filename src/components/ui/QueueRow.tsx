@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Clock, ChevronDown, ChevronUp, Play } from 'lucide-react'
+import { Clock, ChevronDown, ChevronUp, Play, Pin, PinOff } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
 
 interface QueueRowProps {
@@ -16,6 +16,8 @@ interface QueueRowProps {
   overview?: string | null
   currentSeason?: number
   totalSeasons?: number
+  isPinned?: boolean
+  onPin?: () => void
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
 }
@@ -24,6 +26,7 @@ export default function QueueRow({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview,
   currentSeason, totalSeasons,
+  isPinned, onPin,
   onMarkWatched, onRemoveFromQueue,
 }: QueueRowProps) {
   const imgUrl = posterUrl(posterPath)
@@ -106,12 +109,23 @@ export default function QueueRow({
 
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3 }}>
-          <p style={{
-            fontWeight: 700, fontSize: 14, color: 'var(--cream)', margin: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: 0.2,
-          }}>
-            {title}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <p style={{
+              fontWeight: 700, fontSize: 14, color: 'var(--cream)', margin: 0,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: 0.2,
+              flex: 1, minWidth: 0,
+            }}>
+              {title}
+            </p>
+            {isPinned && (
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1,
+                color: 'var(--amber)', background: 'rgba(192,120,24,0.15)',
+                border: '1px solid rgba(192,120,24,0.4)',
+                borderRadius: 2, padding: '1px 4px', flexShrink: 0,
+              }}>ON DECK</span>
+            )}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {releaseYear && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{releaseYear}</span>}
             {runtime    && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{formatRuntime(runtime)}</span>}
@@ -171,6 +185,7 @@ export default function QueueRow({
           ) : (
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>No description available.</p>
           )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={handleTrailer}
             disabled={trailerLoading}
@@ -185,6 +200,24 @@ export default function QueueRow({
             <Play size={10} fill="currentColor" />
             {trailerLoading ? 'LOADING...' : 'WATCH TRAILER'}
           </button>
+          {onPin && (
+            <button
+              onClick={e => { e.stopPropagation(); onPin() }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: isPinned ? 'rgba(192,120,24,0.12)' : 'var(--raised)',
+                border: `1px solid ${isPinned ? 'var(--amber)' : 'var(--border)'}`,
+                borderRadius: 3,
+                color: isPinned ? 'var(--amber)' : 'var(--muted)',
+                cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                fontSize: 10, letterSpacing: 1, padding: '7px 12px',
+              }}
+            >
+              {isPinned ? <PinOff size={10} /> : <Pin size={10} />}
+              {isPinned ? 'UNPIN' : 'ON DECK'}
+            </button>
+          )}
+          </div>
         </div>
       )}
     </div>

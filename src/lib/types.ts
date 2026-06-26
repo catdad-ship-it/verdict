@@ -80,6 +80,7 @@ export interface PostWatchAnswers {
   userRating: number
   whatWorked: string[]
   wantMoreLikeThis: boolean
+  notes?: string
 }
 
 export interface FinishTime {

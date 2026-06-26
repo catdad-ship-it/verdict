@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const { media_type, tmdb_id, title, poster_path, genre_ids, runtime,
-          user_rating, what_worked, want_more,
+          user_rating, what_worked, want_more, notes,
           status, current_season, total_seasons } = body
 
   if (media_type === 'show') {
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       user_rating,
       what_worked: what_worked ?? [],
       want_more_like_this: want_more ?? true,
+      notes: notes ?? null,
     })
     if (error) {
       console.error('Watched movies insert error:', JSON.stringify(error))

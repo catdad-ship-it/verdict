@@ -19,6 +19,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
   const [hovered, setHovered]   = useState(0)
   const [worked, setWorked]     = useState<string[]>([])
   const [wantMore, setWantMore] = useState<boolean | null>(null)
+  const [notes, setNotes]       = useState('')
 
   const ratingLabels = ['', 'Skip it', 'Eh, okay', 'Worth watching', 'Really good', 'Masterpiece']
 
@@ -28,7 +29,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
   function handleSave() {
     if (!rating) return
-    onSave({ userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true })
+    onSave({ userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true, notes: notes.trim() || undefined })
   }
 
   const subtitle = mediaType === 'tv' && seasonNumber
@@ -142,6 +143,24 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className="mb-5">
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>Notes (optional)</p>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="What stood out? Any quick thoughts..."
+              rows={2}
+              style={{
+                width: '100%', background: 'var(--card)',
+                border: '1px solid var(--border)', borderRadius: 3,
+                color: 'var(--cream)', fontFamily: 'var(--font-mono)',
+                fontSize: 13, padding: '0.6rem 0.75rem', outline: 'none',
+                resize: 'vertical', lineHeight: 1.5,
+              }}
+            />
           </div>
 
           <button onClick={handleSave} disabled={!rating}

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
@@ -40,7 +40,9 @@ export default function HomePage() {
   const [newListName, setNewListName]       = useState('')
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState<'all' | 'movie' | 'tv'>('all')
-  const [sort, setSort]             = useState<'added' | 'runtime' | 'title'>('added')
+  const [sort, setSort]             = useState<'added' | 'runtime' | 'title' | 'year' | 'rating'>('added')
+  const [search, setSearch]         = useState('')
+  const [pinnedKey, setPinnedKey]   = useState<string | null>(null)
   const [addTarget, setAddTarget]   = useState<ActiveList>('queue')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
@@ -84,6 +86,21 @@ export default function HomePage() {
   useEffect(() => {
     if (activeList !== 'queue') fetchListItems(activeList)
   }, [activeList, fetchListItems])
+
+  // Load/clear pin when active list changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = localStorage.getItem(`verdict_pin_${activeList}`)
+    setPinnedKey(stored ?? null)
+    setSearch('')
+  }, [activeList])
+
+  const handlePin = (key: string) => {
+    const next = pinnedKey === key ? null : key
+    setPinnedKey(next)
+    if (next) localStorage.setItem(`verdict_pin_${activeList}`, next)
+    else localStorage.removeItem(`verdict_pin_${activeList}`)
+  }
 
   const switchList = (id: ActiveList) => {
     setActiveList(id)
@@ -180,6 +197,7 @@ export default function HomePage() {
         user_rating: answers.userRating,
         what_worked: answers.whatWorked,
         want_more:   answers.wantMoreLikeThis,
+        notes:       answers.notes ?? null,
         status:      postWatch.mediaType === 'tv' ? 'watching' : undefined,
       }),
     })
@@ -211,9 +229,16 @@ export default function HomePage() {
 
   const displayItems = sourceItems
     .filter(i => filter === 'all' || i.mediaType === filter)
+    .filter(i => !search || i.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
+      const aKey = `${a.tmdbId}-${a.mediaType}`
+      const bKey = `${b.tmdbId}-${b.mediaType}`
+      if (aKey === pinnedKey) return -1
+      if (bKey === pinnedKey) return 1
       if (sort === 'title')   return a.title.localeCompare(b.title)
       if (sort === 'runtime') return (a.runtime ?? 999) - (b.runtime ?? 999)
+      if (sort === 'year')    return (b.releaseYear ?? 0) - (a.releaseYear ?? 0)
+      if (sort === 'rating')  return (b.imdbRating ?? 0) - (a.imdbRating ?? 0)
       return 0 // 'added' → API already returns newest-first
     })
 
@@ -379,6 +404,39 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Search bar */}
+      <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+        <Search size={13} style={{
+          position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+          color: 'var(--muted)', pointerEvents: 'none',
+        }} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search titles..."
+          style={{
+            width: '100%', background: 'var(--raised)',
+            border: '1px solid var(--border)', borderRadius: 3,
+            color: 'var(--cream)', fontFamily: 'var(--font-mono)',
+            fontSize: 13, padding: '0.45rem 2rem 0.45rem 2rem',
+            outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            style={{
+              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', padding: 2,
+            }}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
       {/* Filter/sort */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         {([['all','ALL'],['movie','▶ MOVIES'],['tv','▣ SHOWS']] as const).map(([f, label]) => (
@@ -389,15 +447,15 @@ export default function HomePage() {
             border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
           }}>{label}</button>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)' }}>SORT:</span>
-          {(['added','title','runtime'] as const).map(s => (
+          {([['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const).map(([s, label]) => (
             <button key={s} onClick={() => setSort(s)} style={{
               fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
               background: sort === s ? 'var(--amber-dim)' : 'transparent',
               color: sort === s ? 'var(--amber)' : 'var(--cream-dim)',
               border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-            }}>{s.toUpperCase()}</button>
+            }}>{label}</button>
           ))}
         </div>
       </div>
@@ -409,7 +467,7 @@ export default function HomePage() {
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 13 }}>
           {sourceItems.length === 0
             ? activeList === 'queue' ? 'YOUR QUEUE IS EMPTY. TAP ＋ TO ADD.' : 'THIS LIST IS EMPTY. TAP ＋ TO ADD.'
-            : 'NO TITLES MATCH THAT FILTER.'}
+            : search ? 'NO TITLES MATCH THAT SEARCH.' : 'NO TITLES MATCH THAT FILTER.'}
         </div>
       ) : (
         <div>
@@ -419,6 +477,8 @@ export default function HomePage() {
               tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
               mediaType={item.mediaType} runtime={item.runtime} releaseYear={item.releaseYear}
               imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
+              isPinned={pinnedKey === `${item.tmdbId}-${item.mediaType}`}
+              onPin={() => handlePin(`${item.tmdbId}-${item.mediaType}`)}
               onMarkWatched={() => setPostWatch(item)}
               onRemoveFromQueue={
                 activeList === 'queue'
