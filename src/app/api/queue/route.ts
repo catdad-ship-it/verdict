@@ -52,9 +52,10 @@ export async function GET() {
             const detail = await getMovie(row.tmdb_id)
             runtime = detail.runtime ?? null
             releaseYear = releaseYear ?? detail.releaseYear ?? null
-            if (!imdbRating && !rtScore && detail.title) {
+            if (!imdbRating && detail.title) {
               const r = await getRatings(detail.title, detail.releaseYear)
-              imdbRating = r.imdbRating ?? null
+              // Prefer IMDb/RT; fall back to TMDB community score for new releases
+              imdbRating = r.imdbRating ?? detail.tmdbRating ?? null
               rtScore = r.rtScore ?? null
             }
           }
@@ -109,10 +110,10 @@ export async function POST(req: NextRequest) {
         const detail = await getMovie(tmdb_id)
         runtime     = detail.runtime ?? null
         releaseYear = releaseYear ?? detail.releaseYear ?? null
-        // Fetch ratings if missing
-        if (!imdbRating && !rtScore && detail.title) {
+        // Fetch ratings if missing; fall back to TMDB score for new releases
+        if (!imdbRating && detail.title) {
           const r = await getRatings(detail.title, detail.releaseYear)
-          imdbRating = r.imdbRating ?? null
+          imdbRating = r.imdbRating ?? detail.tmdbRating ?? null
           rtScore    = r.rtScore    ?? null
         }
       }

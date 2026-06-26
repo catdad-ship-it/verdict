@@ -443,7 +443,7 @@ export default function HomePage() {
             width: '100%', background: 'var(--raised)',
             border: '1px solid var(--border)', borderRadius: 3,
             color: 'var(--cream)', fontFamily: 'var(--font-mono)',
-            fontSize: 13, padding: '0.45rem 2rem 0.45rem 2rem',
+            fontSize: 16, padding: '0.45rem 2rem 0.45rem 2rem',
             outline: 'none', boxSizing: 'border-box',
           }}
         />

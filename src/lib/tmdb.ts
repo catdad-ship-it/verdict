@@ -22,7 +22,7 @@ function genreNames(ids: number[]): string[] {
 }
 
 // ── Movie ──────────────────────────────────────────────
-export async function getMovie(tmdbId: number): Promise<Movie> {
+export async function getMovie(tmdbId: number): Promise<Movie & { tmdbRating: number | null }> {
   const d = await get(`/movie/${tmdbId}`)
   return {
     id: d.id,
@@ -37,6 +37,8 @@ export async function getMovie(tmdbId: number): Promise<Movie> {
     imdbRating: null,
     rtScore: null,
     mediaType: 'movie',
+    // TMDB community score — used as fallback when OMDB has no data yet
+    tmdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
   }
 }
 

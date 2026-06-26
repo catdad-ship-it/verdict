@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { Play, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavBarProps { queueCount?: number }
@@ -58,7 +59,7 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
               <span className="font-black text-xl tracking-tight" style={{ color: 'var(--bg)' }}>VERDICT</span>
             </div>
             <div className="flex items-center px-2.5 py-1.5" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-              <span style={{ color: 'var(--amber)', fontSize: '1.1rem', lineHeight: 1 }}>▶</span>
+              <Play size={14} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
             </div>
           </Link>
           {queueCount > 0 && (
@@ -85,10 +86,10 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
           <div className="w-px h-5 mx-2 hidden md:block" style={{ background: 'var(--border)' }} />
           <button onClick={signOut}
             className="text-xs font-semibold tracking-widest uppercase px-2.5 py-1.5 rounded-sm transition-colors"
-            style={{ color: 'var(--muted)' }}
-            onMouseOver={e => (e.target as HTMLElement).style.color = 'var(--cream-dim)'}
-            onMouseOut={e => (e.target as HTMLElement).style.color = 'var(--muted)'}>
-            ⏏ OUT
+            style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}
+            onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
+            onMouseOut={e => (e.currentTarget.style.color = 'var(--muted)')}>
+            <LogOut size={13} /> OUT
           </button>
         </div>
       </div>
