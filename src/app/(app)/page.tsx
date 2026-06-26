@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
+import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import SearchAddModal from '@/components/modals/SearchAddModal'
@@ -401,7 +402,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* List */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
       ) : displayItems.length === 0 ? (
@@ -411,14 +412,13 @@ export default function HomePage() {
             : 'NO TITLES MATCH THAT FILTER.'}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.25rem' }}>
+        <div>
           {displayItems.map(item => (
-            <VHSCard
+            <QueueRow
               key={`${item.tmdbId}-${item.mediaType}`}
               tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
               mediaType={item.mediaType} runtime={item.runtime} releaseYear={item.releaseYear}
               imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
-              isInQueue
               onMarkWatched={() => setPostWatch(item)}
               onRemoveFromQueue={
                 activeList === 'queue'
