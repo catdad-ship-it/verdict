@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import SearchAddModal from '@/components/modals/SearchAddModal'
+import WatchTonightModal from '@/components/modals/WatchTonightModal'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -33,7 +34,8 @@ export default function HomePage() {
   const [trending, setTrending]     = useState<{ movies: TrendingItem[]; shows: TrendingItem[] }>({ movies: [], shows: [] })
   const [showSpin, setShowSpin]     = useState(false)
   const [postWatch, setPostWatch]   = useState<QueueItem | null>(null)
-  const [showSearch, setShowSearch] = useState(false)
+  const [showSearch, setShowSearch]       = useState(false)
+  const [showWatchTonight, setShowWatchTonight] = useState(false)
   const [showListPicker, setShowListPicker] = useState(false)
   const [showSelector, setShowSelector]     = useState(false)
   const [showNewList, setShowNewList]       = useState(false)
@@ -243,7 +245,7 @@ export default function HomePage() {
     })
 
   const movieItems = queue.filter(i => i.mediaType === 'movie')
-  const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker)
+  const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker || showWatchTonight)
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
@@ -394,12 +396,21 @@ export default function HomePage() {
         {/* Spin */}
         <div style={{ display: 'flex', gap: 8 }}>
           {activeList === 'queue' && (
-            <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
-              <Dice3 size={26} />
-            </button>
+            <>
+              <button onClick={() => setShowWatchTonight(true)} disabled={queue.length === 0}
+                title="Watch Tonight"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
+                <Clock size={22} />
+              </button>
+              <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
+                <Dice3 size={26} />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -578,6 +589,13 @@ export default function HomePage() {
 
       {/* Modals */}
       {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} onPick={() => {}} />}
+      {showWatchTonight && (
+        <WatchTonightModal
+          items={queue}
+          onPin={handlePin}
+          onClose={() => setShowWatchTonight(false)}
+        />
+      )}
       {postWatch && (
         <PostWatchModal
           title={postWatch.title} posterPath={postWatch.posterPath}
