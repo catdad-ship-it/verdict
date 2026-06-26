@@ -5,7 +5,6 @@ import { WHAT_WORKED_OPTIONS, PostWatchAnswers } from '@/lib/types'
 
 interface Props {
   title: string
-  posterPath: string | null
   runtime?: number | null
   year?: number
   mediaType: 'movie' | 'tv'

@@ -64,7 +64,7 @@ export default function ListPickerSheet({ lists, onPick, onClose, onListCreated 
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 201,
         background: 'var(--surface)', borderTop: '2px solid var(--amber-dim)',
         borderRadius: '12px 12px 0 0', padding: '1.25rem 1rem 2rem',
-        maxHeight: '65vh', overflowY: 'auto',
+        maxHeight: '65dvh', overflowY: 'auto',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>

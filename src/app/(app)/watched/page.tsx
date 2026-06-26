@@ -250,7 +250,6 @@ export default function WatchedPage() {
       {replayTarget && (
         <PostWatchModal
           title={replayTarget.title}
-          posterPath={replayTarget.posterPath}
           mediaType="movie"
           runtime={replayTarget.runtime ?? undefined}
           isRewatch

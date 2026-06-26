@@ -2,9 +2,8 @@ app = "verdict-bnieman"
 primary_region = "iad"
 
 [build]
-  [build.args]
-    NEXT_PUBLIC_SUPABASE_URL = "https://xdwitnnqkzxhrboczjdu.supabase.co"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_TaVws2SsGgfd9Wk_LLLgnQ_Fiogkg_N"
+  # Supabase env vars are set via: fly secrets set NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+  # Never commit secrets here.
 
 [env]
   PORT = "3000"

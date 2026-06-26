@@ -10,8 +10,11 @@ export async function GET(
   const supabase = createServiceClient()
 
   const [{ data: list }, { data: items }] = await Promise.all([
-    supabase.from('lists').select('id, name, user_id').eq('id', id).single(),
-    supabase.from('list_items').select('*').eq('list_id', id).order('added_at', { ascending: false }),
+    supabase.from('lists').select('id, name').eq('id', id).single(),
+    supabase.from('list_items')
+      .select('id, tmdb_id, media_type, title, poster_path, runtime, release_year, imdb_rating, rt_score')
+      .eq('list_id', id)
+      .order('added_at', { ascending: false }),
   ])
 
   if (!list) return NextResponse.json({ error: 'List not found' }, { status: 404 })

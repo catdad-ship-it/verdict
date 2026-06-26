@@ -34,6 +34,10 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // Verify the list belongs to this user before touching it
+  const { data: listCheck } = await supabase.from('lists').select('id').eq('id', list_id).eq('user_id', user.id).single()
+  if (!listCheck) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
   const body = await req.json()
   const tmdb_id    = body.tmdbId    ?? body.tmdb_id
   const raw_type   = body.mediaType ?? body.media_type ?? 'movie'

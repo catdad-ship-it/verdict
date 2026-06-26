@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -24,13 +24,14 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  const authRoutes = ['/login', '/signup', '/reset-password']
-  const isAuthRoute = authRoutes.some(r => pathname.startsWith(r))
+  // Public routes — no auth needed
+  const publicPrefixes = ['/login', '/signup', '/reset-password', '/share']
+  const isPublic = publicPrefixes.some(p => pathname.startsWith(p))
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-  if (user && isAuthRoute) {
+  if (user && ['/login', '/signup', '/reset-password'].some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 

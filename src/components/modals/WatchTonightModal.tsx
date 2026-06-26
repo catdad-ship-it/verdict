@@ -75,7 +75,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
           border: '1px solid var(--amber)',
           boxShadow: '0 30px 70px rgba(0,0,0,0.7), 0 0 40px rgba(192,120,24,0.08)',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
-          maxHeight: '88vh', overflowY: 'auto',
+          maxHeight: '88dvh', overflowY: 'auto',
         }}
       >
         {/* Drag handle */}

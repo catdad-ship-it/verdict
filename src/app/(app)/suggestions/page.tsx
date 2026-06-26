@@ -154,7 +154,7 @@ export default function SuggestionsPage() {
       )}
       {postWatch && (
         <PostWatchModal
-          title={postWatch.title} posterPath={postWatch.posterPath ?? null} mediaType="movie" runtime={postWatch.runtime ?? undefined}
+          title={postWatch.title} mediaType="movie" runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
         />
       )}

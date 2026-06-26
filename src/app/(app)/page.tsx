@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
@@ -50,14 +50,18 @@ export default function HomePage() {
   const selectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (selectorRef.current && !selectorRef.current.contains(e.target as Node)) {
         setShowSelector(false)
         setPendingDelete(null)
       }
     }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler as EventListener, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler as EventListener)
+    }
   }, [])
 
   const fetchQueue = useCallback(async () => {
@@ -229,7 +233,7 @@ export default function HomePage() {
 
   const sourceItems = activeList === 'queue' ? queue : listAsQueue
 
-  const displayItems = sourceItems
+  const displayItems = useMemo(() => sourceItems
     .filter(i => filter === 'all' || i.mediaType === filter)
     .filter(i => !search || i.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -242,7 +246,7 @@ export default function HomePage() {
       if (sort === 'year')    return (b.releaseYear ?? 0) - (a.releaseYear ?? 0)
       if (sort === 'rating')  return (b.imdbRating ?? 0) - (a.imdbRating ?? 0)
       return 0 // 'added' → API already returns newest-first
-    })
+    }), [sourceItems, filter, search, pinnedKey, sort])
 
   const movieItems = queue.filter(i => i.mediaType === 'movie')
   const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker || showWatchTonight)
@@ -412,13 +416,13 @@ export default function HomePage() {
             <>
               <button onClick={() => setShowWatchTonight(true)} disabled={queue.length === 0}
                 title="Watch Tonight"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center', minWidth: 44, minHeight: 44, justifyContent: 'center' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
                 <Clock size={22} />
               </button>
               <button onClick={() => setShowSpin(true)} disabled={movieItems.length === 0}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--amber)', opacity: 0.65, padding: '0.25rem', display: 'flex', alignItems: 'center', minWidth: 44, minHeight: 44, justifyContent: 'center' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}>
                 <Dice3 size={26} />
@@ -611,7 +615,7 @@ export default function HomePage() {
       )}
       {postWatch && (
         <PostWatchModal
-          title={postWatch.title} posterPath={postWatch.posterPath}
+          title={postWatch.title}
           mediaType={postWatch.mediaType} runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
         />

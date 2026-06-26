@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   // Extra IDs to exclude (already shown movies)
   const extraExclude = (req.nextUrl.searchParams.get('excludeIds') ?? '')
-    .split(',').filter(Boolean).map(Number)
+    .split(',').filter(Boolean).slice(0, 200).map(Number)
 
   const [
     { data: watched },

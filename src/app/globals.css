@@ -38,8 +38,18 @@ body {
   background: var(--bg);
   color: var(--cream);
   font-family: var(--font-inter, Inter, sans-serif);
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: clip; /* clip prevents page scroll without breaking child overflow-x: auto shelves */
+}
+
+/* Suppress tap flash on links (buttons already handled above) */
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent hover transforms from sticking on touch devices */
+@media (hover: none) {
+  .vhs-card-hover { transform: none !important; box-shadow: none !important; }
 }
 
 
