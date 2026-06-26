@@ -13,64 +13,26 @@ interface StatsData {
   monthlyActivity: { month: string; movies: number; shows: number }[]
 }
 
-const RATING_LABELS: Record<number, string> = {
-  1: 'Skip It', 2: 'Meh', 3: 'Decent', 4: 'Liked It', 5: 'Masterpiece',
-}
-
-function StatBox({ value, label }: { value: string | number; label: string }) {
+function BentoCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ textAlign: 'center', padding: 'clamp(0.5rem, 2vw, 1rem)', background: 'var(--raised)', borderRadius: 4 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(20px, 6vw, 36px)', fontWeight: 700, color: 'var(--amber)', lineHeight: 1 }}>
-        {value}
-      </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 2, marginTop: 6 }}>
-        {label}
-      </div>
+    <div style={{
+      background: 'var(--raised)', borderRadius: 6,
+      padding: 'clamp(0.875rem, 3vw, 1.25rem)',
+      ...style,
+    }}>
+      {children}
     </div>
   )
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function CardLabel({ children }: { children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: '1.5rem' }}>
-      <h2 style={{
-        fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 11,
-        letterSpacing: 3, margin: '0 0 0.75rem 0', textTransform: 'uppercase',
-      }}>
-        {title}
-      </h2>
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--amber-dim)',
-        borderRadius: 4, padding: '1.25rem',
-      }}>
-        {children}
-      </div>
-    </section>
-  )
-}
-
-function HBar({ label, count, max, color }: { label: string; count: number; max: number; color: string }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(60px, 100px) 1fr 28px', alignItems: 'center', gap: '0.75rem' }}>
-      <span style={{
-        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)',
-        textAlign: 'right', letterSpacing: 0.5, whiteSpace: 'nowrap', overflow: 'hidden',
-        textOverflow: 'ellipsis',
-      }}>
-        {label}
-      </span>
-      <div style={{ background: 'var(--raised)', borderRadius: 2, height: 14, overflow: 'hidden' }}>
-        <div style={{
-          height: '100%',
-          width: max > 0 ? `${(count / max) * 100}%` : '0%',
-          background: color,
-          minWidth: count > 0 ? 4 : 0,
-          transition: 'width 0.6s ease',
-        }} />
-      </div>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>
-        {count}
-      </span>
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: 9,
+      color: 'rgba(192,120,24,0.5)', letterSpacing: 2,
+      marginBottom: '0.75rem', textTransform: 'uppercase',
+    }}>
+      {children}
     </div>
   )
 }
@@ -96,153 +58,248 @@ export default function StatsPage() {
 
   if (!stats) return null
 
-  const totalHours = Math.round(stats.totalRuntimeMinutes / 60)
-  const maxRating  = Math.max(...stats.ratingDistribution.map(r => r.count), 1)
-  const maxGenre   = Math.max(...stats.topGenres.map(g => g.count), 1)
-  const maxTag     = Math.max(...stats.whatWorkedTags.map(t => t.count), 1)
-  const maxMonthly = Math.max(...stats.monthlyActivity.map(m => m.movies + m.shows), 1)
-  const ratedCount = stats.ratingDistribution.reduce((a, b) => a + b.count, 0)
+  const totalHours  = Math.round(stats.totalRuntimeMinutes / 60)
+  const ratedCount  = stats.ratingDistribution.reduce((a, b) => a + b.count, 0)
+  const maxRating   = Math.max(...stats.ratingDistribution.map(r => r.count), 1)
+  const maxMonthly  = Math.max(...stats.monthlyActivity.map(m => m.movies + m.shows), 1)
+  const maxTag      = Math.max(...stats.whatWorkedTags.map(t => t.count), 1)
+  const sortedTags  = [...stats.whatWorkedTags].sort((a, b) => b.count - a.count)
+  const totalTitles = stats.movieCount + stats.showCount
 
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 0' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
-        <BarChart2 size={18} color="var(--amber)" />
-        <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>
+      {/* Page header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
+        <BarChart2 size={15} color="var(--amber)" />
+        <h1 style={{
+          fontFamily: 'var(--font-mono)', color: 'var(--amber)',
+          fontSize: 12, margin: 0, letterSpacing: 3,
+        }}>
           YOUR STATS
         </h1>
       </div>
 
-      {/* By the numbers */}
-      <SectionCard title="By the Numbers">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-          <StatBox value={stats.movieCount} label="MOVIES" />
-          <StatBox value={stats.showCount} label="SHOWS" />
-          <StatBox value={totalHours} label="HRS WATCHED" />
+      {/* ── HERO ── */}
+      <BentoCard style={{ marginBottom: '0.625rem', position: 'relative', overflow: 'hidden' }}>
+        {/* Scanline texture */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px)',
+        }} />
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontWeight: 700, lineHeight: 0.85,
+            fontSize: 'clamp(64px, 18vw, 112px)', color: 'var(--amber)',
+            textShadow: '0 0 60px rgba(192,120,24,0.25)',
+          }}>
+            {totalTitles}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 10,
+            color: 'var(--cream-dim)', letterSpacing: 2, marginTop: 10,
+          }}>
+            TITLES WATCHED
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--muted)', letterSpacing: 1, marginTop: 5,
+          }}>
+            {stats.movieCount} movies · {stats.showCount} shows · {totalHours} hrs
+          </div>
         </div>
-      </SectionCard>
+      </BentoCard>
 
-      {/* Average rating */}
-      {stats.avgRating != null && (
-        <SectionCard title="Average Rating">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 52, fontWeight: 700, color: 'var(--amber)', lineHeight: 1 }}>
-              {stats.avgRating.toFixed(1)}
-            </span>
-            <div>
-              <div style={{ color: 'var(--amber)', fontSize: 22, letterSpacing: 3 }}>
-                {'★'.repeat(Math.round(stats.avgRating))}{'☆'.repeat(5 - Math.round(stats.avgRating))}
+      {/* ── 2-COL: avg rating + top genres ── */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: '0.625rem', marginBottom: '0.625rem',
+      }}>
+
+        {/* Avg rating */}
+        <BentoCard>
+          <CardLabel>Avg Rating</CardLabel>
+          {stats.avgRating != null ? (
+            <>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontWeight: 700,
+                fontSize: 'clamp(32px, 9vw, 48px)', color: 'var(--amber)', lineHeight: 1,
+                marginBottom: 8,
+              }}>
+                {stats.avgRating.toFixed(1)}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', marginTop: 4 }}>
-                from {ratedCount} rated {ratedCount === 1 ? 'movie' : 'movies'}
+              <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+                {[1,2,3,4,5].map(n => (
+                  <span key={n} style={{
+                    fontSize: 13,
+                    color: n <= Math.round(stats.avgRating!) ? 'var(--amber)' : 'rgba(192,120,24,0.2)',
+                  }}>★</span>
+                ))}
               </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                {ratedCount} rated
+              </div>
+            </>
+          ) : (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+              No ratings yet
             </div>
-          </div>
-        </SectionCard>
-      )}
+          )}
+        </BentoCard>
 
-      {/* Rating breakdown */}
-      {ratedCount > 0 && (
-        <SectionCard title="Rating Breakdown">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {[...stats.ratingDistribution].reverse().map(({ rating, count }) => (
-              <HBar
-                key={rating}
-                label={`${'★'.repeat(rating)} ${RATING_LABELS[rating]}`}
-                count={count}
-                max={maxRating}
-                color="var(--amber)"
-              />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {/* Top genres */}
-      {stats.topGenres.length > 0 && (
-        <SectionCard title="Top Genres">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {stats.topGenres.map(({ name, count }) => (
-              <HBar
-                key={name}
-                label={name.toUpperCase()}
-                count={count}
-                max={maxGenre}
-                color="linear-gradient(90deg, var(--amber), #B8860B)"
-              />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {/* What worked */}
-      {stats.whatWorkedTags.length > 0 && (
-        <SectionCard title="What Worked">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {stats.whatWorkedTags.map(({ tag, count }) => (
-              <HBar
-                key={tag}
-                label={tag.toUpperCase()}
-                count={count}
-                max={maxTag}
-                color="rgba(192,120,24,0.55)"
-              />
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {/* Activity by month */}
-      <SectionCard title="Activity by Month">
-        <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 110 }}>
-          {stats.monthlyActivity.map(({ month, movies, shows }) => {
-            const total   = movies + shows
-            const barH    = maxMonthly > 0 ? Math.round((total / maxMonthly) * 88) : 0
-            const movH    = maxMonthly > 0 ? Math.round((movies / maxMonthly) * 88) : 0
-            const showH   = barH - movH
-            return (
-              <div key={month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {/* Bar */}
-                <div style={{ width: '100%', height: 88, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                  {total > 0 && (
-                    <div style={{ width: '100%', borderRadius: '2px 2px 0 0', overflow: 'hidden' }}>
-                      {showH > 0 && (
-                        <div style={{ height: showH, background: 'rgba(192,120,24,0.35)' }} />
-                      )}
-                      {movH > 0 && (
-                        <div style={{ height: movH, background: 'var(--amber)' }} />
-                      )}
-                    </div>
-                  )}
-                  {total === 0 && (
-                    <div style={{ height: 2, background: 'var(--raised)', borderRadius: 1 }} />
-                  )}
+        {/* Top genres */}
+        <BentoCard>
+          <CardLabel>Top Genres</CardLabel>
+          {stats.topGenres.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {stats.topGenres.slice(0, 5).map(({ name, count }, i) => (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 8, width: 10, flexShrink: 0,
+                    color: i === 0 ? 'var(--amber)' : 'var(--muted)',
+                  }}>{i + 1}</span>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 10, flex: 1,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    color: i === 0 ? 'var(--cream)' : 'var(--cream-dim)',
+                  }}>
+                    {name}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>
+                    {count}
+                  </span>
                 </div>
-                {/* Label */}
-                <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--cream-dim)',
-                  marginTop: 5, letterSpacing: 0,
-                }}>
-                  {month.toUpperCase()}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: 16, marginTop: 16, justifyContent: 'center' }}>
-          {[
-            { color: 'var(--amber)', label: 'MOVIES' },
-            { color: 'rgba(192,120,24,0.35)', label: 'SHOWS' },
-          ].map(({ color, label }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 10, height: 10, background: color, borderRadius: 1 }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cream-dim)' }}>{label}</span>
+              ))}
             </div>
-          ))}
-        </div>
-      </SectionCard>
+          ) : (
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+              No data yet
+            </div>
+          )}
+        </BentoCard>
+      </div>
+
+      {/* ── WHAT WORKED — tag cloud ── */}
+      {sortedTags.length > 0 && (
+        <BentoCard style={{ marginBottom: '0.625rem' }}>
+          <CardLabel>What Worked</CardLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {sortedTags.map(({ tag, count }) => {
+              const ratio   = count / maxTag
+              const opacity = 0.3 + ratio * 0.7
+              const fs      = Math.round(9 + ratio * 4)
+              return (
+                <span key={tag} style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: fs,
+                  letterSpacing: 0.5,
+                  color: `rgba(192,120,24,${opacity.toFixed(2)})`,
+                  border: `1px solid rgba(192,120,24,${(opacity * 0.45).toFixed(2)})`,
+                  background: `rgba(192,120,24,${(opacity * 0.07).toFixed(2)})`,
+                  padding: '5px 10px',
+                  borderRadius: 3,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {tag}
+                </span>
+              )
+            })}
+          </div>
+        </BentoCard>
+      )}
+
+      {/* ── RATING BREAKDOWN — vertical bars ── */}
+      {ratedCount > 0 && (
+        <BentoCard style={{ marginBottom: '0.625rem' }}>
+          <CardLabel>Rating Breakdown</CardLabel>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+            {[1, 2, 3, 4, 5].map(star => {
+              const found = stats.ratingDistribution.find(r => r.rating === star)
+              const count = found?.count ?? 0
+              const barH  = maxRating > 0 ? Math.round((count / maxRating) * 72) : 0
+              const barColor =
+                star >= 4 ? 'var(--amber)' :
+                star === 3 ? 'rgba(192,120,24,0.55)' :
+                             'rgba(192,120,24,0.28)'
+              return (
+                <div key={star} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {/* Count — always reserves height for alignment */}
+                  <div style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 9,
+                    color: count > 0 ? 'var(--muted)' : 'transparent',
+                    height: 14, display: 'flex', alignItems: 'flex-end', marginBottom: 3,
+                  }}>
+                    {count}
+                  </div>
+                  {/* Bar */}
+                  <div style={{ width: '100%', height: 72, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    <div style={{
+                      width: '100%',
+                      height: Math.max(barH, count > 0 ? 3 : 0),
+                      background: barColor,
+                      borderRadius: '2px 2px 0 0',
+                    }} />
+                  </div>
+                  {/* Star label */}
+                  <div style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 8,
+                    color: 'var(--amber)', marginTop: 5, letterSpacing: -0.5,
+                    opacity: count > 0 ? 1 : 0.25,
+                  }}>
+                    {'★'.repeat(star)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </BentoCard>
+      )}
+
+      {/* ── ACTIVITY BY MONTH ── */}
+      {stats.monthlyActivity.length > 0 && (
+        <BentoCard>
+          <CardLabel>Activity by Month</CardLabel>
+          <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 80 }}>
+            {stats.monthlyActivity.map(({ month, movies, shows }) => {
+              const total = movies + shows
+              const barH  = maxMonthly > 0 ? Math.round((total / maxMonthly) * 62) : 0
+              const movH  = total > 0 ? Math.round((movies / total) * barH) : 0
+              const showH = barH - movH
+              return (
+                <div key={month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ width: '100%', height: 62, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                    {total > 0 ? (
+                      <div style={{ width: '100%', borderRadius: '2px 2px 0 0', overflow: 'hidden' }}>
+                        {showH > 0 && <div style={{ height: showH, background: 'rgba(192,120,24,0.35)' }} />}
+                        {movH  > 0 && <div style={{ height: movH,  background: 'var(--amber)' }} />}
+                      </div>
+                    ) : (
+                      <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }} />
+                    )}
+                  </div>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 7,
+                    color: 'var(--cream-dim)', marginTop: 5,
+                  }}>
+                    {month.slice(0, 3).toUpperCase()}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 14, marginTop: 12, justifyContent: 'center' }}>
+            {[
+              { color: 'var(--amber)',          label: 'MOVIES' },
+              { color: 'rgba(192,120,24,0.35)', label: 'SHOWS' },
+            ].map(({ color, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 8, height: 8, background: color, borderRadius: 1 }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </BentoCard>
+      )}
 
     </div>
   )
