@@ -44,12 +44,19 @@ export default function VHSCard({
   const [synopsisOpen, setSynopsisOpen] = useState(false)
   const [synopsisLoading, setSynopsisLoading] = useState(false)
   const [providers, setProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
+  const [hasRent, setHasRent] = useState(false)
+  const [hasBuy, setHasBuy]   = useState(false)
   const [providersLoaded, setProvidersLoaded] = useState(false)
 
   useEffect(() => {
     fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
       .then(r => r.json())
-      .then(d => { setProviders(d.providers ?? []); setProvidersLoaded(true) })
+      .then(d => {
+        setProviders(d.providers ?? [])
+        setHasRent(d.hasRent ?? false)
+        setHasBuy(d.hasBuy ?? false)
+        setProvidersLoaded(true)
+      })
       .catch(() => setProvidersLoaded(true))
   }, [tmdbId, mediaType])
 
@@ -222,29 +229,52 @@ export default function VHSCard({
         )}
       </div>
 
-      {/* Provider logos */}
-      {providersLoaded && providers.length > 0 && (
-        <div style={{
-          background: '#0E0C09', borderTop: '1px solid #1A1610',
-          padding: '4px 8px', display: 'flex', gap: 4, alignItems: 'center',
-        }}>
-          {providers.slice(0, 4).map(p => (
-            <div key={p.providerId} title={p.providerName} style={{
-              width: 20, height: 20, borderRadius: 3, overflow: 'hidden',
-              flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <img
-                src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
-                alt={p.providerName}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
-          ))}
-          {providers.length > 4 && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>+{providers.length - 4}</span>
-          )}
-        </div>
-      )}
+      {/* Provider strip — always rendered to normalize card heights */}
+      <div style={{
+        background: '#0E0C09', borderTop: '1px solid #1A1610',
+        padding: '4px 8px', display: 'flex', gap: 4, alignItems: 'center',
+        minHeight: 29,
+      }}>
+        {providersLoaded && providers.length > 0 && (
+          <>
+            {providers.slice(0, 4).map(p => (
+              <div key={p.providerId} title={p.providerName} style={{
+                width: 20, height: 20, borderRadius: 3, overflow: 'hidden',
+                flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                <img
+                  src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
+                  alt={p.providerName}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+            ))}
+            {providers.length > 4 && (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>+{providers.length - 4}</span>
+            )}
+          </>
+        )}
+        {providersLoaded && providers.length === 0 && (hasRent || hasBuy) && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {hasRent && (
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 0.5,
+                color: 'var(--cream-dim)', background: 'rgba(228,204,144,0.07)',
+                border: '1px solid rgba(228,204,144,0.15)',
+                borderRadius: 2, padding: '2px 5px',
+              }}>$ RENT</span>
+            )}
+            {hasBuy && !hasRent && (
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 0.5,
+                color: 'var(--muted)', background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 2, padding: '2px 5px',
+              }}>$$$ BUY</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* VHS Footer */}
       <div className="px-2.5 py-2.5 flex gap-2 items-center relative"

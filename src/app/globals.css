@@ -24,6 +24,14 @@
 
 * { box-sizing: border-box; }
 
+/* Kill iOS/Android default button chrome */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html { scroll-behavior: smooth; }
 
 body {

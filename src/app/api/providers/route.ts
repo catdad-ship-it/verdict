@@ -22,11 +22,9 @@ export async function GET(req: NextRequest) {
     const data = await fetch(url, { next: { revalidate: 86400 } }).then(r => r.json())
     const us   = data?.results?.US
 
-    if (!us?.flatrate) return NextResponse.json({ providers: [] })
+    type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
 
-    const providers: StreamProvider[] = (us.flatrate as {
-      provider_id: number; provider_name: string; logo_path: string; display_priority: number
-    }[])
+    const providers: StreamProvider[] = ((us?.flatrate ?? []) as RawProvider[])
       .sort((a, b) => a.display_priority - b.display_priority)
       .map(p => ({
         providerId:   p.provider_id,
@@ -34,7 +32,10 @@ export async function GET(req: NextRequest) {
         logoPath:     p.logo_path,
       }))
 
-    return NextResponse.json({ providers })
+    const hasRent = !!(us?.rent?.length)
+    const hasBuy  = !!(us?.buy?.length)
+
+    return NextResponse.json({ providers, hasRent, hasBuy })
   } catch {
     return NextResponse.json({ providers: [] })
   }
