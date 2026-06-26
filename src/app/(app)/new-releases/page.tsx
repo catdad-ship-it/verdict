@@ -116,7 +116,7 @@ export default function NewReleasesPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 1rem' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
       <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, marginBottom: '1.5rem', letterSpacing: 2 }}>NEW RELEASES</h1>
       {loading
         ? <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>

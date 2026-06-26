@@ -24,14 +24,14 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--bg);
   color: var(--cream);
   font-family: var(--font-inter, Inter, sans-serif);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip prevents page scroll without breaking child overflow-x: auto shelves */
 }
 
 
@@ -43,9 +43,8 @@ body {
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border-lt); border-radius: 3px; }
 
-/* Horizontal scroll shelf */
+/* Horizontal scroll shelf — flex/gap go on the inner wrapper, not here */
 .hscroll {
-  display: flex; gap: 14px;
   overflow-x: auto; padding-bottom: 8px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-lt) var(--surface);

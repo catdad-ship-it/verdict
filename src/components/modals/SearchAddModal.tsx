@@ -115,7 +115,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
             style={{
               width: '100%', background: 'var(--bg)', border: '1px solid var(--amber-dim)',
               color: 'var(--cream)', padding: '0.65rem 0.75rem', borderRadius: 2,
-              fontFamily: 'var(--font-mono)', fontSize: 15, outline: 'none',
+              fontFamily: 'var(--font-mono)', fontSize: 16, outline: 'none',
               boxSizing: 'border-box',
             }}
           />

@@ -128,7 +128,7 @@ export default function QueueRow({
           <button
             onClick={onMarkWatched}
             className="vcr-btn"
-            style={{ fontSize: 9, padding: '5px 8px', letterSpacing: 1, whiteSpace: 'nowrap' }}
+            style={{ fontSize: 10, padding: '10px 10px', letterSpacing: 1, whiteSpace: 'nowrap', minHeight: 44, minWidth: 44 }}
           >
             ✓ WATCHED
           </button>
@@ -138,8 +138,9 @@ export default function QueueRow({
             onClick={handleRemove}
             style={{
               background: 'none', border: '1px solid var(--border)', borderRadius: 2,
-              color: 'var(--muted)', cursor: 'pointer', fontSize: 11, padding: '4px 8px',
-              fontFamily: 'var(--font-mono)', lineHeight: 1,
+              color: 'var(--muted)', cursor: 'pointer', fontSize: 14, padding: '10px 10px',
+              fontFamily: 'var(--font-mono)', lineHeight: 1, minHeight: 44, minWidth: 44,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}

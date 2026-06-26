@@ -135,7 +135,7 @@ export default function VHSCard({
             <button
               onClick={e => { e.stopPropagation(); setSynopsisOpen(false) }}
               className="absolute top-2 right-2"
-              style={{ color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+              style={{ color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
             >
               <X size={12} />
             </button>

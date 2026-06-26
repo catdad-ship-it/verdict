@@ -52,7 +52,7 @@ export default function WatchedPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 1rem' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
         <Archive size={18} color="var(--amber)" />
         <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>WATCHED HISTORY</h1>

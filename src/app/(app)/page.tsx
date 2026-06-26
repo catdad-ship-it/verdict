@@ -221,7 +221,7 @@ export default function HomePage() {
   const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker)
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 1rem' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -248,8 +248,8 @@ export default function HomePage() {
             <div style={{
               position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 40,
               background: 'var(--surface)', border: '1px solid var(--amber-dim)',
-              borderRadius: 4, minWidth: 220, boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-              overflow: 'hidden',
+              borderRadius: 4, minWidth: 220, maxWidth: 'calc(100vw - 2rem)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden',
             }}>
               {/* Queue */}
               <button

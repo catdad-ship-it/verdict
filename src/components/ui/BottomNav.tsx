@@ -42,7 +42,7 @@ export default function BottomNav() {
             <Icon size={28} />
             <span style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.65rem',
+              fontSize: '0.7rem',
               letterSpacing: '0.05em',
               lineHeight: 1,
             }}>

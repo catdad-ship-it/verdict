@@ -19,8 +19,8 @@ const RATING_LABELS: Record<number, string> = {
 
 function StatBox({ value, label }: { value: string | number; label: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--raised)', borderRadius: 4 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 36, fontWeight: 700, color: 'var(--amber)', lineHeight: 1 }}>
+    <div style={{ textAlign: 'center', padding: 'clamp(0.5rem, 2vw, 1rem)', background: 'var(--raised)', borderRadius: 4 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(20px, 6vw, 36px)', fontWeight: 700, color: 'var(--amber)', lineHeight: 1 }}>
         {value}
       </div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 2, marginTop: 6 }}>
@@ -51,7 +51,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 function HBar({ label, count, max, color }: { label: string; count: number; max: number; color: string }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 28px', alignItems: 'center', gap: '0.75rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(60px, 100px) 1fr 28px', alignItems: 'center', gap: '0.75rem' }}>
       <span style={{
         fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)',
         textAlign: 'right', letterSpacing: 0.5, whiteSpace: 'nowrap', overflow: 'hidden',
@@ -104,7 +104,7 @@ export default function StatsPage() {
   const ratedCount = stats.ratingDistribution.reduce((a, b) => a + b.count, 0)
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 1rem' }}>
+    <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 0' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>

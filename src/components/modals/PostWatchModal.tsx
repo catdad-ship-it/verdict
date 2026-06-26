@@ -79,13 +79,13 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           {/* Rating */}
           <div className="mb-5">
             <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>How'd you rate it?</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {[1,2,3,4,5].map(n => (
                 <button key={n}
                   onClick={() => setRating(n)}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
-                  className="text-2xl w-12 h-12 rounded-sm transition-all"
+                  className="text-2xl w-10 h-10 rounded-sm transition-all"
                   style={{
                     background: n <= (hovered || rating) ? 'rgba(192,120,24,0.15)' : 'var(--card)',
                     border: `1px solid ${n <= (hovered || rating) ? 'var(--amber)' : 'var(--border)'}`,
@@ -124,15 +124,16 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           {/* Want more */}
           <div className="mb-6">
             <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>More of this, or switch it up?</p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {[
-                { val: true,  label: '▶▶ MORE LIKE THIS' },
-                { val: false, label: '◀◀ SWITCH IT UP' },
+                { val: true,  label: '▶▶ MORE' },
+                { val: false, label: '◀◀ SWITCH' },
               ].map(({ val, label }) => (
                 <button key={String(val)}
                   onClick={() => setWantMore(val)}
-                  className="flex-1 text-xs font-semibold tracking-widest uppercase py-3 rounded-sm transition-all"
+                  className="flex-1 text-xs font-semibold tracking-wide uppercase py-3 rounded-sm transition-all"
                   style={{
+                    minWidth: 120,
                     background: wantMore === val ? 'rgba(192,120,24,0.1)' : 'var(--card)',
                     border: `1px solid ${wantMore === val ? 'var(--amber)' : 'var(--border)'}`,
                     color: wantMore === val ? 'var(--amber)' : 'var(--muted)',

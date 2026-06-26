@@ -32,7 +32,7 @@ export default function TagSelector({ options, selected, onChange, max }: TagSel
               fontWeight: 500,
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
-              padding: '5px 12px',
+              padding: '10px 12px',
               borderRadius: '3px',
               border: `1px solid ${active ? 'var(--amber)' : 'var(--border)'}`,
               background: active ? 'var(--amber-glow)' : 'var(--surface)',
