@@ -43,7 +43,7 @@ function BentoCard({ children, style }: { children: React.ReactNode; style?: Rea
 function CardLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: 9,
+      fontFamily: 'var(--font-mono)', fontSize: 11,
       color: 'rgba(192,120,24,0.5)', letterSpacing: 2,
       marginBottom: '0.75rem', textTransform: 'uppercase',
     }}>
@@ -129,7 +129,7 @@ export default function StatsPage() {
                 ].map(({ v, l }) => (
                   <div key={l} style={{ textAlign: 'center', background: 'var(--surface)', borderRadius: 4, padding: '0.75rem 0.5rem' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'clamp(20px, 6vw, 30px)', color: 'var(--amber)', lineHeight: 1 }}>{v}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginTop: 5 }}>{l}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 5 }}>{l}</div>
                   </div>
                 ))}
               </div>
@@ -145,9 +145,9 @@ export default function StatsPage() {
                       </div>
                     )}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--amber)', letterSpacing: 1, marginBottom: 3 }}>BEST</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yearData.bestMovie.title}</div>
-                      <div style={{ color: 'var(--amber)', fontSize: 10, marginTop: 2 }}>{'★'.repeat(yearData.bestMovie.rating)}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1, marginBottom: 3 }}>BEST</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yearData.bestMovie.title}</div>
+                      <div style={{ color: 'var(--amber)', fontSize: 12, marginTop: 2 }}>{'★'.repeat(yearData.bestMovie.rating)}</div>
                     </div>
                   </div>
                 )}
@@ -161,9 +161,9 @@ export default function StatsPage() {
                       </div>
                     )}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, marginBottom: 3 }}>SKIP IT</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yearData.worstMovie.title}</div>
-                      <div style={{ color: 'rgba(192,120,24,0.35)', fontSize: 10, marginTop: 2 }}>{'★'.repeat(yearData.worstMovie.rating)}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginBottom: 3 }}>SKIP IT</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yearData.worstMovie.title}</div>
+                      <div style={{ color: 'rgba(192,120,24,0.35)', fontSize: 12, marginTop: 2 }}>{'★'.repeat(yearData.worstMovie.rating)}</div>
                     </div>
                   </div>
                 )}
@@ -172,17 +172,17 @@ export default function StatsPage() {
               {/* Bottom tags */}
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {yearData.topGenre && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
                     TOP GENRE: <span style={{ color: 'var(--amber)' }}>{yearData.topGenre.toUpperCase()}</span>
                   </span>
                 )}
                 {yearData.hottestMonth && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
                     HOTTEST MONTH: <span style={{ color: 'var(--amber)' }}>{yearData.hottestMonth.toUpperCase()}</span>
                   </span>
                 )}
                 {yearData.topTag && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '4px 8px', letterSpacing: 1 }}>
                     LOVED: <span style={{ color: 'var(--amber)' }}>{yearData.topTag.toUpperCase()}</span>
                   </span>
                 )}
@@ -208,13 +208,13 @@ export default function StatsPage() {
             {totalTitles}
           </div>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10,
+            fontFamily: 'var(--font-mono)', fontSize: 12,
             color: 'var(--cream-dim)', letterSpacing: 2, marginTop: 10,
           }}>
             TITLES WATCHED
           </div>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11,
+            fontFamily: 'var(--font-mono)', fontSize: 13,
             color: 'var(--muted)', letterSpacing: 1, marginTop: 5,
           }}>
             {stats.movieCount} movies · {stats.showCount} shows · {totalHours} hrs
@@ -248,7 +248,7 @@ export default function StatsPage() {
                   }}>★</span>
                 ))}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                 {ratedCount} rated
               </div>
             </>
@@ -267,17 +267,17 @@ export default function StatsPage() {
               {stats.topGenres.slice(0, 5).map(({ name, count }, i) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 8, width: 10, flexShrink: 0,
+                    fontFamily: 'var(--font-mono)', fontSize: 10, width: 10, flexShrink: 0,
                     color: i === 0 ? 'var(--amber)' : 'var(--muted)',
                   }}>{i + 1}</span>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10, flex: 1,
+                    fontFamily: 'var(--font-mono)', fontSize: 12, flex: 1,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     color: i === 0 ? 'var(--cream)' : 'var(--cream-dim)',
                   }}>
                     {name}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>
                     {count}
                   </span>
                 </div>
@@ -299,7 +299,7 @@ export default function StatsPage() {
             {sortedTags.map(({ tag, count }) => {
               const ratio   = count / maxTag
               const opacity = 0.3 + ratio * 0.7
-              const fs      = Math.round(9 + ratio * 4)
+              const fs      = Math.round(11 + ratio * 5)
               return (
                 <span key={tag} style={{
                   fontFamily: 'var(--font-mono)',
@@ -337,9 +337,9 @@ export default function StatsPage() {
                 <div key={star} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   {/* Count — always reserves height for alignment */}
                   <div style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 9,
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
                     color: count > 0 ? 'var(--muted)' : 'transparent',
-                    height: 14, display: 'flex', alignItems: 'flex-end', marginBottom: 3,
+                    height: 16, display: 'flex', alignItems: 'flex-end', marginBottom: 3,
                   }}>
                     {count}
                   </div>
@@ -354,7 +354,7 @@ export default function StatsPage() {
                   </div>
                   {/* Star label */}
                   <div style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 8,
+                    fontFamily: 'var(--font-mono)', fontSize: 10,
                     color: 'var(--amber)', marginTop: 5, letterSpacing: -0.5,
                     opacity: count > 0 ? 1 : 0.25,
                   }}>
@@ -390,7 +390,7 @@ export default function StatsPage() {
                     )}
                   </div>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 7,
+                    fontFamily: 'var(--font-mono)', fontSize: 10,
                     color: 'var(--cream-dim)', marginTop: 5,
                   }}>
                     {month.slice(0, 3).toUpperCase()}
@@ -406,7 +406,7 @@ export default function StatsPage() {
             ].map(({ color, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 8, height: 8, background: color, borderRadius: 1 }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
               </div>
             ))}
           </div>
