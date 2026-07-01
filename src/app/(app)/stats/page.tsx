@@ -96,7 +96,7 @@ function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) 
               {isNewMonth && (
                 <span style={{
                   position: 'absolute', top: -14, left: 0, whiteSpace: 'nowrap',
-                  fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
                 }}>
                   {firstDay.toLocaleDateString('en-US', { month: 'short' })}
                 </span>
@@ -193,7 +193,7 @@ export default function StatsPage() {
                 ].map(({ v, l }) => (
                   <div key={l} style={{ textAlign: 'center', background: 'var(--surface)', borderRadius: 4, padding: '0.75rem 0.5rem' }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'clamp(20px, 6vw, 30px)', color: 'var(--amber)', lineHeight: 1 }}>{v}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 5 }}>{l}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 2, marginTop: 5 }}>{l}</div>
                   </div>
                 ))}
               </div>
@@ -225,7 +225,7 @@ export default function StatsPage() {
                       </div>
                     )}
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginBottom: 3 }}>SKIP IT</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 3 }}>SKIP IT</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yearData.worstMovie.title}</div>
                       <div style={{ color: 'rgba(192,120,24,0.35)', fontSize: 12, marginTop: 2 }}>{'★'.repeat(yearData.worstMovie.rating)}</div>
                     </div>
@@ -279,7 +279,7 @@ export default function StatsPage() {
           </div>
           <div style={{
             fontFamily: 'var(--font-mono)', fontSize: 13,
-            color: 'var(--muted)', letterSpacing: 1, marginTop: 5,
+            color: 'var(--cream-dim)', letterSpacing: 1, marginTop: 5,
           }}>
             {stats.movieCount} movies · {stats.showCount} shows · {totalHours} hrs
           </div>
@@ -312,12 +312,12 @@ export default function StatsPage() {
                   }}>★</span>
                 ))}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>
                 {ratedCount} rated
               </div>
             </>
           ) : (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginTop: 8 }}>
               No ratings yet
             </div>
           )}
@@ -331,8 +331,8 @@ export default function StatsPage() {
               {stats.topGenres.slice(0, 5).map(({ name, count }, i) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10, width: 10, flexShrink: 0,
-                    color: i === 0 ? 'var(--amber)' : 'var(--muted)',
+                    fontFamily: 'var(--font-mono)', fontSize: 11, width: 11, flexShrink: 0,
+                    color: i === 0 ? 'var(--amber)' : 'var(--cream-dim)',
                   }}>{i + 1}</span>
                   <span style={{
                     fontFamily: 'var(--font-mono)', fontSize: 12, flex: 1,
@@ -341,14 +341,14 @@ export default function StatsPage() {
                   }}>
                     {name}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', flexShrink: 0 }}>
                     {count}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginTop: 8 }}>
               No data yet
             </div>
           )}
@@ -402,7 +402,7 @@ export default function StatsPage() {
                   {/* Count — always reserves height for alignment */}
                   <div style={{
                     fontFamily: 'var(--font-mono)', fontSize: 11,
-                    color: count > 0 ? 'var(--muted)' : 'transparent',
+                    color: count > 0 ? 'var(--cream-dim)' : 'transparent',
                     height: 16, display: 'flex', alignItems: 'flex-end', marginBottom: 3,
                   }}>
                     {count}
@@ -418,9 +418,8 @@ export default function StatsPage() {
                   </div>
                   {/* Star label */}
                   <div style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
                     color: 'var(--amber)', marginTop: 5, letterSpacing: -0.5,
-                    opacity: count > 0 ? 1 : 0.25,
                   }}>
                     {'★'.repeat(star)}
                   </div>
@@ -454,7 +453,7 @@ export default function StatsPage() {
                     )}
                   </div>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
                     color: 'var(--cream-dim)', marginTop: 5,
                   }}>
                     {month.slice(0, 3).toUpperCase()}
@@ -470,7 +469,7 @@ export default function StatsPage() {
             ].map(({ color, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 8, height: 8, background: color, borderRadius: 1 }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -483,14 +482,14 @@ export default function StatsPage() {
           <CardLabel>Watch History</CardLabel>
           <HeatmapCalendar days={stats.heatmapDays} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>LESS</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>LESS</span>
             {[0, 0.3, 0.55, 0.8, 1].map(ratio => (
               <div key={ratio} style={{
                 width: 10, height: 10, borderRadius: 2,
                 background: ratio === 0 ? 'rgba(255,255,255,0.05)' : `rgba(192,120,24,${(0.3 + ratio * 0.7).toFixed(2)})`,
               }} />
             ))}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>MORE</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>MORE</span>
           </div>
         </BentoCard>
       )}

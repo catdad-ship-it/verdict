@@ -85,14 +85,14 @@ export default function UpNextBar() {
             {item.posterPath && <Image src={posterUrl(item.posterPath)!} alt={item.title} fill style={{ objectFit: 'cover' }} sizes="30px" />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--amber)', letterSpacing: 1.5 }}>ON DECK</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1.5 }}>ON DECK</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.title}
             </div>
             {item.runtime != null && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Clock size={9} color="var(--muted)" />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatRuntime(item.runtime)}</span>
+                <Clock size={9} color="var(--cream-dim)" />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{formatRuntime(item.runtime)}</span>
               </div>
             )}
           </div>

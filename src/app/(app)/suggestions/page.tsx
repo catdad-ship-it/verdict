@@ -190,10 +190,10 @@ export default function SuggestionsPage() {
       {!loading && state.visible.length > 0 && (
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>DECADE:</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>DECADE:</span>
             {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
               <button key={v} onClick={() => setDecadeFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
                 background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
                 color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
                 border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -201,10 +201,10 @@ export default function SuggestionsPage() {
             ))}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>RUNTIME:</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RUNTIME:</span>
             {([['all','ALL'],['short','UNDER 2H']] as const).map(([v, label]) => (
               <button key={v} onClick={() => setRuntimeFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
                 background: runtimeFilter === v ? 'var(--amber-dim)' : 'transparent',
                 color: runtimeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
                 border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -212,10 +212,10 @@ export default function SuggestionsPage() {
             ))}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>RATING:</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RATING:</span>
             {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
               <button key={v} onClick={() => setRatingFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
                 background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
                 color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
                 border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',

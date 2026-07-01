@@ -246,10 +246,10 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
         {view === 'search' && tab !== 'people' && results.length > 0 && (
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 1rem 0.75rem', flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>DECADE:</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>DECADE:</span>
               {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
                 <button key={v} onClick={() => setDecadeFilter(v)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, padding: '0.15rem 0.4rem',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.4rem',
                   background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
                   color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
                   border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -257,10 +257,10 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
               ))}
             </div>
             <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>RATING:</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RATING:</span>
               {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
                 <button key={v} onClick={() => setRatingFilter(v)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, padding: '0.15rem 0.4rem',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.4rem',
                   background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
                   color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
                   border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -301,7 +301,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
                     </div>
                     <div style={{ color: 'var(--cream-dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {credit.releaseYear ?? '—'}
-                      <span style={{ marginLeft: 8, color: 'var(--muted)' }}>{credit.role}</span>
+                      <span style={{ marginLeft: 8, color: 'var(--cream-dim)' }}>{credit.role}</span>
                     </div>
                   </div>
                   <button
@@ -346,7 +346,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
                     <div style={{ color: 'var(--cream)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{person.name}</div>
                     <div style={{ color: 'var(--cream-dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {person.knownForDepartment}
-                      {person.knownFor.length > 0 && <span style={{ color: 'var(--muted)' }}> · {person.knownFor.join(', ')}</span>}
+                      {person.knownFor.length > 0 && <span style={{ color: 'var(--cream-dim)' }}> · {person.knownFor.join(', ')}</span>}
                     </div>
                   </div>
                   <ChevronLeft size={16} color="var(--muted)" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />

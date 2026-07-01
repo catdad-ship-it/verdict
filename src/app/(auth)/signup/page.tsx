@@ -36,7 +36,7 @@ export default function SignupPage() {
       </div>
       <div className="rounded-sm p-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <p className="text-2xl mb-3" style={{ color: 'var(--amber)' }}>Membership Created</p>
-        <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>Check your email to confirm your account, then sign in.</p>
+        <p className="text-sm mb-6" style={{ color: 'var(--cream-dim)' }}>Check your email to confirm your account, then sign in.</p>
         <Link href="/login" className="vcr-btn-primary inline-block px-6 py-2.5 text-sm">SIGN IN →</Link>
       </div>
     </div>
@@ -61,7 +61,7 @@ export default function SignupPage() {
         </h2>
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>Email</label>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--cream-dim)' }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="your@email.com"
               className="w-full px-3 py-2.5 rounded-sm outline-none"
               style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
@@ -69,7 +69,7 @@ export default function SignupPage() {
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>Password</label>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--cream-dim)' }}>Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min 6 characters"
               className="w-full px-3 py-2.5 rounded-sm outline-none"
               style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
@@ -83,7 +83,7 @@ export default function SignupPage() {
           </button>
         </form>
         <div className="text-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <Link href="/login" className="text-xs" style={{ color: 'var(--muted)' }}>Already a member? Sign in</Link>
+          <Link href="/login" className="text-xs" style={{ color: 'var(--cream-dim)' }}>Already a member? Sign in</Link>
         </div>
       </div>
     </div>

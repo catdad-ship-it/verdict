@@ -75,7 +75,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                 {isRewatch ? '◼ TAPE REWOUND' : mediaType === 'tv' ? '◼ SEASON ENDED' : '◼ TAPE ENDED'}
               </p>
               <h3 className="font-bold text-lg leading-tight" style={{ color: 'var(--cream)' }}>{title}</h3>
-              {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
+              {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--cream-dim)' }}>
                 {subtitle}{runtime ? ` · ${Math.floor(runtime/60)}h ${runtime%60}m` : ''}
               </p>}
             </div>
@@ -83,7 +83,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
           {/* Rating */}
           <div className="mb-5">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>How'd you rate it?</p>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>How'd you rate it?</p>
             <div className="flex items-center gap-2 flex-wrap">
               {[1,2,3,4,5].map(n => (
                 <button key={n}
@@ -100,7 +100,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                   }}>★</button>
               ))}
               {(hovered || rating) > 0 && (
-                <span className="text-xs ml-2" style={{ color: 'var(--muted)' }}>
+                <span className="text-xs ml-2" style={{ color: 'var(--cream-dim)' }}>
                   {ratingLabels[hovered || rating]}
                 </span>
               )}
@@ -109,7 +109,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
           {/* What worked */}
           <div className="mb-5">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>What worked? (pick all that apply)</p>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>What worked? (pick all that apply)</p>
             <div className="flex flex-wrap gap-2">
               {WHAT_WORKED_OPTIONS.map(tag => (
                 <button key={tag}
@@ -118,7 +118,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                   style={{
                     background: worked.includes(tag) ? 'rgba(192,120,24,0.1)' : 'var(--card)',
                     border: `1px solid ${worked.includes(tag) ? 'var(--amber)' : 'var(--border)'}`,
-                    color: worked.includes(tag) ? 'var(--amber)' : 'var(--muted)',
+                    color: worked.includes(tag) ? 'var(--amber)' : 'var(--cream-dim)',
                   }}>
                   {tag}
                 </button>
@@ -128,7 +128,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
           {/* Want more */}
           <div className="mb-6">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>More of this, or switch it up?</p>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>More of this, or switch it up?</p>
             <div className="flex gap-2 flex-wrap">
               {[
                 { val: true,  label: '▶▶ MORE' },
@@ -141,7 +141,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                     minWidth: 120,
                     background: wantMore === val ? 'rgba(192,120,24,0.1)' : 'var(--card)',
                     border: `1px solid ${wantMore === val ? 'var(--amber)' : 'var(--border)'}`,
-                    color: wantMore === val ? 'var(--amber)' : 'var(--muted)',
+                    color: wantMore === val ? 'var(--amber)' : 'var(--cream-dim)',
                   }}>
                   {label}
                 </button>
@@ -151,7 +151,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
           {/* Notes */}
           <div className="mb-5">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--muted)' }}>Notes (optional)</p>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>Notes (optional)</p>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}

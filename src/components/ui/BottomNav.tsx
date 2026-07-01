@@ -33,7 +33,7 @@ export default function BottomNav() {
             href={href}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
             style={{
-              color: active ? 'var(--amber)' : 'var(--muted)',
+              color: active ? 'var(--amber)' : 'var(--cream-dim)',
               borderTop: `2px solid ${active ? 'var(--amber)' : 'transparent'}`,
               marginTop: '-2px',
               textDecoration: 'none',

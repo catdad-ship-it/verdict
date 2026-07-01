@@ -190,7 +190,7 @@ export default function WatchedPage() {
             title={selectMode ? 'Exit select mode' : 'Select multiple entries'}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.4rem 0.7rem',
+              fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.4rem 0.7rem',
               background: selectMode ? 'var(--amber)' : 'transparent',
               color: selectMode ? 'var(--bg)' : 'var(--cream-dim)',
               border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -215,7 +215,7 @@ export default function WatchedPage() {
           <button
             onClick={selectAllVisible}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)',
+              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
               background: 'none', border: '1px solid var(--border)', borderRadius: 2,
               padding: '0.3rem 0.6rem', cursor: 'pointer',
             }}
@@ -225,7 +225,7 @@ export default function WatchedPage() {
               onClick={handleBulkDelete}
               disabled={selectedCount === 0}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                 color: '#f87171', background: 'rgba(154,48,40,0.12)',
                 border: '1px solid rgba(154,48,40,0.4)', borderRadius: 2,
                 padding: '0.4rem 0.75rem', cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
@@ -235,8 +235,8 @@ export default function WatchedPage() {
             <button
               onClick={toggleSelectMode}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
-                color: 'var(--muted)', background: 'none',
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
+                color: 'var(--cream-dim)', background: 'none',
                 border: '1px solid var(--border)', borderRadius: 2,
                 padding: '0.4rem 0.75rem', cursor: 'pointer',
               }}
@@ -280,14 +280,14 @@ export default function WatchedPage() {
                       {/* Title row */}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                         <span style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 14 }}>{latest.title}</span>
-                        <span style={{ color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                        <span style={{ color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
                           {new Date(latest.watched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                         {watchCount > 1 && (
                           <span
                             onClick={e => { if (selectMode) return; e.stopPropagation(); setExpandedId(isExpanded ? null : latest.tmdb_id) }}
                             style={{
-                              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                               color: 'var(--amber)', background: 'rgba(192,120,24,0.15)',
                               border: '1px solid rgba(192,120,24,0.4)',
                               borderRadius: 2, padding: '1px 5px', cursor: 'pointer',
@@ -307,7 +307,7 @@ export default function WatchedPage() {
                           {latest.what_worked.map(w => (
                             <span key={w} style={{
                               background: 'rgba(192,120,24,0.15)', color: 'var(--amber)',
-                              border: '1px solid var(--amber-dim)', fontSize: 10,
+                              border: '1px solid var(--amber-dim)', fontSize: 11,
                               padding: '0.15rem 0.5rem', borderRadius: 2, fontFamily: 'var(--font-mono)',
                             }}>{w}</span>
                           ))}
@@ -328,14 +328,14 @@ export default function WatchedPage() {
                           borderTop: '1px solid var(--border)',
                           display: 'flex', flexDirection: 'column', gap: 6,
                         }}>
-                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginBottom: 2 }}>WATCH HISTORY</p>
+                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 2 }}>WATCH HISTORY</p>
                           {group.map((w, i) => (
                             <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', minWidth: 70 }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', minWidth: 70 }}>
                                 {new Date(w.watched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
                               </span>
                               <Stars n={w.user_rating} />
-                              {i === 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--amber)', opacity: 0.6 }}>LATEST</span>}
+                              {i === 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)' }}>LATEST</span>}
                             </div>
                           ))}
                         </div>
@@ -348,11 +348,11 @@ export default function WatchedPage() {
                           style={{
                             marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5,
                             background: 'none', border: '1px solid var(--border)', borderRadius: 2,
-                            color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
-                            fontSize: 10, letterSpacing: 1, padding: '4px 8px',
+                            color: 'var(--cream-dim)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                            fontSize: 11, letterSpacing: 1, padding: '4px 8px',
                           }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--amber)'; e.currentTarget.style.color = 'var(--amber)' }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--cream-dim)' }}
                         >
                           <RefreshCw size={9} /> REWATCH
                         </button>
@@ -392,7 +392,7 @@ export default function WatchedPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 14 }}>{s.title}</span>
                       <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.15rem 0.5rem', borderRadius: 2,
+                        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.5rem', borderRadius: 2,
                         background: s.status==='watching' ? 'rgba(192,120,24,0.2)' : s.status==='finished' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
                         color: s.status==='watching' ? 'var(--amber)' : s.status==='finished' ? '#4ade80' : '#f87171',
                         border: `1px solid ${s.status==='watching' ? 'var(--amber-dim)' : s.status==='finished' ? '#4ade80' : '#f87171'}`,

@@ -346,6 +346,46 @@ export async function getShow(tmdbId: number): Promise<Show> {
   }
 }
 
+// ── Title details (for the click-to-expand modal) ──────
+// Everything the card doesn't have room for: full genre names, top cast,
+// and director (movies) / creators (shows). Kept as one combined shape so
+// the modal only needs a single fetch beyond what the card already passed
+// it as props.
+export interface TitleDetails {
+  overview: string
+  genres: string[]
+  cast: string[]
+  director: string | null
+  creators: string[]
+}
+
+export async function getMovieDetails(tmdbId: number): Promise<TitleDetails> {
+  const [movie, credits] = await Promise.all([getMovie(tmdbId), getMovieCredits(tmdbId)])
+  return {
+    overview: movie.overview,
+    genres: movie.genres,
+    cast: credits.filter(c => c.role === 'cast').map(c => c.name),
+    director: credits.find(c => c.role === 'director')?.name ?? null,
+    creators: [],
+  }
+}
+
+export async function getShowDetails(tmdbId: number): Promise<TitleDetails> {
+  const [showRaw, creditsData] = await Promise.all([
+    get(`/tv/${tmdbId}`),
+    get(`/tv/${tmdbId}/credits`),
+  ])
+  const cast: TMDBCastMember[] = creditsData.cast ?? []
+  const createdBy: { name: string }[] = showRaw.created_by ?? []
+  return {
+    overview: showRaw.overview ?? '',
+    genres: (showRaw.genres ?? []).map((g: { name: string }) => g.name),
+    cast: cast.slice(0, 5).map(c => c.name),
+    director: null,
+    creators: createdBy.map(c => c.name),
+  }
+}
+
 export async function searchShows(query: string): Promise<Show[]> {
   const data = await get('/search/tv', { query, include_adult: 'false' })
   return data.results.slice(0, 10).map((d: TMDBShowResult) => ({

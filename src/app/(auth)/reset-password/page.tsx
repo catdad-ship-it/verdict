@@ -25,8 +25,8 @@ export default function ResetPasswordPage() {
     <div className="w-full max-w-sm text-center">
       <div className="rounded-sm p-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <p className="text-lg mb-3" style={{ color: 'var(--amber)' }}>Check your email</p>
-        <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>We sent a reset link to {email}</p>
-        <Link href="/login" className="text-xs" style={{ color: 'var(--muted)' }}>← Back to sign in</Link>
+        <p className="text-sm mb-6" style={{ color: 'var(--cream-dim)' }}>We sent a reset link to {email}</p>
+        <Link href="/login" className="text-xs" style={{ color: 'var(--cream-dim)' }}>← Back to sign in</Link>
       </div>
     </div>
   )
@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
         </h2>
         <form onSubmit={handleReset} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>Email</label>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--cream-dim)' }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="your@email.com"
               className="w-full px-3 py-2.5 rounded-sm outline-none"
               style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
           </button>
         </form>
         <div className="text-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <Link href="/login" className="text-xs" style={{ color: 'var(--muted)' }}>← Back to sign in</Link>
+          <Link href="/login" className="text-xs" style={{ color: 'var(--cream-dim)' }}>← Back to sign in</Link>
         </div>
       </div>
     </div>

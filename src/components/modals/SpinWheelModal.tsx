@@ -89,7 +89,7 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
         <div className="inline-block mb-2" style={{ borderBottom: '2px solid var(--amber)', paddingBottom: '6px' }}>
           <span className="font-bold text-lg tracking-wider uppercase" style={{ color: 'var(--amber)' }}>SPIN THE WHEEL</span>
         </div>
-        <p className="text-xs mb-5" style={{ color: 'var(--muted)' }}>Can't decide? Let fate pick from your queue.</p>
+        <p className="text-xs mb-5" style={{ color: 'var(--cream-dim)' }}>Can't decide? Let fate pick from your queue.</p>
 
         {/* Wheel */}
         <div className="relative inline-block mb-3">
@@ -103,7 +103,7 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
                style={{ background: 'var(--card)', border: '1px solid var(--amber)', boxShadow: '0 0 20px rgba(192,120,24,0.15)' }}>
             <p className="text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--amber)' }}>TONIGHT&apos;S PICK</p>
             <p className="font-bold text-xl leading-tight mb-1" style={{ color: 'var(--cream)' }}>{result.title}</p>
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+            <p className="text-xs" style={{ color: 'var(--cream-dim)' }}>
               {result.releaseYear}{result.runtime ? ` · ${formatRuntime(result.runtime)}` : ''}
             </p>
           </div>

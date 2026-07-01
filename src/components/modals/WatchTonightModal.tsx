@@ -90,10 +90,10 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
 
         <div style={{ padding: '1rem 1.25rem 1.25rem' }}>
           {/* Header */}
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--amber)', letterSpacing: 3, marginBottom: 4 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 3, marginBottom: 4 }}>
             ◼ WHAT DO YOU HAVE TONIGHT?
           </p>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: '1.25rem' }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginBottom: '1.25rem' }}>
             Pick your window — I'll find something that fits.
           </p>
 
@@ -119,7 +119,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
               {candidates.length === 0 ? (
                 <div style={{
                   textAlign: 'center', padding: '2rem 1rem',
-                  fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
                 }}>
                   Nothing in your queue fits that window.<br />
                   <span style={{ color: 'var(--cream-dim)', marginTop: 4, display: 'block' }}>
@@ -153,24 +153,24 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
                       </p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {pick.releaseYear && (
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{pick.releaseYear}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{pick.releaseYear}</span>
                         )}
                         {pick.runtime ? (
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>
                             {Math.floor(pick.runtime / 60)}h {pick.runtime % 60}m
                           </span>
                         ) : (
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>runtime unknown</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>runtime unknown</span>
                         )}
                         {pick.imdbRating && (
-                          <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 9, padding: '1px 4px', borderRadius: 1 }}>
+                          <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 4px', borderRadius: 1 }}>
                             ★ {pick.imdbRating}
                           </span>
                         )}
                       </div>
                       {pinned && (
                         <span style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                           color: 'var(--amber)', display: 'inline-block', marginTop: 2,
                         }}>◼ PINNED TO TOP OF QUEUE</span>
                       )}
@@ -179,7 +179,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
 
                   {/* Matches */}
                   {candidates.length > 1 && (
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginBottom: '0.75rem', textAlign: 'center' }}>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: '0.75rem', textAlign: 'center' }}>
                       {candidates.length} TITLES FIT · PICK {pickIdx + 1} OF {candidates.length}
                     </p>
                   )}

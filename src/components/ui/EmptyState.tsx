@@ -10,7 +10,7 @@ export function EmptyState({ title, subtitle }: { title: string; subtitle?: stri
         <rect x="14" y="42" width="36" height="4" rx="1" fill="var(--muted)" />
       </svg>
       <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 13, letterSpacing: 0.5, margin: 0 }}>{title}</p>
-      {subtitle && <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 11, marginTop: 6 }}>{subtitle}</p>}
+      {subtitle && <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 11, marginTop: 6 }}>{subtitle}</p>}
     </div>
   )
 }

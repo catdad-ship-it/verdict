@@ -77,7 +77,7 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
             <Link key={l.href} href={l.href}
               className="hidden md:block text-xs font-semibold tracking-widest uppercase px-2.5 py-2 transition-colors"
               style={{
-                color: pathname === l.href ? 'var(--amber)' : 'var(--muted)',
+                color: pathname === l.href ? 'var(--amber)' : 'var(--cream-dim)',
                 borderBottom: pathname === l.href ? '3px solid var(--amber)' : '3px solid transparent',
                 marginBottom: '-3px',
               }}>
@@ -88,18 +88,18 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
             className="flex items-center justify-center rounded-sm transition-colors"
             style={{
               width: 32, height: 32,
-              color: pathname === '/settings' ? 'var(--amber)' : 'var(--muted)',
+              color: pathname === '/settings' ? 'var(--amber)' : 'var(--cream-dim)',
             }}
             onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
-            onMouseOut={e => (e.currentTarget.style.color = pathname === '/settings' ? 'var(--amber)' : 'var(--muted)')}>
+            onMouseOut={e => (e.currentTarget.style.color = pathname === '/settings' ? 'var(--amber)' : 'var(--cream-dim)')}>
             <Settings size={16} />
           </Link>
           <div className="w-px h-5 mx-2 hidden md:block" style={{ background: 'var(--border)' }} />
           <button onClick={signOut}
             className="text-xs font-semibold tracking-widest uppercase px-2.5 py-1.5 rounded-sm transition-colors"
-            style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}
+            style={{ color: 'var(--cream-dim)', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}
             onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
-            onMouseOut={e => (e.currentTarget.style.color = 'var(--muted)')}>
+            onMouseOut={e => (e.currentTarget.style.color = 'var(--cream-dim)')}>
             <LogOut size={13} /> OUT
           </button>
         </div>

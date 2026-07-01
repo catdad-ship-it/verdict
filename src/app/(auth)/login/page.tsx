@@ -45,7 +45,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <p className="text-center text-xs tracking-widest uppercase mb-8" style={{ color: 'var(--muted)', fontFamily: 'monospace' }}>
+      <p className="text-center text-xs tracking-widest uppercase mb-8" style={{ color: 'var(--cream-dim)', fontFamily: 'monospace' }}>
         YOUR PERSONAL VIDEO STORE
       </p>
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--cream-dim)' }}>
               Email
             </label>
             <input
@@ -76,7 +76,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>
+            <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--cream-dim)' }}>
               Password
             </label>
             <input
@@ -103,15 +103,15 @@ export default function LoginPage() {
         </form>
 
         <div className="flex justify-center gap-5 mt-5 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <Link href="/reset-password" className="text-xs transition-colors" style={{ color: 'var(--muted)' }}
-            onMouseOver={e => (e.target as HTMLElement).style.color = 'var(--cream-dim)'}
-            onMouseOut={e => (e.target as HTMLElement).style.color = 'var(--muted)'}>
+          <Link href="/reset-password" className="text-xs transition-colors" style={{ color: 'var(--cream-dim)' }}
+            onMouseOver={e => (e.target as HTMLElement).style.color = 'var(--amber)'}
+            onMouseOut={e => (e.target as HTMLElement).style.color = 'var(--cream-dim)'}>
             Forgot password?
           </Link>
           <span style={{ color: 'var(--border)' }}>|</span>
-          <Link href="/signup" className="text-xs transition-colors" style={{ color: 'var(--muted)' }}
-            onMouseOver={e => (e.target as HTMLElement).style.color = 'var(--cream-dim)'}
-            onMouseOut={e => (e.target as HTMLElement).style.color = 'var(--muted)'}>
+          <Link href="/signup" className="text-xs transition-colors" style={{ color: 'var(--cream-dim)' }}
+            onMouseOver={e => (e.target as HTMLElement).style.color = 'var(--amber)'}
+            onMouseOut={e => (e.target as HTMLElement).style.color = 'var(--cream-dim)'}>
             New member
           </Link>
         </div>

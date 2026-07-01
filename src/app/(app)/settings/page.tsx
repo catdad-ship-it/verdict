@@ -39,7 +39,7 @@ function SaveButton({ onClick, saving, saved }: { onClick: () => void; saving: b
         {saving ? 'SAVING...' : 'SAVE'}
       </button>
       {saved && (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--amber)', letterSpacing: 1 }}>✓ SAVED</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1 }}>✓ SAVED</span>
       )}
     </div>
   )
@@ -300,12 +300,12 @@ export default function SettingsPage() {
                       background: 'var(--raised)', border: '1px solid var(--border)',
                     }}
                   >
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 0.5, color: isOn ? 'var(--cream)' : 'var(--muted)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 0.5, color: isOn ? 'var(--cream)' : 'var(--cream-dim)' }}>
                       {shelf.label}
                     </span>
                     <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, fontWeight: 700,
-                      color: isOn ? 'var(--amber)' : 'var(--muted)',
+                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700,
+                      color: isOn ? 'var(--amber)' : 'var(--cream-dim)',
                       border: `1px solid ${isOn ? 'var(--amber)' : 'var(--border)'}`,
                       borderRadius: 2, padding: '2px 8px',
                     }}>
@@ -418,7 +418,7 @@ export default function SettingsPage() {
                 {passwordSaving ? 'SAVING...' : 'CHANGE PASSWORD'}
               </button>
               {passwordSaved && (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--amber)', letterSpacing: 1 }}>✓ UPDATED</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1 }}>✓ UPDATED</span>
               )}
             </div>
 
@@ -428,7 +428,7 @@ export default function SettingsPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'none', border: '1px solid var(--border)', borderRadius: 3,
-                color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                color: 'var(--cream-dim)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
                 fontSize: 11, letterSpacing: 1, padding: '0.5rem 1rem', opacity: signingOut ? 0.6 : 1,
               }}
             >

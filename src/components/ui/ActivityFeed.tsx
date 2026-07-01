@@ -68,7 +68,7 @@ export default function ActivityFeed() {
         style={{
           display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
           cursor: 'pointer', padding: '0.2rem 0', fontFamily: 'var(--font-mono)',
-          fontSize: 10, letterSpacing: 1.5, color: 'var(--muted)', textTransform: 'uppercase',
+          fontSize: 11, letterSpacing: 1.5, color: 'var(--cream-dim)', textTransform: 'uppercase',
         }}
       >
         RECENT ACTIVITY
@@ -94,7 +94,7 @@ export default function ActivityFeed() {
                       {describe(item)}
                     </span>
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{relativeTime(item.timestamp)}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{relativeTime(item.timestamp)}</span>
                 </div>
               </div>
             ))}

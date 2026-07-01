@@ -493,14 +493,14 @@ export default function HomePage() {
                         <button
                           onClick={() => { deleteList(l.id); setPendingDelete(null) }}
                           style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.25rem 0.6rem',
+                            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
                             background: '#f87171', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontWeight: 700,
                           }}
                         >YES</button>
                         <button
                           onClick={() => setPendingDelete(null)}
                           style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.25rem 0.6rem',
+                            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
                             background: 'var(--raised)', color: 'var(--cream-dim)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer',
                           }}
                         >NO</button>
@@ -662,10 +662,10 @@ export default function HomePage() {
           }}>{label}</button>
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)' }}>SORT:</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>SORT:</span>
           {([['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const).map(([s, label]) => (
             <button key={s} onClick={() => setSort(s)} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+              fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
               background: sort === s ? 'var(--amber-dim)' : 'transparent',
               color: sort === s ? 'var(--amber)' : 'var(--cream-dim)',
               border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -677,7 +677,7 @@ export default function HomePage() {
               title={selectMode ? 'Exit select mode' : 'Select multiple titles'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
                 background: selectMode ? 'var(--amber)' : 'transparent',
                 color: selectMode ? 'var(--bg)' : 'var(--cream-dim)',
                 border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
@@ -703,7 +703,7 @@ export default function HomePage() {
           <button
             onClick={selectAllVisible}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)',
+              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
               background: 'none', border: '1px solid var(--border)', borderRadius: 2,
               padding: '0.3rem 0.6rem', cursor: 'pointer',
             }}
@@ -713,7 +713,7 @@ export default function HomePage() {
               onClick={() => setShowBulkListPicker(true)}
               disabled={selected.size === 0}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                 color: 'var(--amber)', background: 'rgba(192,120,24,0.1)',
                 border: '1px solid var(--amber-dim)', borderRadius: 2,
                 padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
@@ -724,7 +724,7 @@ export default function HomePage() {
               onClick={handleBulkRemove}
               disabled={selected.size === 0}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                 color: '#f87171', background: 'rgba(154,48,40,0.12)',
                 border: '1px solid rgba(154,48,40,0.4)', borderRadius: 2,
                 padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
@@ -734,8 +734,8 @@ export default function HomePage() {
             <button
               onClick={toggleSelectMode}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
-                color: 'var(--muted)', background: 'none',
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
+                color: 'var(--cream-dim)', background: 'none',
                 border: '1px solid var(--border)', borderRadius: 2,
                 padding: '0.4rem 0.75rem', cursor: 'pointer',
               }}
