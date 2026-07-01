@@ -87,6 +87,19 @@ export async function GET() {
     return { month: label, movies: moviesWatched, shows: showsUpdated }
   })
 
+  // Daily activity heatmap — sparse list of {date, count}; the client fills
+  // in zero-count days itself so we don't ship ~370 mostly-empty rows.
+  const dayCounts: Record<string, number> = {}
+  for (const mov of m) {
+    const day = new Date(mov.watched_at).toISOString().slice(0, 10)
+    dayCounts[day] = (dayCounts[day] ?? 0) + 1
+  }
+  for (const show of s) {
+    const day = new Date(show.updated_at).toISOString().slice(0, 10)
+    dayCounts[day] = (dayCounts[day] ?? 0) + 1
+  }
+  const heatmapDays = Object.entries(dayCounts).map(([date, count]) => ({ date, count }))
+
   return NextResponse.json({
     movieCount,
     showCount,
@@ -96,5 +109,6 @@ export async function GET() {
     topGenres,
     whatWorkedTags,
     monthlyActivity,
+    heatmapDays,
   })
 }

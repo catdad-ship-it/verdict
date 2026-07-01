@@ -1,12 +1,14 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2, CheckSquare, Square } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import SearchAddModal from '@/components/modals/SearchAddModal'
 import WatchTonightModal from '@/components/modals/WatchTonightModal'
+import ListPickerSheet from '@/components/ui/ListPickerSheet'
+import ActivityFeed from '@/components/ui/ActivityFeed'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { RowListSkeleton } from '@/components/ui/Skeleton'
@@ -55,6 +57,12 @@ export default function HomePage() {
   const [addTarget, setAddTarget]   = useState<ActiveList>('queue')
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Multi-select bulk actions
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected]     = useState<Set<string>>(new Set())
+  const [showBulkListPicker, setShowBulkListPicker] = useState(false)
 
   useEffect(() => {
     const handler = (e: MouseEvent | TouchEvent) => {
@@ -126,6 +134,9 @@ export default function HomePage() {
     setPinnedKey(next)
     if (next) localStorage.setItem(`verdict_pin_${activeList}`, next)
     else localStorage.removeItem(`verdict_pin_${activeList}`)
+    // Tell the persistent "Up Next" bar (mounted in the layout) to re-sync —
+    // same-tab localStorage writes don't fire the native `storage` event.
+    if (activeList === 'queue') window.dispatchEvent(new Event('verdict:pin-changed'))
   }
 
   const switchList = (id: ActiveList) => {
@@ -206,6 +217,8 @@ export default function HomePage() {
         body: JSON.stringify({ tmdbId, mediaType }),
       })
     }, { onUndo: () => { if (original) setQueue(q => [original, ...q]) } })
+    // In case this was the pinned "Up Next" item — let the layout's bar re-sync.
+    window.dispatchEvent(new Event('verdict:pin-changed'))
   }
 
   const removeFromList = (listId: string, tmdbId: number, mediaType: string) => {
@@ -218,6 +231,90 @@ export default function HomePage() {
         body: JSON.stringify({ tmdbId, mediaType }),
       })
     }, { onUndo: () => { if (original) setListItems(items => [original, ...items]) } })
+  }
+
+  // Drag-to-reorder — only meaningful in the queue's natural (unfiltered,
+  // "added" sort) order, so the indices line up with what's on screen.
+  // Not destructive, so this just fires the persist call without an undo toast.
+  const handleReorder = (fromIndex: number, toIndex: number) => {
+    setQueue(q => {
+      const next = [...q]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      fetch('/api/queue/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: next.map(i => i.id) }),
+      }).catch(() => {})
+      return next
+    })
+  }
+
+  // Multi-select bulk actions — keys are normalized `${tmdbId}-${movie|tv}`
+  // so they line up whether the row came from `queue` or `listItems`.
+  const selectionKey = (tmdbId: number, mediaType: string) => `${tmdbId}-${mediaType === 'tv' ? 'tv' : 'movie'}`
+
+  const toggleSelectMode = () => {
+    setSelectMode(m => !m)
+    setSelected(new Set())
+  }
+
+  const toggleSelect = (key: string) => {
+    setSelected(s => {
+      const next = new Set(s)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const selectAllVisible = () => {
+    setSelected(new Set(displayItems.map(i => selectionKey(i.tmdbId, i.mediaType))))
+  }
+
+  const handleBulkRemove = () => {
+    if (selected.size === 0) return
+    const count = selected.size
+    if (activeList === 'queue') {
+      const originals = queue.filter(i => selected.has(selectionKey(i.tmdbId, i.mediaType)))
+      setQueue(q => q.filter(i => !selected.has(selectionKey(i.tmdbId, i.mediaType))))
+      toast.showUndo(`Removed ${count} title${count > 1 ? 's' : ''} from queue`, () => {
+        originals.forEach(o => fetch('/api/queue', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tmdbId: o.tmdbId, mediaType: o.mediaType }),
+        }))
+      }, { onUndo: () => setQueue(q => [...originals, ...q]) })
+    } else {
+      const listId = activeList
+      const originals = listItems.filter(i => selected.has(selectionKey(i.tmdb_id, i.media_type)))
+      setListItems(items => items.filter(i => !selected.has(selectionKey(i.tmdb_id, i.media_type))))
+      toast.showUndo(`Removed ${count} title${count > 1 ? 's' : ''}`, () => {
+        originals.forEach(o => fetch(`/api/lists/${listId}/items`, {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tmdbId: o.tmdb_id, mediaType: o.media_type }),
+        }))
+      }, { onUndo: () => setListItems(items => [...originals, ...items]) })
+    }
+    setSelected(new Set())
+    setSelectMode(false)
+  }
+
+  const handleBulkAddToList = async (targetListId: 'queue' | string) => {
+    const items = displayItems.filter(i => selected.has(selectionKey(i.tmdbId, i.mediaType)))
+    setShowBulkListPicker(false)
+    if (items.length === 0) return
+    await Promise.all(items.map(i => {
+      const payload = {
+        tmdbId: i.tmdbId, title: i.title, posterPath: i.posterPath,
+        mediaType: i.mediaType, genreIds: i.genreIds, runtime: i.runtime,
+        overview: i.overview ?? undefined,
+      }
+      return targetListId === 'queue' ? addToQueue(payload) : addToList(targetListId, payload)
+    }))
+    const destName = targetListId === 'queue' ? 'queue' : (lists.find(l => l.id === targetListId)?.name ?? 'list')
+    toast.show(`Added ${items.length} title${items.length > 1 ? 's' : ''} to ${destName.toUpperCase()}`)
+    setSelected(new Set())
+    setSelectMode(false)
   }
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
@@ -242,6 +339,8 @@ export default function HomePage() {
     if (activeList === 'queue') await fetchQueue()
     else await fetchListItems(activeList)
     setPostWatch(null)
+    // In case this was the pinned "Up Next" item — let the layout's bar re-sync.
+    window.dispatchEvent(new Event('verdict:pin-changed'))
   }
 
   const activeListName = activeList === 'queue'
@@ -280,8 +379,59 @@ export default function HomePage() {
       return 0 // 'added' → API already returns newest-first
     }), [sourceItems, filter, search, pinnedKey, sort])
 
+  // Drag-to-reorder only makes sense when what's on screen is the queue's
+  // real, unfiltered order — otherwise a dragged index wouldn't map back to
+  // a sane position once the pin/filter/search/sort is removed.
+  const reorderEnabled = activeList === 'queue' && sort === 'added' && filter === 'all' && !search && !pinnedKey && !selectMode
+
   const movieItems = queue.filter(i => i.mediaType === 'movie')
   const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker || showWatchTonight)
+
+  // Same "where should this add go" logic as the FAB button — pulled out so
+  // the "n" keyboard shortcut can trigger the identical flow.
+  const openAddFlow = useCallback(() => {
+    if (lists.length === 0) {
+      setAddTarget('queue')
+      setShowSearch(true)
+    } else {
+      setShowListPicker(true)
+    }
+  }, [lists.length])
+
+  // Desktop keyboard shortcuts: "/" focus search, "n" open add-title flow,
+  // "Esc" close whatever's open. Skipped while the user is actively typing
+  // in a field so normal text entry (including literal "/" or "n") still works.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const isTyping = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+
+      if (e.key === 'Escape') {
+        setShowSearch(false)
+        setShowSpin(false)
+        setShowWatchTonight(false)
+        setShowListPicker(false)
+        setShowSelector(false)
+        setShowNewList(false)
+        setShowBulkListPicker(false)
+        setPostWatch(null)
+        if (selectMode) { setSelectMode(false); setSelected(new Set()) }
+        return
+      }
+
+      if (isTyping || anyModalOpen) return
+
+      if (e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      } else if (e.key.toLowerCase() === 'n') {
+        e.preventDefault()
+        openAddFlow()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [anyModalOpen, openAddFlow, selectMode])
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
@@ -464,6 +614,9 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Recent activity (queue view only) */}
+      {activeList === 'queue' && <ActivityFeed />}
+
       {/* Search bar */}
       <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
         <Search size={13} style={{
@@ -471,6 +624,7 @@ export default function HomePage() {
           color: 'var(--muted)', pointerEvents: 'none',
         }} />
         <input
+          ref={searchInputRef}
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -517,8 +671,78 @@ export default function HomePage() {
               border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
             }}>{label}</button>
           ))}
+          {displayItems.length > 0 && (
+            <button
+              onClick={toggleSelectMode}
+              title={selectMode ? 'Exit select mode' : 'Select multiple titles'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                background: selectMode ? 'var(--amber)' : 'transparent',
+                color: selectMode ? 'var(--bg)' : 'var(--cream-dim)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+              }}
+            >
+              {selectMode ? <CheckSquare size={11} /> : <Square size={11} />}
+              SELECT
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Bulk action bar */}
+      {selectMode && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          marginBottom: '1.25rem', padding: '0.6rem 0.75rem',
+          background: 'var(--surface)', border: '1px solid var(--amber-dim)', borderRadius: 4,
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1, whiteSpace: 'nowrap' }}>
+            {selected.size} SELECTED
+          </span>
+          <button
+            onClick={selectAllVisible}
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)',
+              background: 'none', border: '1px solid var(--border)', borderRadius: 2,
+              padding: '0.3rem 0.6rem', cursor: 'pointer',
+            }}
+          >SELECT ALL</button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowBulkListPicker(true)}
+              disabled={selected.size === 0}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                color: 'var(--amber)', background: 'rgba(192,120,24,0.1)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2,
+                padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+                opacity: selected.size === 0 ? 0.4 : 1,
+              }}
+            >ADD TO LIST</button>
+            <button
+              onClick={handleBulkRemove}
+              disabled={selected.size === 0}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                color: '#f87171', background: 'rgba(154,48,40,0.12)',
+                border: '1px solid rgba(154,48,40,0.4)', borderRadius: 2,
+                padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
+                opacity: selected.size === 0 ? 0.4 : 1,
+              }}
+            >REMOVE</button>
+            <button
+              onClick={toggleSelectMode}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                color: 'var(--muted)', background: 'none',
+                border: '1px solid var(--border)', borderRadius: 2,
+                padding: '0.4rem 0.75rem', cursor: 'pointer',
+              }}
+            >CANCEL</button>
+          </div>
+        </div>
+      )}
 
       {/* List */}
       {loading ? (
@@ -537,7 +761,7 @@ export default function HomePage() {
         )
       ) : (
         <div>
-          {displayItems.map(item => (
+          {displayItems.map((item, i) => (
             <QueueRow
               key={`${item.tmdbId}-${item.mediaType}`}
               tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
@@ -551,6 +775,12 @@ export default function HomePage() {
                   ? () => removeFromQueue(item.tmdbId, item.mediaType)
                   : () => removeFromList(activeList, item.tmdbId, item.mediaType)
               }
+              index={i}
+              reorderEnabled={reorderEnabled}
+              onReorder={handleReorder}
+              selectable={selectMode}
+              isSelected={selected.has(selectionKey(item.tmdbId, item.mediaType))}
+              onToggleSelect={() => toggleSelect(selectionKey(item.tmdbId, item.mediaType))}
             />
           ))}
         </div>
@@ -590,10 +820,7 @@ export default function HomePage() {
       {/* FAB */}
       {!anyModalOpen && (
         <button
-          onClick={() => lists.length === 0
-            ? (setAddTarget('queue'), setShowSearch(true))
-            : setShowListPicker(true)
-          }
+          onClick={openAddFlow}
           className="vcr-fab" aria-label="Add title"
         >
           <Plus size={22} />
@@ -667,6 +894,14 @@ export default function HomePage() {
             mediaType: item.mediaType, genreIds: item.genres, runtime: item.runtime,
             overview: item.overview,
           })}
+        />
+      )}
+      {showBulkListPicker && (
+        <ListPickerSheet
+          lists={lists}
+          onPick={handleBulkAddToList}
+          onClose={() => setShowBulkListPicker(false)}
+          onListCreated={l => setLists(prev => [...prev, l])}
         />
       )}
     </div>

@@ -28,6 +28,10 @@ export async function GET() {
     .from('queue_items')
     .select('*')
     .eq('user_id', user.id)
+    // Manually-dragged rows (sort_order set) come first in that exact order;
+    // anything never touched by drag-to-reorder (sort_order null) falls back
+    // to newest-added-first.
+    .order('sort_order', { ascending: true, nullsFirst: false })
     .order('added_at', { ascending: false })
 
   const rows = data ?? []

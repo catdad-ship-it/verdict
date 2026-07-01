@@ -12,6 +12,7 @@ interface StatsData {
   topGenres: { genreId: number; name: string; count: number }[]
   whatWorkedTags: { tag: string; count: number }[]
   monthlyActivity: { month: string; movies: number; shows: number }[]
+  heatmapDays: { date: string; count: number }[]
 }
 interface YearData {
   year: number
@@ -48,6 +49,69 @@ function CardLabel({ children }: { children: React.ReactNode }) {
       marginBottom: '0.75rem', textTransform: 'uppercase',
     }}>
       {children}
+    </div>
+  )
+}
+
+// GitHub-style contribution grid — 53 weeks ending today, columns = weeks,
+// rows = weekdays. Defined at module scope (not inside StatsPage) so it
+// doesn't get recreated as a new component type on every render.
+function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) {
+  const countByDate = new Map(days.map(d => [d.date, d.count]))
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const TOTAL_DAYS = 371 // 53 weeks
+  const start = new Date(today)
+  start.setDate(start.getDate() - (TOTAL_DAYS - 1))
+  start.setDate(start.getDate() - start.getDay()) // back up to the preceding Sunday
+
+  const cells: { date: string; count: number }[] = []
+  const cursor = new Date(start)
+  while (cursor <= today) {
+    const iso = cursor.toISOString().slice(0, 10)
+    cells.push({ date: iso, count: countByDate.get(iso) ?? 0 })
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  const weeks: { date: string; count: number }[][] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+
+  const maxCount = Math.max(...cells.map(c => c.count), 1)
+  const colorFor = (count: number) => {
+    if (count === 0) return 'rgba(255,255,255,0.05)'
+    const ratio = Math.min(count / maxCount, 1)
+    return `rgba(192,120,24,${(0.3 + ratio * 0.7).toFixed(2)})`
+  }
+
+  return (
+    <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 3, paddingTop: 14, width: 'max-content' }}>
+        {weeks.map((week, wi) => {
+          const firstDay = new Date(week[0].date)
+          const prevMonth = wi > 0 ? new Date(weeks[wi - 1][0].date).getMonth() : null
+          const isNewMonth = prevMonth !== null && prevMonth !== firstDay.getMonth()
+          return (
+            <div key={week[0].date} style={{ display: 'flex', flexDirection: 'column', gap: 3, position: 'relative' }}>
+              {isNewMonth && (
+                <span style={{
+                  position: 'absolute', top: -14, left: 0, whiteSpace: 'nowrap',
+                  fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)',
+                }}>
+                  {firstDay.toLocaleDateString('en-US', { month: 'short' })}
+                </span>
+              )}
+              {week.map(day => (
+                <div
+                  key={day.date}
+                  title={`${day.date}: ${day.count} watched`}
+                  style={{ width: 10, height: 10, borderRadius: 2, background: colorFor(day.count) }}
+                />
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -409,6 +473,24 @@ export default function StatsPage() {
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
               </div>
             ))}
+          </div>
+        </BentoCard>
+      )}
+
+      {/* ── WATCH HISTORY HEATMAP ── */}
+      {stats.heatmapDays.length > 0 && (
+        <BentoCard style={{ marginTop: '0.625rem' }}>
+          <CardLabel>Watch History</CardLabel>
+          <HeatmapCalendar days={stats.heatmapDays} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>LESS</span>
+            {[0, 0.3, 0.55, 0.8, 1].map(ratio => (
+              <div key={ratio} style={{
+                width: 10, height: 10, borderRadius: 2,
+                background: ratio === 0 ? 'rgba(255,255,255,0.05)' : `rgba(192,120,24,${(0.3 + ratio * 0.7).toFixed(2)})`,
+              }} />
+            ))}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>MORE</span>
           </div>
         </BentoCard>
       )}

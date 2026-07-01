@@ -31,6 +31,8 @@ interface RawSearchItem {
 }
 
 type Tab = 'movie' | 'show' | 'people'
+type DecadeFilter = 'all' | '2020s' | '2010s' | '2000s' | 'older'
+type RatingFilter = 'all' | 'high'
 
 interface Props {
   onClose: () => void
@@ -51,6 +53,12 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null)
   const [personCredits, setPersonCredits] = useState<PersonCreditItem[]>([])
   const [creditsLoading, setCreditsLoading] = useState(false)
+
+  // Filter chips for movie/show results — client-side, over what's already
+  // fetched. No runtime chip here: TMDB's search endpoint doesn't return
+  // runtime (only full title lookups do), so there's nothing to filter on.
+  const [decadeFilter, setDecadeFilter] = useState<DecadeFilter>('all')
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all')
 
   const search = useCallback(async (q: string, type: Tab) => {
     if (!q.trim()) { setResults([]); setPeopleResults([]); return }
@@ -88,7 +96,25 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
     setView('search')
     setSelectedPerson(null)
     setPersonCredits([])
+    setDecadeFilter('all')
+    setRatingFilter('all')
   }
+
+  const matchesFilters = (item: SearchResult) => {
+    if (decadeFilter !== 'all') {
+      const y = parseInt(item.releaseYear ?? '0')
+      if (decadeFilter === 'older') {
+        if (y >= 2000) return false
+      } else {
+        const decadeStart = parseInt(decadeFilter)
+        if (y < decadeStart || y >= decadeStart + 10) return false
+      }
+    }
+    if (ratingFilter === 'high' && (item.imdbRating == null || item.imdbRating < 7)) return false
+    return true
+  }
+  const filteredResults = results.filter(matchesFilters)
+  const filtersActive = decadeFilter !== 'all' || ratingFilter !== 'all'
 
   const openPerson = async (person: PersonResult) => {
     setSelectedPerson(person)
@@ -216,6 +242,34 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
           </div>
         )}
 
+        {/* Filter chips — movie/show results only */}
+        {view === 'search' && tab !== 'people' && results.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 1rem 0.75rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>DECADE:</span>
+              {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
+                <button key={v} onClick={() => setDecadeFilter(v)} style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, padding: '0.15rem 0.4rem',
+                  background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
+                  color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
+                  border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+                }}>{label}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>RATING:</span>
+              {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
+                <button key={v} onClick={() => setRatingFilter(v)} style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, padding: '0.15rem 0.4rem',
+                  background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
+                  color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
+                  border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {view === 'person' ? (
@@ -306,7 +360,12 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
                   SEARCHING...
                 </div>
               )}
-              {!loading && results.map(item => (
+              {!loading && results.length > 0 && filteredResults.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                  NO MATCHES FOR THESE FILTERS{filtersActive ? ' — TRY LOOSENING ONE.' : '.'}
+                </div>
+              )}
+              {!loading && filteredResults.map(item => (
                 <div key={item.tmdbId} style={{
                   display: 'flex', gap: 12, padding: '0.875rem 1rem',
                   borderBottom: '1px solid rgba(192,120,24,0.1)',

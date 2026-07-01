@@ -62,3 +62,29 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true })
 }
+
+// DELETE /api/watched — bulk-remove entries from watched history.
+// Body: { movieIds?: string[], showIds?: string[] } (watched_movies.id /
+// watched_shows.id — pass all rewatch rows for a title to fully clear it).
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { movieIds, showIds } = await req.json()
+  const tasks: PromiseLike<{ error: { message: string } | null }>[] = []
+
+  if (Array.isArray(movieIds) && movieIds.length > 0) {
+    tasks.push(supabase.from('watched_movies').delete().eq('user_id', user.id).in('id', movieIds))
+  }
+  if (Array.isArray(showIds) && showIds.length > 0) {
+    tasks.push(supabase.from('watched_shows').delete().eq('user_id', user.id).in('id', showIds))
+  }
+  if (tasks.length === 0) return NextResponse.json({ error: 'No ids provided' }, { status: 400 })
+
+  const results = await Promise.all(tasks)
+  const failed = results.find(r => r.error)
+  if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true })
+}

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import NavBar from '@/components/ui/NavBar'
 import BottomNav from '@/components/ui/BottomNav'
 import { ToastProvider } from '@/components/ui/Toast'
+import UpNextBar from '@/components/ui/UpNextBar'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </main>
         <BottomNav />
+        <UpNextBar />
       </div>
     </ToastProvider>
   )

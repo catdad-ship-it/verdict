@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { WHAT_WORKED_OPTIONS, PostWatchAnswers } from '@/lib/types'
+import ConfettiBurst from '@/components/ui/ConfettiBurst'
 
 interface Props {
   title: string
@@ -20,6 +21,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
   const [worked, setWorked]     = useState<string[]>([])
   const [wantMore, setWantMore] = useState<boolean | null>(null)
   const [notes, setNotes]       = useState('')
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const ratingLabels = ['', 'Skip it', 'Eh, okay', 'Worth watching', 'Really good', 'Masterpiece']
 
@@ -52,6 +54,8 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
         }}
       >
+        {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+
         {/* Drag handle — mobile only */}
         <div className="md:hidden flex justify-center pt-3 pb-1">
           <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
@@ -83,7 +87,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
             <div className="flex items-center gap-2 flex-wrap">
               {[1,2,3,4,5].map(n => (
                 <button key={n}
-                  onClick={() => setRating(n)}
+                  onClick={() => { setRating(n); if (n === 5) setShowConfetti(true) }}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
                   className="text-2xl w-10 h-10 rounded-sm transition-all"

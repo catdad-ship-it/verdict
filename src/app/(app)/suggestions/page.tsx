@@ -28,6 +28,10 @@ interface SuggestState {
   topGenreNames: string[] // derived from taste profile
 }
 
+type DecadeFilter = 'all' | '2020s' | '2010s' | '2000s' | 'older'
+type RuntimeFilter = 'all' | 'short'
+type RatingFilter = 'all' | 'high'
+
 export default function SuggestionsPage() {
   const toast = useToast()
   const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
@@ -38,6 +42,12 @@ export default function SuggestionsPage() {
   const [pendingAdd, setPendingAdd] = useState<Movie | null>(null)
   const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
   const fetchingMore              = useRef(false)
+
+  // Client-side filter chips — everything's already fetched, so narrowing
+  // the grid down is just a filter over state.visible, no extra requests.
+  const [decadeFilter, setDecadeFilter]   = useState<DecadeFilter>('all')
+  const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>('all')
+  const [ratingFilter, setRatingFilter]   = useState<RatingFilter>('all')
 
   useEffect(() => {
     fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
@@ -134,6 +144,23 @@ export default function SuggestionsPage() {
     })
   }
 
+  const matchesFilters = (m: Movie) => {
+    if (decadeFilter !== 'all') {
+      const y = m.releaseYear ?? 0
+      if (decadeFilter === 'older') {
+        if (y >= 2000) return false
+      } else {
+        const decadeStart = parseInt(decadeFilter)
+        if (y < decadeStart || y >= decadeStart + 10) return false
+      }
+    }
+    if (runtimeFilter === 'short' && (m.runtime == null || m.runtime > 120)) return false
+    if (ratingFilter === 'high' && (m.imdbRating == null || m.imdbRating < 7)) return false
+    return true
+  }
+  const filteredVisible = state.visible.filter(matchesFilters)
+  const filtersActive = decadeFilter !== 'all' || runtimeFilter !== 'all' || ratingFilter !== 'all'
+
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
     await fetch('/api/watched', {
@@ -160,6 +187,43 @@ export default function SuggestionsPage() {
           ? `Based on your taste profile — ${state.topGenreNames.map(g => g.toLowerCase()).join(', ')}.`
           : 'Based on your taste profile.'}
       </p>
+      {!loading && state.visible.length > 0 && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>DECADE:</span>
+            {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setDecadeFilter(v)} style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
+                color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+              }}>{label}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>RUNTIME:</span>
+            {([['all','ALL'],['short','UNDER 2H']] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setRuntimeFilter(v)} style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                background: runtimeFilter === v ? 'var(--amber-dim)' : 'transparent',
+                color: runtimeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+              }}>{label}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>RATING:</span>
+            {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
+              <button key={v} onClick={() => setRatingFilter(v)} style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, padding: '0.2rem 0.5rem',
+                background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
+                color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+              }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
       {loading ? (
         <CardGridSkeleton count={VISIBLE} />
       ) : state.visible.length === 0 ? (
@@ -167,9 +231,14 @@ export default function SuggestionsPage() {
           title="NO SUGGESTIONS RIGHT NOW"
           subtitle="Watch or rate a few titles and check back — we'll have more to go on."
         />
+      ) : filteredVisible.length === 0 ? (
+        <EmptyState
+          title="NO MATCHES FOR THESE FILTERS"
+          subtitle={filtersActive ? 'Try loosening a filter above.' : undefined}
+        />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
-          {state.visible.map(m => (
+          {filteredVisible.map(m => (
             <VHSCard
               key={m.id}
               tmdbId={m.id} title={m.title} posterPath={m.posterPath}
