@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Play } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import PlayPauseBadge from '@/components/ui/PlayPauseBadge'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -32,14 +34,14 @@ export default function LoginPage() {
       <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-48 rounded-full"
            style={{ background: 'radial-gradient(ellipse, rgba(192,120,24,0.07), transparent 65%)' }} />
 
-      {/* Logo */}
+      {/* Logo — same lockup as the signed-in NavBar, so branding matches before and after sign-in */}
       <div className="flex justify-center mb-10">
         <div className="flex items-stretch">
           <div className="px-4 py-2 flex items-center" style={{ background: 'var(--amber)' }}>
             <span className="font-black text-4xl tracking-tight" style={{ color: 'var(--bg)', fontFamily: 'var(--font-inter)' }}>VERDICT</span>
           </div>
           <div className="px-3 py-2 flex items-center" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-            <span style={{ color: 'var(--amber)', fontSize: '1.8rem', lineHeight: 1 }}>▶</span>
+            <PlayPauseBadge size={32} />
           </div>
         </div>
       </div>
@@ -67,8 +69,8 @@ export default function LoginPage() {
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               required placeholder="your@email.com"
-              className="w-full px-3 py-2.5 rounded-sm text-sm outline-none transition-colors"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)' }}
+              className="w-full px-3 py-2.5 rounded-sm outline-none transition-colors"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
               onFocus={e => e.target.style.borderColor = 'var(--amber)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
             />
@@ -80,8 +82,8 @@ export default function LoginPage() {
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               required placeholder="••••••••"
-              className="w-full px-3 py-2.5 rounded-sm text-sm outline-none transition-colors"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)' }}
+              className="w-full px-3 py-2.5 rounded-sm outline-none transition-colors"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
               onFocus={e => e.target.style.borderColor = 'var(--amber)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'}
             />
@@ -94,8 +96,9 @@ export default function LoginPage() {
           )}
 
           <button type="submit" disabled={loading}
-            className="vcr-btn-primary w-full py-3 text-sm mt-2">
-            {loading ? '▶ Signing in…' : '▶  PLAY'}
+            className="vcr-btn-primary w-full py-3 text-sm mt-2 flex items-center justify-center gap-2">
+            <Play size={13} fill="currentColor" />
+            {loading ? 'Signing in…' : 'PLAY'}
           </button>
         </form>
 

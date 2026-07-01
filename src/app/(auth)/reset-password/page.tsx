@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
@@ -40,14 +41,15 @@ export default function ResetPasswordPage() {
           <div>
             <label className="block text-xs font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="your@email.com"
-              className="w-full px-3 py-2.5 rounded-sm text-sm outline-none"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)' }}
+              className="w-full px-3 py-2.5 rounded-sm outline-none"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--cream)', fontSize: 16 }}
               onFocus={e => e.target.style.borderColor = 'var(--amber)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
           {error && <p className="text-xs px-3 py-2 rounded-sm" style={{ background: 'rgba(154,48,40,0.2)', border: '1px solid var(--red)', color: '#E08070' }}>{error}</p>}
-          <button type="submit" disabled={loading} className="vcr-btn-primary w-full py-3 text-sm">
-            {loading ? 'Sending…' : '⏏  SEND RESET LINK'}
+          <button type="submit" disabled={loading} className="vcr-btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
+            <Mail size={13} />
+            {loading ? 'Sending…' : 'SEND RESET LINK'}
           </button>
         </form>
         <div className="text-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
