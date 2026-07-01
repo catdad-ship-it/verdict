@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
-import { useState } from 'react'
-import { Clock, ChevronDown, ChevronUp, Play, Pin, PinOff } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Clock, ChevronDown, ChevronUp, Play, Pin, PinOff, Check, X } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
 
 interface QueueRowProps {
@@ -39,7 +39,65 @@ export default function QueueRow({
   const [removing, setRemoving]               = useState(false)
   const [providers, setProviders]             = useState<{ providerId: number; providerName: string; logoPath: string }[] | null>(null)
 
+  // Swipe right = mark watched, swipe left = dismiss (remove from queue/list).
+  // Pointer Events unify mouse + touch; `touch-action: pan-y` on the draggable
+  // layer keeps vertical page scroll working while we own horizontal drags.
+  const SWIPE_THRESHOLD = 96
+  const MAX_DRAG = 140
+  const dragRef = useRef({ startX: 0, startY: 0, pointerId: null as number | null, locked: false, active: false })
+  const suppressClickRef = useRef(false)
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [exitingRemove, setExitingRemove] = useState(false)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (expanded || removing || exitingRemove) return
+    if ((e.target as HTMLElement).closest('button')) return
+    dragRef.current = { startX: e.clientX, startY: e.clientY, pointerId: e.pointerId, locked: false, active: true }
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d.active || d.pointerId !== e.pointerId) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    if (!d.locked) {
+      // Not enough movement yet to tell a tap from a drag
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      // More vertical than horizontal — this is a scroll, not a swipe
+      if (Math.abs(dy) > Math.abs(dx)) { d.active = false; return }
+      d.locked = true
+      setIsDragging(true)
+      try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* noop */ }
+    }
+    let next = dx
+    if (next > 0 && !onMarkWatched) next = 0
+    if (next < 0 && !onRemoveFromQueue) next = 0
+    next = Math.max(-MAX_DRAG, Math.min(MAX_DRAG, next))
+    setDragX(next)
+  }
+
+  const handlePointerEnd = (e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d.active || d.pointerId !== e.pointerId) return
+    d.active = false
+    if (!d.locked) return // was just a tap — let the normal onClick handle it
+    setIsDragging(false)
+    suppressClickRef.current = true
+    if (dragX >= SWIPE_THRESHOLD && onMarkWatched) {
+      setDragX(0)
+      onMarkWatched()
+    } else if (dragX <= -SWIPE_THRESHOLD && onRemoveFromQueue) {
+      setExitingRemove(true)
+      setRemoving(true)
+      onRemoveFromQueue()
+    } else {
+      setDragX(0)
+    }
+  }
+
   const handleExpand = async () => {
+    if (suppressClickRef.current) { suppressClickRef.current = false; return }
     const next = !expanded
     setExpanded(next)
     // Lazy-fetch synopsis + providers if not already loaded
@@ -85,10 +143,40 @@ export default function QueueRow({
   }
 
   return (
-    <div style={{
-      borderBottom: '1px solid var(--border)',
-      opacity: removing ? 0.4 : 1, transition: 'opacity 0.2s',
-    }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
+      {/* Swipe action background — revealed as the row underneath slides away */}
+      {dragX !== 0 && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+          justifyContent: dragX > 0 ? 'flex-start' : 'flex-end', padding: '0 22px',
+          background: dragX > 0 ? '#1F3D28' : '#4A1616',
+        }}>
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, fontWeight: 700,
+            color: dragX > 0 ? '#A8C898' : '#F0A8A8',
+            opacity: Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1),
+          }}>
+            {dragX > 0 ? <><Check size={16} /> WATCHED</> : <>DISMISS <X size={16} /></>}
+          </span>
+        </div>
+      )}
+
+      {/* Draggable foreground — swipe right = watched, swipe left = dismiss */}
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        style={{
+          position: 'relative', background: 'var(--bg)',
+          transform: exitingRemove ? 'translateX(-120%)' : `translateX(${dragX}px)`,
+          opacity: exitingRemove ? 0 : (removing ? 0.4 : 1),
+          transition: isDragging ? 'none' : 'transform 0.25s ease, opacity 0.25s ease',
+          touchAction: 'pan-y',
+          userSelect: isDragging ? 'none' : undefined,
+        }}
+      >
       {/* Main row — tap anywhere except buttons to expand */}
       <div
         onClick={handleExpand}
@@ -261,6 +349,7 @@ export default function QueueRow({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

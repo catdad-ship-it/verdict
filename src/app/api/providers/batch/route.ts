@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from 'next/server'
+import type { StreamProvider } from '../route'
+
+const BASE = 'https://api.themoviedb.org/3'
+const KEY  = process.env.TMDB_API_KEY
+
+interface BatchEntry {
+  tmdbId: number
+  mediaType: 'movie' | 'tv'
+}
+
+interface ProviderResult {
+  providers: StreamProvider[]
+  hasRent: boolean
+  hasBuy: boolean
+}
+
+async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<ProviderResult> {
+  const path = mediaType === 'tv' ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
+  const url  = `${BASE}${path}?api_key=${KEY}`
+
+  try {
+    const data = await fetch(url, { next: { revalidate: 86400 } }).then(r => r.json())
+    const us   = data?.results?.US
+
+    type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
+
+    const providers: StreamProvider[] = ((us?.flatrate ?? []) as RawProvider[])
+      .sort((a, b) => a.display_priority - b.display_priority)
+      .map(p => ({
+        providerId:   p.provider_id,
+        providerName: p.provider_name,
+        logoPath:     p.logo_path,
+      }))
+
+    return {
+      providers,
+      hasRent: !!(us?.rent?.length),
+      hasBuy:  !!(us?.buy?.length),
+    }
+  } catch {
+    return { providers: [], hasRent: false, hasBuy: false }
+  }
+}
+
+// POST /api/providers/batch  { items: [{ tmdbId, mediaType }, ...] }
+// Returns { [`${mediaType}:${tmdbId}`]: { providers, hasRent, hasBuy } }
+// Lets the page fetch provider data for an entire screen of cards in one
+// round trip instead of one fetch per VHSCard (was causing 20-40+ parallel
+// client requests on pages like Home/Suggestions/New Releases).
+export async function POST(req: NextRequest) {
+  let items: BatchEntry[] = []
+  try {
+    const body = await req.json()
+    items = Array.isArray(body?.items) ? body.items : []
+  } catch {
+    return NextResponse.json({ results: {} })
+  }
+
+  if (!KEY || items.length === 0) {
+    return NextResponse.json({ results: {} })
+  }
+
+  // De-dupe — the same title can appear in multiple shelves (e.g. queue + trending)
+  const seen = new Map<string, BatchEntry>()
+  for (const item of items) {
+    if (!item || !item.tmdbId) continue
+    const mediaType = item.mediaType === 'tv' ? 'tv' : 'movie'
+    seen.set(`${mediaType}:${item.tmdbId}`, { tmdbId: item.tmdbId, mediaType })
+  }
+
+  const entries = Array.from(seen.entries())
+  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType)))
+
+  const results: Record<string, ProviderResult> = {}
+  entries.forEach(([key], i) => {
+    results[key] = settled[i]
+  })
+
+  return NextResponse.json({ results })
+}

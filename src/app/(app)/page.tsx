@@ -7,6 +7,7 @@ import SpinWheelModal from '@/components/modals/SpinWheelModal'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import SearchAddModal from '@/components/modals/SearchAddModal'
 import WatchTonightModal from '@/components/modals/WatchTonightModal'
+import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [activeList, setActiveList] = useState<ActiveList>('queue')
   const [listItems, setListItems]   = useState<ListItem[]>([])
   const [trending, setTrending]     = useState<{ movies: TrendingItem[]; shows: TrendingItem[] }>({ movies: [], shows: [] })
+  const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
   const [showSpin, setShowSpin]     = useState(false)
   const [postWatch, setPostWatch]   = useState<QueueItem | null>(null)
   const [showSearch, setShowSearch]       = useState(false)
@@ -86,7 +88,14 @@ export default function HomePage() {
   useEffect(() => {
     fetchQueue()
     fetchLists()
-    fetch('/api/trending').then(r => r.json()).then(setTrending).catch(() => {})
+    fetch('/api/trending').then(r => r.json()).then((d: { movies: TrendingItem[]; shows: TrendingItem[] }) => {
+      setTrending(d)
+      const items = [...d.movies, ...d.shows].map(item => ({
+        tmdbId: item.tmdbId,
+        mediaType: (item.mediaType === 'show' ? 'tv' : 'movie') as 'movie' | 'tv',
+      }))
+      fetchProvidersBatch(items).then(map => setProvidersMap(prev => ({ ...prev, ...map })))
+    }).catch(() => {})
   }, [fetchQueue, fetchLists])
 
   useEffect(() => {
@@ -535,6 +544,7 @@ export default function HomePage() {
                     runtime={item.runtime} releaseYear={item.releaseYear}
                     imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
                     isReddit redditVotes={item.redditVotes}
+                    providerData={providersMap[`${item.mediaType === 'show' ? 'tv' : 'movie'}:${item.tmdbId}`]}
                     onAddToQueue={() => addToQueue({
                       tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
                       mediaType: item.mediaType, genreIds: item.genreIds, runtime: item.runtime,

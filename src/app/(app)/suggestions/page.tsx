@@ -4,6 +4,7 @@ import { Zap } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
+import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -30,6 +31,7 @@ export default function SuggestionsPage() {
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
   const [lists, setLists]         = useState<UserList[]>([])
   const [pendingAdd, setPendingAdd] = useState<Movie | null>(null)
+  const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
   const fetchingMore              = useRef(false)
 
   useEffect(() => {
@@ -40,6 +42,10 @@ export default function SuggestionsPage() {
         const movies = Array.isArray(d) ? d : (d.movies ?? [])
         const topGenreNames = Array.isArray(d) ? [] : (d.topGenreNames ?? [])
         setState({ pool: movies.slice(VISIBLE), visible: movies.slice(0, VISIBLE), topGenreNames })
+        // One batched request for every card on the page instead of each
+        // VHSCard firing its own /api/providers call.
+        fetchProvidersBatch(movies.map(m => ({ tmdbId: m.id, mediaType: 'movie' as const })))
+          .then(map => setProvidersMap(prev => ({ ...prev, ...map })))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -53,6 +59,8 @@ export default function SuggestionsPage() {
       const data = Array.isArray(d) ? d : (d.movies ?? [])
       if (data.length > 0) {
         setState(s => ({ ...s, pool: [...s.pool, ...data] }))
+        fetchProvidersBatch(data.map(m => ({ tmdbId: m.id, mediaType: 'movie' as const })))
+          .then(map => setProvidersMap(prev => ({ ...prev, ...map })))
       }
     } finally {
       fetchingMore.current = false
@@ -145,6 +153,7 @@ export default function SuggestionsPage() {
               mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
               imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
               isInQueue={addedIds.has(m.id)}
+              providerData={providersMap[`movie:${m.id}`]}
               onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
               onMarkWatched={() => setPostWatch(m)}
               onDismiss={() => handleDismiss(m.id, m.genreIds ?? [])}

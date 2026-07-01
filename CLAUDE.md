@@ -1,0 +1,150 @@
+# Verdict — Project Memory
+
+## What This Is
+
+Verdict is a personal movie/TV tracker with a VHS aesthetic (dark amber/cream palette, monospace fonts, VCR UI). Built by Brady Nieman. Deployed at `verdict-bnieman.fly.dev`.
+
+**Stack:** Next.js 16 App Router (TypeScript), Supabase (Postgres + Auth + RLS), TMDB API, OMDB API, deployed on Fly.io.
+
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    (app)/              # Auth-protected routes
+      page.tsx          # Home — queue/lists with search, filter, sort
+      stats/page.tsx    # Stats bento grid
+      watched/page.tsx  # Watched history (movies + shows)
+      new-releases/page.tsx
+      suggestions/page.tsx
+      lists/[id]/page.tsx
+      share/[id]/page.tsx  # Public share pages (no auth required)
+    api/
+      queue/route.ts
+      watched/route.ts
+      stats/route.ts
+      stats/year/route.ts
+      suggestions/route.ts
+      new-releases/route.ts
+      providers/route.ts    # Streaming + rent/buy availability
+      lists/route.ts
+      lists/[id]/route.ts
+      lists/[id]/items/route.ts
+      share/[id]/route.ts
+      dismiss/route.ts
+  components/
+    ui/
+      NavBar.tsx          # Uses lucide-react Play/LogOut icons (NOT Unicode ▶ ⏏ — iOS renders those as system media controls)
+      BottomNav.tsx
+      VHSCard.tsx         # Always renders provider strip (minHeight: 29) for consistent card height; shows $ RENT / $$ BUY badges
+      ListPickerSheet.tsx
+      WatchTonightModal.tsx
+    modals/
+      PostWatchModal.tsx
+      WatchTonightModal.tsx
+  lib/
+    tmdb.ts              # getMovie() returns tmdbRating (vote_average) as fallback
+    types.ts             # Canonical types — use @/lib/types, NOT src/types/index.ts (deleted)
+    utils.ts
+  middleware.ts           # Auth guard — must export named `middleware`. Includes /share in public prefixes.
+```
+
+---
+
+## Key Technical Decisions & Gotchas
+
+### iOS Safari
+- Use Lucide SVG icons instead of Unicode `▶` and `⏏` in interactive elements — iOS treats those as system media controls
+- `fontSize: 16` minimum on inputs to prevent iOS auto-zoom
+- Use `dvh` not `vh` for modal heights (`maxHeight: '88dvh'`)
+- Add `touchstart` listeners alongside `mousedown` for dropdown close handlers
+- Touch targets: `minWidth: 44, minHeight: 44`
+- `@media (hover: none)` disables card hover effects on mobile
+
+### Next.js / Fly.io
+- `NEXT_PUBLIC_` vars must be in `[build.args]` in `fly.toml` — they're baked at build time. `fly secrets set` only sets runtime env vars and won't work for these.
+- `fly.toml` currently has `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as build args — this is intentional. The anon key is a publishable key, safe to expose.
+- Middleware must be at `src/middleware.ts` with `export async function middleware()` — a different export name means Next.js never runs it.
+
+### React Patterns
+- Define components at module scope, not inside render functions — inline component definitions cause React to see a new type on every render, unmounting/remounting all children (including re-firing provider fetches in VHSCard)
+- Use `useMemo` for expensive derived state (e.g., filtered/sorted queue items)
+
+### Ratings
+- OMDB API returns IMDb + RT ratings; stored as `imdb_rating` and `rt_score`
+- TMDB `vote_average` is used as `tmdbRating` fallback when OMDB has no data
+- Backfill condition in queue GET: `r.runtime == null || (r.media_type !== 'tv' && r.imdb_rating == null)`
+
+### New Releases / Suggestions Filtering
+- Queue items AND watched titles are excluded from both new releases and suggestions
+- `getUserTaste()` in new-releases route fetches queue + watched tmdb_ids and returns them as `exclude: Set<number>`
+- Suggestions API slices `excludeIds` param to 200 max before querying
+
+### Providers API
+- Returns `hasRent` and `hasBuy` booleans in addition to streaming providers
+- Does NOT early-return when no `flatrate` — uses `(us?.flatrate ?? [])` to fall through
+
+### Security
+- `src/middleware.ts` protects all routes except: `_next/static`, `_next/image`, `favicon.ico`, images, and `/share`
+- Security headers in `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- List ownership checked before POST insert in `lists/[id]/items/route.ts`
+- Share API uses explicit column selects (no `select('*')`) and excludes `user_id`
+
+---
+
+## CSS Variables (globals.css)
+
+```
+--amber        primary accent color (warm orange)
+--amber-dim    muted amber for borders
+--cream        primary text
+--cream-dim    secondary text
+--muted        tertiary / placeholder text
+--surface      card background
+--raised       elevated card background
+--bg           page background
+--border       default border color
+--font-mono    monospace font family
+```
+
+---
+
+## Completed Features
+
+- Queue with sort/filter/search, pin "On Deck" title, Watch Tonight mode
+- Streaming providers + rent/buy badges on cards
+- Post-watch flow: rating (1–5 stars), what worked tags, notes, want more like this
+- Watched history with rewatch tracking and expanded history view
+- Stats page: hero count, avg rating, top genres, tag cloud, rating breakdown, activity by month, Year in Review
+- New Releases: Now Playing, Coming Soon, New to Streaming (all filtered against queue + watched)
+- Suggestions: taste-profile-based, paginated, filtered against queue + watched
+- Lists: create, add items, share via public URL
+- Auth via Supabase (middleware-protected)
+- Mobile-first: lucide icons, dvh, font-size 16 on inputs, touch targets, no hover on mobile
+
+---
+
+## Stats Page Font Sizes (after mobile fix)
+
+All labels use minimum 11px. Key sizes:
+- `CardLabel`: 11px
+- Tag cloud: `11 + ratio * 5` (range 11–16px)
+- Genre names: 12px
+- Hero meta text: 12–13px
+- Month labels in activity chart: 10px
+- Bar chart counts: 11px, star labels: 10px
+
+---
+
+## Deploy
+
+```bash
+git add .
+git commit -m "message"
+git push
+fly deploy
+```
+
+App: `verdict-bnieman` on Fly.io, region `iad`, 512mb shared CPU.

@@ -4,6 +4,7 @@ import { Film } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
+import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface Movie {
@@ -17,9 +18,10 @@ interface UserList { id: string; name: string }
 // Defined at module scope so React doesn't see a new component type on each render
 // (which would unmount/remount all VHSCards and re-fire their provider fetches)
 function Shelf({
-  title, items, dismissed, addedIds, soon, stream, onAddToQueue, onMarkWatched, onDismiss,
+  title, items, dismissed, addedIds, providersMap, soon, stream, onAddToQueue, onMarkWatched, onDismiss,
 }: {
   title: string; items: Movie[]; dismissed: Set<number>; addedIds: Set<number>
+  providersMap: Record<string, ProviderData>
   soon?: boolean; stream?: boolean
   onAddToQueue: (m: Movie) => void
   onMarkWatched: (m: Movie) => void
@@ -41,6 +43,7 @@ function Shelf({
                 tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
                 mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
                 imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
+                providerData={providersMap[`movie:${m.tmdbId}`]}
                 isNew={!soon && !stream} isSoon={soon}
                 isInQueue={addedIds.has(m.tmdbId!)}
                 onAddToQueue={addedIds.has(m.tmdbId!) ? undefined : () => onAddToQueue(m)}
@@ -65,6 +68,7 @@ export default function NewReleasesPage() {
   const [lists, setLists]             = useState<UserList[]>([])
   const [pendingAdd, setPendingAdd]   = useState<Movie | null>(null)
   const [addedIds, setAddedIds]       = useState<Set<number>>(new Set())
+  const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
 
   useEffect(() => {
     fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
@@ -72,9 +76,17 @@ export default function NewReleasesPage() {
       .then(r => r.json())
       .then(d => {
         const map = (m: any) => ({ ...m, tmdbId: m.id, genreIds: m.genreIds ?? [] })
-        setNowPlaying((d.nowPlaying ?? []).map(map))
-        setUpcoming((d.upcoming ?? []).map(map))
-        setStreaming((d.streaming ?? []).map(map))
+        const now = (d.nowPlaying ?? []).map(map)
+        const soon = (d.upcoming ?? []).map(map)
+        const stream = (d.streaming ?? []).map(map)
+        setNowPlaying(now)
+        setUpcoming(soon)
+        setStreaming(stream)
+        // Batch every shelf's provider lookups into one request instead of
+        // one fetch per card (these shelves can run 20+ titles each).
+        const all: Movie[] = [...now, ...soon, ...stream]
+        fetchProvidersBatch(all.map(m => ({ tmdbId: m.tmdbId!, mediaType: 'movie' as const })))
+          .then(result => setProvidersMap(prev => ({ ...prev, ...result })))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -131,9 +143,9 @@ export default function NewReleasesPage() {
       {loading
         ? <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
         : <>
-            <Shelf title="NEW TO STREAMING" items={streaming} dismissed={dismissed} addedIds={addedIds} stream onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
-            <Shelf title="NOW PLAYING" items={nowPlaying} dismissed={dismissed} addedIds={addedIds} onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
-            <Shelf title="COMING SOON" items={upcoming} dismissed={dismissed} addedIds={addedIds} soon onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+            <Shelf title="NEW TO STREAMING" items={streaming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} stream onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+            <Shelf title="NOW PLAYING" items={nowPlaying} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+            <Shelf title="COMING SOON" items={upcoming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} soon onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
           </>
       }
       {postWatch && (

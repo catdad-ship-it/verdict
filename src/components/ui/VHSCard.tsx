@@ -28,6 +28,10 @@ interface VHSCardProps {
   onRemoveFromQueue?: () => void
   onDismiss?: () => void
   onClick?: () => void
+  // Pass pre-fetched provider data from a parent that batched the request
+  // (see /api/providers/batch). When omitted, the card falls back to its
+  // own fetch — keep that fallback for any callers that don't batch yet.
+  providerData?: { providers: { providerId: number; providerName: string; logoPath: string }[]; hasRent: boolean; hasBuy: boolean }
 }
 
 export default function VHSCard({
@@ -36,6 +40,7 @@ export default function VHSCard({
   isNew, isSoon, isStream, isReddit, redditVotes,
   isInQueue, isWatched, currentSeason, totalSeasons,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
+  providerData,
 }: VHSCardProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
@@ -43,22 +48,32 @@ export default function VHSCard({
   const [synopsis, setSynopsis] = useState<string | null>(null)
   const [synopsisOpen, setSynopsisOpen] = useState(false)
   const [synopsisLoading, setSynopsisLoading] = useState(false)
-  const [providers, setProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
-  const [hasRent, setHasRent] = useState(false)
-  const [hasBuy, setHasBuy]   = useState(false)
-  const [providersLoaded, setProvidersLoaded] = useState(false)
+  const [fetchedProviders, setFetchedProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
+  const [fetchedHasRent, setFetchedHasRent] = useState(false)
+  const [fetchedHasBuy, setFetchedHasBuy]   = useState(false)
+  const [selfFetchLoaded, setSelfFetchLoaded] = useState(false)
 
+  // Only self-fetch when the parent hasn't already batched provider data for us.
   useEffect(() => {
+    if (providerData) return
+    let cancelled = false
     fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
       .then(r => r.json())
       .then(d => {
-        setProviders(d.providers ?? [])
-        setHasRent(d.hasRent ?? false)
-        setHasBuy(d.hasBuy ?? false)
-        setProvidersLoaded(true)
+        if (cancelled) return
+        setFetchedProviders(d.providers ?? [])
+        setFetchedHasRent(d.hasRent ?? false)
+        setFetchedHasBuy(d.hasBuy ?? false)
+        setSelfFetchLoaded(true)
       })
-      .catch(() => setProvidersLoaded(true))
-  }, [tmdbId, mediaType])
+      .catch(() => !cancelled && setSelfFetchLoaded(true))
+    return () => { cancelled = true }
+  }, [tmdbId, mediaType, providerData])
+
+  const providers       = providerData ? providerData.providers : fetchedProviders
+  const hasRent          = providerData ? providerData.hasRent   : fetchedHasRent
+  const hasBuy           = providerData ? providerData.hasBuy    : fetchedHasBuy
+  const providersLoaded  = providerData ? true : selfFetchLoaded
 
   const handleAddToQueue = (e: React.MouseEvent) => {
     e.stopPropagation()
