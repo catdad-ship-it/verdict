@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { canonicalProviderId } from '@/lib/streamingServices'
+import { CURATED_PROVIDERS, normalizeProviderName } from '@/lib/streamingServices'
 import { NextRequest, NextResponse } from 'next/server'
 import type { StreamProvider } from '../route'
 
@@ -18,19 +18,24 @@ interface ProviderResult {
   hasBuy: boolean
 }
 
-async function getOwnedIds(): Promise<Set<number>> {
+// Normalized names of services the user owns — matching by name instead of
+// raw provider_id so TMDB's ad-tier duplicate rows still count as owned.
+async function getOwnedNames(): Promise<Set<string>> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return new Set()
     const { data } = await supabase.from('profiles').select('streaming_provider_ids').eq('id', user.id).maybeSingle()
-    return new Set(data?.streaming_provider_ids ?? [])
+    const ownedIds = new Set<number>(data?.streaming_provider_ids ?? [])
+    return new Set(
+      CURATED_PROVIDERS.filter(p => ownedIds.has(p.id)).map(p => normalizeProviderName(p.name))
+    )
   } catch {
     return new Set()
   }
 }
 
-async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set<number>): Promise<ProviderResult> {
+async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedNames: Set<string>): Promise<ProviderResult> {
   const path = mediaType === 'tv' ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
   const url  = `${BASE}${path}?api_key=${KEY}`
 
@@ -40,21 +45,25 @@ async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set
 
     type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
 
-    // Canonicalize + dedupe (see canonicalProviderId) — TMDB's duplicate
-    // Amazon Prime Video ids both collapse to one entry.
-    const seen = new Set<number>()
+    // Dedupe by normalized name — same reasoning as /api/providers.
+    const seenNames = new Set<string>()
     const providers: StreamProvider[] = ((us?.flatrate ?? []) as RawProvider[])
       .sort((a, b) => a.display_priority - b.display_priority)
+      .filter(p => {
+        const key = normalizeProviderName(p.provider_name)
+        if (seenNames.has(key)) return false
+        seenNames.add(key)
+        return true
+      })
       .map(p => ({
-        providerId:   canonicalProviderId(p.provider_id),
+        providerId:   p.provider_id,
         providerName: p.provider_name,
         logoPath:     p.logo_path,
       }))
-      .filter(p => (seen.has(p.providerId) ? false : (seen.add(p.providerId), true)))
 
     return {
       providers,
-      ownedProviders: providers.filter(p => ownedIds.has(p.providerId)),
+      ownedProviders: providers.filter(p => ownedNames.has(normalizeProviderName(p.providerName))),
       hasRent: !!(us?.rent?.length),
       hasBuy:  !!(us?.buy?.length),
     }
@@ -90,8 +99,8 @@ export async function POST(req: NextRequest) {
   }
 
   const entries = Array.from(seen.entries())
-  const ownedIds = await getOwnedIds()
-  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType, ownedIds)))
+  const ownedNames = await getOwnedNames()
+  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType, ownedNames)))
 
   const results: Record<string, ProviderResult> = {}
   entries.forEach(([key], i) => {

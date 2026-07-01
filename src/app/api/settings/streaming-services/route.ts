@@ -62,11 +62,14 @@ export async function POST(req: NextRequest) {
 
   const cleaned = providerIds.filter((id): id is number => typeof id === 'number')
 
+  // Upsert, not update — older accounts predating this feature (or the
+  // auto-create-profile trigger) may not have a profiles row yet. update()
+  // against a missing row matches zero rows and "succeeds" without saving
+  // anything, which silently made every title look like you own nothing.
   const { error } = await supabase
     .from('profiles')
-    .update({ streaming_provider_ids: cleaned })
-    .eq('id', user.id)
+    .upsert({ id: user.id, streaming_provider_ids: cleaned }, { onConflict: 'id' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, selected: cleaned })
 }
