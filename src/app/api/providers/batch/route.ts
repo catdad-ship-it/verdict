@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { canonicalProviderId } from '@/lib/streamingServices'
 import { NextRequest, NextResponse } from 'next/server'
 import type { StreamProvider } from '../route'
 
@@ -39,13 +40,17 @@ async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set
 
     type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
 
+    // Canonicalize + dedupe (see canonicalProviderId) — TMDB's duplicate
+    // Amazon Prime Video ids both collapse to one entry.
+    const seen = new Set<number>()
     const providers: StreamProvider[] = ((us?.flatrate ?? []) as RawProvider[])
       .sort((a, b) => a.display_priority - b.display_priority)
       .map(p => ({
-        providerId:   p.provider_id,
+        providerId:   canonicalProviderId(p.provider_id),
         providerName: p.provider_name,
         logoPath:     p.logo_path,
       }))
+      .filter(p => (seen.has(p.providerId) ? false : (seen.add(p.providerId), true)))
 
     return {
       providers,

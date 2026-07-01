@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { canonicalProviderId } from '@/lib/streamingServices'
 import { NextRequest, NextResponse } from 'next/server'
 
 const BASE = 'https://api.themoviedb.org/3'
@@ -40,13 +41,18 @@ export async function GET(req: NextRequest) {
 
     type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
 
+    // Canonicalize first (e.g. TMDB's duplicate Amazon Prime Video ids both
+    // collapse to 9), then dedupe — a title shouldn't show the same real
+    // service twice just because TMDB split it into two provider rows.
+    const seen = new Set<number>()
     const providers: StreamProvider[] = ((us?.flatrate ?? []) as RawProvider[])
       .sort((a, b) => a.display_priority - b.display_priority)
       .map(p => ({
-        providerId:   p.provider_id,
+        providerId:   canonicalProviderId(p.provider_id),
         providerName: p.provider_name,
         logoPath:     p.logo_path,
       }))
+      .filter(p => (seen.has(p.providerId) ? false : (seen.add(p.providerId), true)))
 
     const ownedProviders = providers.filter(p => ownedIds.has(p.providerId))
     const hasRent = !!(us?.rent?.length)
