@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getMovieSuggestions, deriveGenrePreferences, SEED_PROFILE } from '@/lib/suggestions'
+import { getMovieSuggestions, deriveGenrePreferences, getCastCrewCandidates, SEED_PROFILE } from '@/lib/suggestions'
 import { getRatings } from '@/lib/omdb'
 import { TMDB_GENRES } from '@/lib/types'
 import { NextRequest, NextResponse } from 'next/server'
@@ -68,6 +68,9 @@ export async function GET(req: NextRequest) {
     .map(([id]) => TMDB_GENRES[parseInt(id)])
     .filter(Boolean)
 
+  const excludeIdSet = new Set([...watchedIds, ...queueIds, ...dismissedIds, ...extraExclude])
+  const castCrewCandidates = await getCastCrewCandidates(topRatedMovieIds, excludeIdSet)
+
   const movies = await getMovieSuggestions({
     genreScores,
     watchedIds,
@@ -75,6 +78,7 @@ export async function GET(req: NextRequest) {
     dismissedIds: [...dismissedIds, ...extraExclude],
     topRatedMovieIds,
     excludeGenreIds: excludedGenreIds,
+    castCrewCandidates,
   })
 
   const withRatings = await Promise.all(

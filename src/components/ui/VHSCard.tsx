@@ -1,6 +1,6 @@
 'use client'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Clock, Plus, Check, Tv, X } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime, type ProviderData } from '@/lib/utils'
 
@@ -23,6 +23,9 @@ interface VHSCardProps {
   isWatched?: boolean
   currentSeason?: number
   totalSeasons?: number
+  // "More from Denis Villeneuve" / "More with Tom Hardy" — set when a
+  // suggestion came from the cast/crew engine, shown as a small badge
+  matchReason?: string
   onAddToQueue?: () => void
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
@@ -38,7 +41,7 @@ export default function VHSCard({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview,
   isNew, isSoon, isStream, isReddit, redditVotes,
-  isInQueue, isWatched, currentSeason, totalSeasons,
+  isInQueue, isWatched, currentSeason, totalSeasons, matchReason,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
   providerData,
 }: VHSCardProps) {
@@ -48,6 +51,18 @@ export default function VHSCard({
   const [synopsis, setSynopsis] = useState<string | null>(null)
   const [synopsisOpen, setSynopsisOpen] = useState(false)
   const [synopsisLoading, setSynopsisLoading] = useState(false)
+  // Desktop hover quick-peek: same synopsis overlay as the click-to-open
+  // version, but triggered by hovering the card and auto-closed on mouseleave.
+  // Gated on matchMedia so a tap-and-hold on touch can't get it stuck open —
+  // this mirrors the project's existing @media (hover: none) convention.
+  const [hoverPeek, setHoverPeek] = useState(false)
+  const canHoverRef = useRef(false)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    canHoverRef.current = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+    return () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current) }
+  }, [])
+  const peekOpen = synopsisOpen || hoverPeek
   const [fetchedProviders, setFetchedProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
   const [fetchedOwnedProviders, setFetchedOwnedProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
   const [fetchedHasRent, setFetchedHasRent] = useState(false)
@@ -98,24 +113,10 @@ export default function VHSCard({
     }
   }
 
-  const handlePosterClick = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (synopsisOpen) {
-      setSynopsisOpen(false)
-      return
-    }
-    if (overview) {
-      setSynopsis(overview)
-      setSynopsisOpen(true)
-      return
-    }
-    if (synopsis) {
-      setSynopsisOpen(true)
-      return
-    }
-    // Fetch from API
+  const ensureSynopsisLoaded = async () => {
+    if (overview) { setSynopsis(overview); return }
+    if (synopsis) return
     setSynopsisLoading(true)
-    setSynopsisOpen(true)
     try {
       const data = await fetch(`/api/movie/${tmdbId}`).then(r => r.json())
       setSynopsis(data.overview ?? 'No synopsis available.')
@@ -124,6 +125,34 @@ export default function VHSCard({
     } finally {
       setSynopsisLoading(false)
     }
+  }
+
+  const handlePosterClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (synopsisOpen) {
+      setSynopsisOpen(false)
+      return
+    }
+    setSynopsisOpen(true)
+    await ensureSynopsisLoaded()
+  }
+
+  const handleCardMouseEnter = (e: React.MouseEvent) => {
+    ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-5px) scale(1.015)'
+    ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 16px 36px rgba(0,0,0,0.7), 0 0 20px rgba(192,120,24,0.12)'
+    if (canHoverRef.current && !synopsisOpen) {
+      hoverTimerRef.current = setTimeout(() => {
+        setHoverPeek(true)
+        ensureSynopsisLoaded()
+      }, 450)
+    }
+  }
+
+  const handleCardMouseLeave = (e: React.MouseEvent) => {
+    ;(e.currentTarget as HTMLDivElement).style.transform = ''
+    ;(e.currentTarget as HTMLDivElement).style.boxShadow = ''
+    if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null }
+    setHoverPeek(false)
   }
 
   const inQueue = isInQueue || localAdded
@@ -135,14 +164,8 @@ export default function VHSCard({
         background: 'var(--card)',
         transition: 'transform 0.18s ease, box-shadow 0.18s ease',
       }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-5px) scale(1.015)'
-        ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 16px 36px rgba(0,0,0,0.7), 0 0 20px rgba(192,120,24,0.12)'
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = ''
-        ;(e.currentTarget as HTMLDivElement).style.boxShadow = ''
-      }}
+      onMouseEnter={handleCardMouseEnter}
+      onMouseLeave={handleCardMouseLeave}
       onClick={onClick}
     >
       {/* Poster */}
@@ -162,12 +185,12 @@ export default function VHSCard({
           background: 'linear-gradient(to top, rgba(8,6,4,0.97) 0%, rgba(8,6,4,0.55) 55%, transparent 100%)',
         }} />
 
-        {/* Synopsis overlay */}
-        {synopsisOpen && (
+        {/* Synopsis overlay — opens on click (pinned) or desktop hover (quick-peek) */}
+        {peekOpen && (
           <div className="absolute inset-0 z-20 flex flex-col p-3"
                style={{ background: 'rgba(8,6,4,0.93)', backdropFilter: 'blur(2px)' }}>
             <button
-              onClick={e => { e.stopPropagation(); setSynopsisOpen(false) }}
+              onClick={e => { e.stopPropagation(); setSynopsisOpen(false); setHoverPeek(false) }}
               className="absolute top-2 right-2"
               style={{ color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
             >
@@ -187,7 +210,7 @@ export default function VHSCard({
         )}
 
         {/* Badges */}
-        {!synopsisOpen && (
+        {!peekOpen && (
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
             {isNew   && <span className="badge-new">NEW</span>}
             {isSoon  && <span className="badge-soon">SOON</span>}
@@ -198,11 +221,26 @@ export default function VHSCard({
                 <Tv size={8} /> SHOW
               </span>
             )}
+            {matchReason && (
+              <span
+                title={matchReason}
+                style={{
+                  display: 'inline-block', maxWidth: 130, overflow: 'hidden',
+                  textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  background: 'rgba(150,110,220,0.18)', color: '#C4A8F0',
+                  border: '1px solid rgba(150,110,220,0.4)',
+                  fontSize: '0.5rem', fontWeight: 700, letterSpacing: '0.06em',
+                  textTransform: 'uppercase', padding: '1px 5px', borderRadius: '1px',
+                }}
+              >
+                {matchReason}
+              </span>
+            )}
           </div>
         )}
 
         {/* Ratings */}
-        {!synopsisOpen && (imdbRating || rtScore) && (
+        {!peekOpen && (imdbRating || rtScore) && (
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
             {imdbRating && (
               <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: '0.6rem', padding: '1px 5px', borderRadius: '1px', letterSpacing: '0.04em' }}>
@@ -218,7 +256,7 @@ export default function VHSCard({
         )}
 
         {/* Title area */}
-        {!synopsisOpen && (
+        {!peekOpen && (
           <div className="absolute inset-x-0 bottom-0 p-2.5 z-10">
             <p className="font-bold text-sm leading-tight mb-0.5" style={{ color: 'var(--cream)', letterSpacing: '0.03em' }}>
               {title}

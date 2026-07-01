@@ -13,6 +13,10 @@ export interface Movie {
   imdbRating: number | null
   rtScore: number | null
   mediaType: 'movie'
+  // Set when a suggestion came from the cast/crew engine instead of (or in
+  // addition to) genre scoring — e.g. "More from Denis Villeneuve". Lets the
+  // UI show why a title was picked.
+  matchReason?: string
 }
 
 export interface Show {

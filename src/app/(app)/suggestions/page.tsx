@@ -5,6 +5,9 @@ import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
+import { CardGridSkeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -16,6 +19,7 @@ interface Movie {
   overview?: string; runtime?: number | null; genreIds?: number[]
   releaseYear?: number | null
   imdbRating?: number | null; rtScore?: number | null
+  matchReason?: string
 }
 
 interface SuggestState {
@@ -25,6 +29,7 @@ interface SuggestState {
 }
 
 export default function SuggestionsPage() {
+  const toast = useToast()
   const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
@@ -89,11 +94,14 @@ export default function SuggestionsPage() {
     setAddedIds(s => new Set([...s, m.id]))
   }
 
-  const handleDismiss = (id: number, genreIds: number[]) => {
+  const handleDismiss = (id: number, genreIds: number[], title: string) => {
+    let removed: Movie | null = null
+
     setState(({ pool, visible, topGenreNames }) => {
+      removed = visible.find(m => m.id === id) ?? pool.find(m => m.id === id) ?? null
       const nextVisible = visible.filter(m => m.id !== id)
       const backfill    = pool[0] ?? null
-      const nextPool    = backfill ? pool.slice(1) : pool
+      const nextPool    = backfill ? pool.slice(1) : pool.filter(m => m.id !== id)
 
       // Fetch more when pool is running low
       if (nextPool.length < 6) {
@@ -109,10 +117,20 @@ export default function SuggestionsPage() {
       }
     })
 
-    fetch('/api/dismiss', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: id, genre_ids: genreIds }),
+    // The card disappears immediately; the persistent "dismiss this genre"
+    // call is deferred so UNDO can cancel it outright instead of needing a
+    // compensating un-dismiss request.
+    toast.showUndo(`DISMISSED "${title.toUpperCase()}"`, () => {
+      fetch('/api/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdb_id: id, genre_ids: genreIds }),
+      })
+    }, {
+      onUndo: () => {
+        if (!removed) return
+        setState(s => ({ ...s, visible: [removed as Movie, ...s.visible] }))
+      },
     })
   }
 
@@ -143,7 +161,12 @@ export default function SuggestionsPage() {
           : 'Based on your taste profile.'}
       </p>
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
+        <CardGridSkeleton count={VISIBLE} />
+      ) : state.visible.length === 0 ? (
+        <EmptyState
+          title="NO SUGGESTIONS RIGHT NOW"
+          subtitle="Watch or rate a few titles and check back — we'll have more to go on."
+        />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
           {state.visible.map(m => (
@@ -153,10 +176,11 @@ export default function SuggestionsPage() {
               mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
               imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
               isInQueue={addedIds.has(m.id)}
+              matchReason={m.matchReason}
               providerData={providersMap[`movie:${m.id}`]}
               onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
               onMarkWatched={() => setPostWatch(m)}
-              onDismiss={() => handleDismiss(m.id, m.genreIds ?? [])}
+              onDismiss={() => handleDismiss(m.id, m.genreIds ?? [], m.title)}
             />
           ))}
         </div>

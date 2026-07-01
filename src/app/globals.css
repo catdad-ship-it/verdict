@@ -56,6 +56,16 @@ a {
 /* LED display font */
 .font-led { font-family: 'Share Tech Mono', 'Courier New', monospace; }
 
+/* Skeleton loaders */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
+}
+.skeleton {
+  background: var(--raised);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar       { width: 6px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--surface); }

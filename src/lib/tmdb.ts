@@ -208,6 +208,124 @@ export async function discoverMovies(genreIds: number[], excludeIds: number[], e
     }))
 }
 
+export interface CreditInfo { id: number; name: string; role: 'director' | 'cast' }
+
+// Director + top-billed cast for a movie — used to build the "more from this
+// director/actor" suggestion signal without persisting any new profile data.
+export async function getMovieCredits(tmdbId: number): Promise<CreditInfo[]> {
+  const data = await get(`/movie/${tmdbId}/credits`)
+  const crew: TMDBCrewMember[] = data.crew ?? []
+  const cast: TMDBCastMember[] = data.cast ?? []
+  const directors: CreditInfo[] = crew
+    .filter(c => c.job === 'Director')
+    .map(c => ({ id: c.id, name: c.name, role: 'director' as const }))
+  const topCast: CreditInfo[] = cast
+    .slice(0, 5)
+    .map(c => ({ id: c.id, name: c.name, role: 'cast' as const }))
+  return [...directors, ...topCast]
+}
+
+// Other movies featuring a given person (actor or director) — one extra
+// candidate pool alongside genre-based discover/recommendations.
+export async function discoverMoviesByPerson(personId: number, excludeIds: number[]): Promise<Movie[]> {
+  const data = await get('/discover/movie', {
+    with_people: String(personId),
+    sort_by: 'popularity.desc',
+    'vote_count.gte': '50',
+  })
+  const excludeSet = new Set(excludeIds)
+  const results: TMDBMovieResult[] = data.results ?? []
+  return results
+    .filter(d => !excludeSet.has(d.id))
+    .slice(0, 8)
+    .map(d => ({
+      id: d.id,
+      title: d.title,
+      posterPath: d.poster_path,
+      backdropPath: null,
+      overview: d.overview,
+      releaseYear: d.release_date ? parseInt(d.release_date) : 0,
+      runtime: null,
+      genreIds: d.genre_ids ?? [],
+      genres: genreNames(d.genre_ids ?? []),
+      imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
+      rtScore: null,
+      mediaType: 'movie' as const,
+    }))
+}
+
+// ── People ─────────────────────────────────────────────
+export interface PersonResult {
+  id: number
+  name: string
+  profilePath: string | null
+  knownForDepartment: string | null
+  knownFor: string[]  // up to 3 title/name strings, for a hint under the result
+}
+
+export async function searchPeople(query: string): Promise<PersonResult[]> {
+  const data = await get('/search/person', { query, include_adult: 'false' })
+  const results: TMDBPersonSearchResult[] = data.results ?? []
+  return results.slice(0, 8).map(d => ({
+    id: d.id,
+    name: d.name,
+    profilePath: d.profile_path,
+    knownForDepartment: d.known_for_department ?? null,
+    knownFor: (d.known_for ?? [])
+      .map(k => k.title ?? k.name)
+      .filter((t): t is string => Boolean(t))
+      .slice(0, 3),
+  }))
+}
+
+export interface PersonCreditItem {
+  id: number
+  title: string
+  posterPath: string | null
+  releaseYear: number | null
+  genreIds: number[]
+  mediaType: 'movie' | 'show'
+  role: string        // job (director/writer/...) or character name
+  popularity: number
+}
+
+// A person's full filmography (movies + TV, cast + crew combined) for the
+// search modal's drill-down view. Same-title cast+crew entries (e.g. an
+// actor-director) are merged into one row with both roles listed.
+export async function getPersonCredits(personId: number): Promise<PersonCreditItem[]> {
+  const data = await get(`/person/${personId}/combined_credits`)
+  const cast: TMDBPersonCastCredit[] = data.cast ?? []
+  const crew: TMDBPersonCrewCredit[] = data.crew ?? []
+
+  const merged = new Map<string, PersonCreditItem>()
+  const upsert = (raw: TMDBPersonCastCredit | TMDBPersonCrewCredit, role: string) => {
+    if (raw.media_type !== 'movie' && raw.media_type !== 'tv') return
+    const mediaType: 'movie' | 'show' = raw.media_type === 'tv' ? 'show' : 'movie'
+    const key = `${mediaType}:${raw.id}`
+    const dateStr = raw.release_date || raw.first_air_date
+    const existing = merged.get(key)
+    if (existing) {
+      if (!existing.role.includes(role)) existing.role = `${existing.role}, ${role}`
+      return
+    }
+    merged.set(key, {
+      id: raw.id,
+      title: raw.title ?? raw.name ?? 'Untitled',
+      posterPath: raw.poster_path,
+      releaseYear: dateStr ? parseInt(dateStr) : null,
+      genreIds: raw.genre_ids ?? [],
+      mediaType,
+      role,
+      popularity: raw.popularity ?? 0,
+    })
+  }
+
+  for (const c of cast) upsert(c, c.character || 'Actor')
+  for (const c of crew) upsert(c, c.job || 'Crew')
+
+  return [...merged.values()].sort((a, b) => b.popularity - a.popularity)
+}
+
 // ── Show ──────────────────────────────────────────────
 export async function getShow(tmdbId: number): Promise<Show> {
   const d = await get(`/tv/${tmdbId}`)
@@ -268,4 +386,41 @@ interface TMDBShowResult {
   first_air_date: string
   genre_ids: number[]
   vote_average: number
+}
+
+interface TMDBCastMember { id: number; name: string }
+interface TMDBCrewMember { id: number; name: string; job: string }
+
+interface TMDBPersonSearchResult {
+  id: number
+  name: string
+  profile_path: string | null
+  known_for_department?: string
+  known_for?: { title?: string; name?: string }[]
+}
+
+interface TMDBPersonCastCredit {
+  id: number
+  media_type: string
+  title?: string
+  name?: string
+  poster_path: string | null
+  release_date?: string
+  first_air_date?: string
+  genre_ids?: number[]
+  character?: string
+  popularity?: number
+}
+
+interface TMDBPersonCrewCredit {
+  id: number
+  media_type: string
+  title?: string
+  name?: string
+  poster_path: string | null
+  release_date?: string
+  first_air_date?: string
+  genre_ids?: number[]
+  job?: string
+  popularity?: number
 }

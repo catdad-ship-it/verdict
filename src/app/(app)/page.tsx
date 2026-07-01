@@ -8,6 +8,9 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import SearchAddModal from '@/components/modals/SearchAddModal'
 import WatchTonightModal from '@/components/modals/WatchTonightModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
+import { RowListSkeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -28,6 +31,7 @@ interface TrendingItem {
 type ActiveList = 'queue' | string
 
 export default function HomePage() {
+  const toast = useToast()
   const [queue, setQueue]           = useState<QueueItem[]>([])
   const [lists, setLists]           = useState<UserList[]>([])
   const [activeList, setActiveList] = useState<ActiveList>('queue')
@@ -188,22 +192,32 @@ export default function HomePage() {
     else await addToList(addTarget, item)
   }
 
-  const removeFromQueue = async (tmdbId: number, mediaType: string) => {
-    await fetch('/api/queue', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdbId, mediaType }),
-    })
+  // Optimistic removal — the row disappears immediately, but the DELETE
+  // itself is deferred until the undo window passes, so clicking UNDO just
+  // cancels it (no compensating "add it back" call needed) and restores
+  // the exact item we already had in memory.
+  const removeFromQueue = (tmdbId: number, mediaType: string) => {
+    const original = queue.find(i => i.tmdbId === tmdbId && i.mediaType === mediaType)
     setQueue(q => q.filter(i => !(i.tmdbId === tmdbId && i.mediaType === mediaType)))
+    toast.showUndo(`Removed "${original?.title ?? 'title'}" from queue`, () => {
+      fetch('/api/queue', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdbId, mediaType }),
+      })
+    }, { onUndo: () => { if (original) setQueue(q => [original, ...q]) } })
   }
 
-  const removeFromList = async (listId: string, tmdbId: number, mediaType: string) => {
-    await fetch(`/api/lists/${listId}/items`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdbId, mediaType }),
-    })
+  const removeFromList = (listId: string, tmdbId: number, mediaType: string) => {
+    const original = listItems.find(i => i.tmdb_id === tmdbId && i.media_type === mediaType)
     setListItems(items => items.filter(i => !(i.tmdb_id === tmdbId && i.media_type === mediaType)))
+    toast.showUndo(`Removed "${original?.title ?? 'title'}"`, () => {
+      fetch(`/api/lists/${listId}/items`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdbId, mediaType }),
+      })
+    }, { onUndo: () => { if (original) setListItems(items => [original, ...items]) } })
   }
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
@@ -508,13 +522,19 @@ export default function HomePage() {
 
       {/* List */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
+        <RowListSkeleton count={5} />
       ) : displayItems.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 13 }}>
-          {sourceItems.length === 0
-            ? activeList === 'queue' ? 'YOUR QUEUE IS EMPTY. TAP ＋ TO ADD.' : 'THIS LIST IS EMPTY. TAP ＋ TO ADD.'
-            : search ? 'NO TITLES MATCH THAT SEARCH.' : 'NO TITLES MATCH THAT FILTER.'}
-        </div>
+        sourceItems.length === 0 ? (
+          <EmptyState
+            title={activeList === 'queue' ? 'YOUR QUEUE IS EMPTY' : 'THIS LIST IS EMPTY'}
+            subtitle="Tap the ＋ button to add your first title."
+          />
+        ) : (
+          <EmptyState
+            title={search ? 'NO TITLES MATCH THAT SEARCH' : 'NO TITLES MATCH THAT FILTER'}
+            subtitle="Try a different search term or clear your filters."
+          />
+        )
       ) : (
         <div>
           {displayItems.map(item => (

@@ -4,6 +4,8 @@ import { Archive, RefreshCw } from 'lucide-react'
 import Image from 'next/image'
 import { posterUrl } from '@/lib/utils'
 import PostWatchModal from '@/components/modals/PostWatchModal'
+import { WatchedListSkeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface WatchedMovie {
@@ -113,10 +115,10 @@ export default function WatchedPage() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
+        <WatchedListSkeleton count={5} />
       ) : tab === 'movies' ? (
         movieGroups.length === 0
-          ? <p style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 13 }}>NO MOVIES YET.</p>
+          ? <EmptyState title="NO MOVIES YET" subtitle="Mark a movie watched and it'll show up here." />
           : <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {movieGroups.map(group => {
                 const latest     = group[0]
@@ -213,7 +215,7 @@ export default function WatchedPage() {
             </div>
       ) : (
         shows.length === 0
-          ? <p style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--cream-dim)', fontSize: 13 }}>NO SHOWS YET.</p>
+          ? <EmptyState title="NO SHOWS YET" subtitle="Mark a show watched and it'll show up here." />
           : <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {shows.map(s => (
                 <div key={s.id} style={rowStyle}>

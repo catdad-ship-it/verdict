@@ -5,6 +5,9 @@ import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { useToast } from '@/components/ui/Toast'
+import { ShelfSkeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface Movie {
@@ -59,6 +62,7 @@ function Shelf({
 }
 
 export default function NewReleasesPage() {
+  const toast = useToast()
   const [nowPlaying, setNowPlaying]   = useState<Movie[]>([])
   const [upcoming, setUpcoming]       = useState<Movie[]>([])
   const [streaming, setStreaming]     = useState<Movie[]>([])
@@ -115,10 +119,21 @@ export default function NewReleasesPage() {
 
   const handleDismiss = (m: Movie) => {
     setDismissed(s => new Set([...s, m.tmdbId!]))
-    fetch('/api/dismiss', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: m.tmdbId }),
+
+    toast.showUndo(`DISMISSED "${m.title.toUpperCase()}"`, () => {
+      fetch('/api/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tmdb_id: m.tmdbId }),
+      })
+    }, {
+      onUndo: () => {
+        setDismissed(s => {
+          const next = new Set(s)
+          next.delete(m.tmdbId!)
+          return next
+        })
+      },
     })
   }
 
@@ -140,14 +155,24 @@ export default function NewReleasesPage() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
       <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, marginBottom: '1.5rem', letterSpacing: 2 }}>NEW RELEASES</h1>
-      {loading
-        ? <div style={{ textAlign: 'center', padding: '3rem', fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 13 }}>LOADING...</div>
-        : <>
-            <Shelf title="NEW TO STREAMING" items={streaming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} stream onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
-            <Shelf title="NOW PLAYING" items={nowPlaying} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
-            <Shelf title="COMING SOON" items={upcoming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} soon onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
-          </>
-      }
+      {loading ? (
+        <>
+          <ShelfSkeleton count={5} />
+          <div style={{ height: '2rem' }} />
+          <ShelfSkeleton count={5} />
+        </>
+      ) : [...nowPlaying, ...upcoming, ...streaming].every(m => dismissed.has(m.tmdbId!)) ? (
+        <EmptyState
+          title="NOTHING NEW RIGHT NOW"
+          subtitle="Check back soon, or turn shelves back on in Settings."
+        />
+      ) : (
+        <>
+          <Shelf title="NEW TO STREAMING" items={streaming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} stream onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+          <Shelf title="NOW PLAYING" items={nowPlaying} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+          <Shelf title="COMING SOON" items={upcoming} dismissed={dismissed} addedIds={addedIds} providersMap={providersMap} soon onAddToQueue={setPendingAdd} onMarkWatched={setPostWatch} onDismiss={handleDismiss} />
+        </>
+      )}
       {postWatch && (
         <PostWatchModal
           title={postWatch.title} mediaType="movie" runtime={postWatch.runtime ?? undefined}

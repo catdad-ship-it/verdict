@@ -1,4 +1,4 @@
-import { discoverMovies, getMovieRecommendations } from './tmdb'
+import { discoverMovies, getMovieRecommendations, getMovieCredits, discoverMoviesByPerson } from './tmdb'
 import { Movie } from './types'
 
 // Brady's pre-seeded taste profile
@@ -47,6 +47,64 @@ interface SuggestionOptions {
   dismissedIds?: number[]
   topRatedMovieIds?: number[]   // movies rated 4-5 stars — used for TMDB recommendations
   excludeGenreIds?: number[]    // genres explicitly hidden in Settings — never suggest these
+  castCrewCandidates?: Movie[]  // "more from this director/actor" pool — see getCastCrewCandidates()
+}
+
+// Second signal alongside genre scoring: pull credits for a sample of the
+// user's top-rated movies, tally which directors/actors show up most, then
+// pull a few more titles featuring those people. Fully stateless — nothing
+// new persisted, just derived at request time from data already fetched.
+export async function getCastCrewCandidates(
+  topRatedMovieIds: number[],
+  excludeIds: Set<number>,
+): Promise<Movie[]> {
+  const sample = shuffleArray([...topRatedMovieIds]).slice(0, 4)
+  if (sample.length === 0) return []
+
+  const creditsPerMovie = await Promise.all(
+    sample.map(id => getMovieCredits(id).catch(() => []))
+  )
+
+  // Tally frequency across the sample — directors count double since a
+  // shared director is a stronger taste signal than a shared cast member.
+  const tally = new Map<number, { name: string; role: 'director' | 'cast'; count: number }>()
+  for (const credits of creditsPerMovie) {
+    for (const c of credits) {
+      const weight = c.role === 'director' ? 2 : 1
+      const existing = tally.get(c.id)
+      if (existing) {
+        existing.count += weight
+        if (c.role === 'director') existing.role = 'director'
+      } else {
+        tally.set(c.id, { name: c.name, role: c.role, count: weight })
+      }
+    }
+  }
+
+  const topPeople = [...tally.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 2)
+
+  if (topPeople.length === 0) return []
+
+  const moviesPerPerson = await Promise.all(
+    topPeople.map(([personId]) => discoverMoviesByPerson(personId, [...excludeIds]).catch(() => []))
+  )
+
+  const seen = new Set<number>()
+  const candidates: Movie[] = []
+  topPeople.forEach(([, info], i) => {
+    for (const m of moviesPerPerson[i]) {
+      if (seen.has(m.id) || excludeIds.has(m.id)) continue
+      seen.add(m.id)
+      candidates.push({
+        ...m,
+        matchReason: info.role === 'director' ? `More from ${info.name}` : `More with ${info.name}`,
+      })
+    }
+  })
+
+  return candidates
 }
 
 export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movie[]> {
@@ -76,13 +134,17 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
 
   // Track which movies came from direct recommendations (stronger signal → small boost)
   const recIdSet = new Set(recArrays.flat().map(m => m.id))
+  const castCrewCandidates = opts.castCrewCandidates ?? []
+  const castCrewIdSet = new Set(castCrewCandidates.map(m => m.id))
 
-  // Merge discover + recommendations, deduplicate, filter exclusions. The
+  // Merge discover + recommendations + cast/crew picks, deduplicate, filter
+  // exclusions. Cast/crew candidates go first so their matchReason survives
+  // dedup if the same title also turns up via genre discover. The
   // recommendations endpoint has no genre filter of its own, so re-check
   // excludeGenreSet here too — discoverMovies already applied it upstream.
   const seen = new Set<number>()
   const merged: Movie[] = []
-  for (const m of [...discoverResults, ...recArrays.flat()]) {
+  for (const m of [...castCrewCandidates, ...discoverResults, ...recArrays.flat()]) {
     const hasExcludedGenre = m.genreIds.some(g => excludeGenreSet.has(g))
     if (!excludeSet.has(m.id) && !seen.has(m.id) && !hasExcludedGenre) {
       seen.add(m.id)
@@ -90,11 +152,14 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     }
   }
 
-  // Score each movie, sort best-first, then shuffle within tiers for variety
+  // Score each movie, sort best-first, then shuffle within tiers for variety.
+  // Cast/crew matches get a flat boost on top of genre scoring so a favorite
+  // director's new film surfaces even if it's outside the user's usual genres.
   const scored = merged
     .map(m => {
       const genreScore = m.genreIds.reduce((sum, gId) => sum + (opts.genreScores[gId] ?? 0), 0)
-      const score = recIdSet.has(m.id) ? genreScore * 1.2 : genreScore
+      let score = recIdSet.has(m.id) ? genreScore * 1.2 : genreScore
+      if (castCrewIdSet.has(m.id)) score += 3
       return { m, score }
     })
     .sort((a, b) => b.score - a.score)
