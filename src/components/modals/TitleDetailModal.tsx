@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Play, Plus, Check, X, Tv } from 'lucide-react'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import type { TitleDetails } from '@/lib/tmdb'
+import type { ContentWarning } from '@/lib/dtdd'
 
 interface StreamProvider { providerId: number; providerName: string; logoPath: string }
 
@@ -54,6 +55,13 @@ export default function TitleDetailModal({
   const [providersLoaded, setProvidersLoaded] = useState(false)
   const [trailerLoading, setTrailerLoading] = useState(false)
   const [localAdded, setLocalAdded] = useState(false)
+  // Transparent title-logo art (fanart.tv) — falls back to the plain text
+  // title below when there's no key configured or no art for this title.
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  // Content warnings (Does The Dog Die) — community yes/no vote totals per
+  // trigger topic. Empty array is the normal "unconfigured or no data"
+  // state, not an error; the section just doesn't render.
+  const [warnings, setWarnings] = useState<ContentWarning[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -73,14 +81,31 @@ export default function TitleDetailModal({
         setProvidersLoaded(true)
       })
       .catch(() => !cancelled && setProvidersLoaded(true))
+    fetch(`/api/logo?tmdbId=${tmdbId}&mediaType=${mediaType}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setLogoUrl(d.logoUrl ?? null) })
+      .catch(() => { /* non-fatal — plain text title stays */ })
+    fetch(`/api/content-warnings?tmdbId=${tmdbId}&mediaType=${mediaType}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setWarnings(d.warnings ?? []) })
+      .catch(() => { /* non-fatal — section just doesn't render */ })
     return () => { cancelled = true }
   }, [tmdbId, mediaType])
+
+  // Trailer plays inline (a YouTube iframe embed dropped into the sheet)
+  // instead of punting the user out to youtube.com — the whole point of
+  // this modal is "get everything without leaving the flow."
+  const [trailerKey, setTrailerKey] = useState<string | null>(null)
+  const [trailerNotFound, setTrailerNotFound] = useState(false)
 
   const handleTrailer = async () => {
     setTrailerLoading(true)
     try {
       const data = await fetch(`/api/trailer?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json())
-      if (data.url) window.open(data.url, '_blank', 'noopener')
+      if (data.key) setTrailerKey(data.key)
+      else setTrailerNotFound(true)
+    } catch {
+      setTrailerNotFound(true)
     } finally {
       setTrailerLoading(false)
     }
@@ -176,7 +201,14 @@ export default function TitleDetailModal({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold leading-tight mb-1" style={{ color: 'var(--cream)', fontSize: 19 }}>{title}</h3>
+              {logoUrl ? (
+                <div style={{ height: 34, marginBottom: 6 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- variable aspect ratio transparent logo art, not a fixed-size photo */}
+                  <img src={logoUrl} alt={title} style={{ height: '100%', maxWidth: '100%', objectFit: 'contain', objectPosition: 'left center', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))' }} />
+                </div>
+              ) : (
+                <h3 className="font-bold leading-tight mb-1" style={{ color: 'var(--cream)', fontSize: 19 }}>{title}</h3>
+              )}
               {subtitle && <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: 8 }}>{subtitle}</p>}
               <div className="flex items-center gap-2 flex-wrap">
                 {imdbRating != null && (
@@ -244,6 +276,31 @@ export default function TitleDetailModal({
             </div>
           )}
 
+          {/* Content notes (Does The Dog Die) — community-sourced trigger
+              warnings, only rendered when there's actually data to show. */}
+          {warnings.length > 0 && (
+            <div className="mb-5">
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 700 }}>CONTENT NOTES</p>
+              <div className="flex flex-col gap-1.5">
+                {warnings.map(w => {
+                  const total = w.yes + w.no
+                  const yesPct = Math.round((w.yes / total) * 100)
+                  return (
+                    <div key={w.topicName} className="flex items-center justify-between gap-3">
+                      <span style={{ fontSize: 12.5, color: 'var(--cream-dim)' }}>{w.topicName}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: yesPct >= 50 ? '#D0603C' : 'var(--cream-dim)', flexShrink: 0 }}>
+                        {yesPct}% yes ({total})
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--cream-dim)', marginTop: 6 }}>
+                Community-sourced via Does the Dog Die — may be incomplete.
+              </p>
+            </div>
+          )}
+
           {/* Where to watch — full list, not just the first logo */}
           <div className="mb-5">
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 700 }}>WHERE TO WATCH</p>
@@ -287,21 +344,33 @@ export default function TitleDetailModal({
             )}
           </div>
 
-          {/* Trailer */}
-          <button
-            onClick={handleTrailer}
-            disabled={trailerLoading}
-            className="flex items-center justify-center gap-2 w-full mb-4"
-            style={{
-              background: 'var(--raised)', border: '1px solid var(--amber-dim)',
-              borderRadius: 3, color: 'var(--amber)', cursor: 'pointer',
-              fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
-              padding: '11px 12px', opacity: trailerLoading ? 0.5 : 1,
-            }}
-          >
-            <Play size={12} fill="currentColor" />
-            {trailerLoading ? 'LOADING...' : 'WATCH TRAILER'}
-          </button>
+          {/* Trailer — plays inline once fetched, no tab-out */}
+          {trailerKey ? (
+            <div className="mb-4" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: 3, overflow: 'hidden' }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+                title="Trailer"
+                allow="accelerate-compute; encrypted-media; picture-in-picture; autoplay"
+                allowFullScreen
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={handleTrailer}
+              disabled={trailerLoading || trailerNotFound}
+              className="flex items-center justify-center gap-2 w-full mb-4"
+              style={{
+                background: 'var(--raised)', border: '1px solid var(--amber-dim)',
+                borderRadius: 3, color: trailerNotFound ? 'var(--cream-dim)' : 'var(--amber)', cursor: trailerNotFound ? 'default' : 'pointer',
+                fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
+                padding: '11px 12px', opacity: trailerLoading ? 0.5 : 1,
+              }}
+            >
+              <Play size={12} fill="currentColor" />
+              {trailerLoading ? 'LOADING...' : trailerNotFound ? 'NO TRAILER AVAILABLE' : 'WATCH TRAILER'}
+            </button>
+          )}
 
           {/* Primary action — mirrors the card's footer state */}
           {isWatched ? (

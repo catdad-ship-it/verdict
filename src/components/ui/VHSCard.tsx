@@ -18,8 +18,8 @@ interface VHSCardProps {
   isNew?: boolean
   isSoon?: boolean
   isStream?: boolean
-  isReddit?: boolean
-  redditVotes?: number
+  isTrending?: boolean
+  trendingCount?: number
   isInQueue?: boolean
   isWatched?: boolean
   currentSeason?: number
@@ -41,7 +41,7 @@ interface VHSCardProps {
 export default function VHSCard({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview,
-  isNew, isSoon, isStream, isReddit, redditVotes,
+  isNew, isSoon, isStream, isTrending, trendingCount,
   isInQueue, isWatched, currentSeason, totalSeasons, matchReason,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
   providerData,
@@ -149,7 +149,7 @@ export default function VHSCard({
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
           {isNew   && <span className="badge-new">NEW</span>}
             {isSoon  && <span className="badge-soon">SOON</span>}
-            {isReddit && <span className="badge-reddit">r/movies</span>}
+            {isTrending && <span className="badge-trending">TRENDING</span>}
             {mediaType === 'tv' && (
               <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded-sm"
                 style={{ background: 'var(--forest)', color: '#C0E8AC', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -209,9 +209,9 @@ export default function VHSCard({
               </span>
             </div>
           )}
-          {isReddit && redditVotes && (
-            <p className="text-xs mt-0.5" style={{ color: '#D87838', fontSize: '0.6875rem' }}>
-              {redditVotes.toLocaleString()} upvotes
+          {isTrending && trendingCount && (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--amber)', fontSize: '0.6875rem' }}>
+              {trendingCount.toLocaleString()} watching now
             </p>
           )}
         </div>

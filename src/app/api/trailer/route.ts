@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
       videos.find(v => v.site === 'YouTube' && v.type === 'Trailer') ??
       videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
 
-    if (!trailer) return NextResponse.json({ url: null })
-    return NextResponse.json({ url: `https://www.youtube.com/watch?v=${trailer.key}` })
+    if (!trailer) return NextResponse.json({ url: null, key: null })
+    return NextResponse.json({ url: `https://www.youtube.com/watch?v=${trailer.key}`, key: trailer.key })
   } catch {
     return NextResponse.json({ url: null })
   }

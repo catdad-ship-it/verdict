@@ -26,7 +26,7 @@ interface ListItem {
 interface TrendingItem {
   tmdbId: number; title: string; posterPath: string | null
   runtime?: number; releaseYear?: number | null; imdbRating?: number | null
-  rtScore?: number | null; redditVotes?: number; overview?: string
+  rtScore?: number | null; watchers?: number; overview?: string
   genreIds?: number[]; mediaType?: string
 }
 
@@ -791,7 +791,7 @@ export default function HomePage() {
         <section style={{ marginTop: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
             <TrendingUp size={16} color="var(--amber)" />
-            <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>TRENDING ON REDDIT</h2>
+            <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>TRENDING NOW</h2>
           </div>
           <div className="hscroll" style={{ overflowX: 'auto', paddingBottom: 8 }}>
             <div style={{ display: 'flex', gap: '1rem', minWidth: 'max-content' }}>
@@ -802,7 +802,7 @@ export default function HomePage() {
                     mediaType={item.mediaType === 'show' ? 'tv' : 'movie'}
                     runtime={item.runtime} releaseYear={item.releaseYear}
                     imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
-                    isReddit redditVotes={item.redditVotes}
+                    isTrending trendingCount={item.watchers}
                     providerData={providersMap[`${item.mediaType === 'show' ? 'tv' : 'movie'}:${item.tmdbId}`]}
                     onAddToQueue={() => addToQueue({
                       tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,

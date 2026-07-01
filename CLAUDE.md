@@ -86,6 +86,16 @@ src/
 - Returns `hasRent` and `hasBuy` booleans in addition to streaming providers
 - Does NOT early-return when no `flatrate` — uses `(us?.flatrate ?? [])` to fall through
 
+### Third-party enrichment APIs (all free-tier, all optional/graceful)
+- **Trakt** (`src/lib/trakt.ts`) — trending movies/shows for the Home "Trending Now" shelf. Gives a direct TMDB id per result, no title-matching needed. Needs `TRAKT_CLIENT_ID`. Without it, `/api/trending` falls back to the older Reddit-scrape-and-fuzzy-match approach (`src/lib/reddit.ts`, kept around specifically as this fallback).
+- **Fanart.tv** (`src/lib/fanart.ts`) — transparent title-logo art in `TitleDetailModal`'s header, replacing the plain text title when available. Movies are keyed by TMDB id directly; TV shows require bridging through TMDB's `external_ids` to get a TVDB id first (`getTvdbId` in `tmdb.ts`) since fanart.tv's TV endpoint doesn't accept TMDB ids. Needs `FANART_API_KEY`. Without it, the modal just shows the plain text title.
+- **Does The Dog Die** (`src/lib/dtdd.ts`) — community content-warning votes ("Content notes" section in `TitleDetailModal`). Uses only the free-tier endpoints (search + item detail + `topicItemStats` vote totals) — deliberately not the paid "Scene Alerts" tier. Needs `DDD_API_KEY`. Without it, the section doesn't render.
+- All three follow the same pattern: check a `*Configured()` helper or just let a missing key produce a `null`/`[]` result, never throw — none of this should ever block or break the modal.
+
+### Trailer
+- `/api/trailer` returns both `url` (external youtube.com link) and `key` (raw video id)
+- `TitleDetailModal` plays the trailer inline via a YouTube iframe embed using `key` — no more tabbing out to YouTube
+
 ### Security
 - `src/middleware.ts` protects all routes except: `_next/static`, `_next/image`, `favicon.ico`, images, and `/share`
 - Security headers in `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
@@ -123,6 +133,9 @@ src/
 - Lists: create, add items, share via public URL
 - Auth via Supabase (middleware-protected)
 - Mobile-first: lucide icons, dvh, font-size 16 on inputs, touch targets, no hover on mobile
+- Legibility pass: `--muted` reserved for decorative-only elements, 11px floor on all inline font sizes
+- Click-to-expand `TitleDetailModal`: bottom sheet (desktop: centered), swipe-to-dismiss, full synopsis/ratings/genres/cast/provider list/trailer — VHSCard stays a fast-scan summary
+- Trending shelf backed by Trakt (Reddit-scrape fallback), title-logo art via Fanart.tv, content warnings via Does The Dog Die — all three optional/gracefully degrading without an API key
 
 ---
 

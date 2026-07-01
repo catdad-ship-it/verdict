@@ -95,10 +95,10 @@ a {
   letter-spacing: 0.05em; text-transform: uppercase;
   padding: 1px 5px; border-radius: 2px;
 }
-.badge-reddit {
-  background: rgba(255,69,0,0.18); border: 1px solid #FF6B35; color: #FFA070;
+.badge-trending {
+  background: rgba(192,120,24,0.18); border: 1px solid var(--amber); color: var(--amber-lt);
   font-family: var(--font-mono); font-weight: 700; font-size: 11px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em; text-transform: uppercase;
   padding: 1px 5px; border-radius: 2px;
 }
 

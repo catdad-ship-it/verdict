@@ -326,6 +326,18 @@ export async function getPersonCredits(personId: number): Promise<PersonCreditIt
   return [...merged.values()].sort((a, b) => b.popularity - a.popularity)
 }
 
+// Fanart.tv's TV endpoint is keyed by TheTVDB id, not TMDB id — this is
+// the bridge between the two. Movies don't need this; fanart.tv accepts
+// TMDB ids directly for movie art.
+export async function getTvdbId(tmdbId: number): Promise<number | null> {
+  try {
+    const d = await get(`/tv/${tmdbId}/external_ids`)
+    return d.tvdb_id ?? null
+  } catch {
+    return null
+  }
+}
+
 // ── Show ──────────────────────────────────────────────
 export async function getShow(tmdbId: number): Promise<Show> {
   const d = await get(`/tv/${tmdbId}`)
