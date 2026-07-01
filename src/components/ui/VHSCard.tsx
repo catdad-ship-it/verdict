@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Clock, Plus, Check, Tv, X } from 'lucide-react'
-import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
+import { posterUrl, formatRuntime, calcFinishTime, type ProviderData } from '@/lib/utils'
 
 interface VHSCardProps {
   tmdbId: number
@@ -31,7 +31,7 @@ interface VHSCardProps {
   // Pass pre-fetched provider data from a parent that batched the request
   // (see /api/providers/batch). When omitted, the card falls back to its
   // own fetch — keep that fallback for any callers that don't batch yet.
-  providerData?: { providers: { providerId: number; providerName: string; logoPath: string }[]; hasRent: boolean; hasBuy: boolean }
+  providerData?: ProviderData
 }
 
 export default function VHSCard({
@@ -49,6 +49,7 @@ export default function VHSCard({
   const [synopsisOpen, setSynopsisOpen] = useState(false)
   const [synopsisLoading, setSynopsisLoading] = useState(false)
   const [fetchedProviders, setFetchedProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
+  const [fetchedOwnedProviders, setFetchedOwnedProviders] = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
   const [fetchedHasRent, setFetchedHasRent] = useState(false)
   const [fetchedHasBuy, setFetchedHasBuy]   = useState(false)
   const [selfFetchLoaded, setSelfFetchLoaded] = useState(false)
@@ -62,6 +63,7 @@ export default function VHSCard({
       .then(d => {
         if (cancelled) return
         setFetchedProviders(d.providers ?? [])
+        setFetchedOwnedProviders(d.ownedProviders ?? [])
         setFetchedHasRent(d.hasRent ?? false)
         setFetchedHasBuy(d.hasBuy ?? false)
         setSelfFetchLoaded(true)
@@ -70,7 +72,8 @@ export default function VHSCard({
     return () => { cancelled = true }
   }, [tmdbId, mediaType, providerData])
 
-  const providers       = providerData ? providerData.providers : fetchedProviders
+  const providers       = providerData ? providerData.providers      : fetchedProviders
+  const ownedProviders  = providerData ? providerData.ownedProviders : fetchedOwnedProviders
   const hasRent          = providerData ? providerData.hasRent   : fetchedHasRent
   const hasBuy           = providerData ? providerData.hasBuy    : fetchedHasBuy
   const providersLoaded  = providerData ? true : selfFetchLoaded
@@ -250,26 +253,27 @@ export default function VHSCard({
         padding: '4px 8px', display: 'flex', gap: 4, alignItems: 'center',
         minHeight: 29,
       }}>
-        {providersLoaded && providers.length > 0 && (
-          <>
-            {providers.slice(0, 4).map(p => (
-              <div key={p.providerId} title={p.providerName} style={{
-                width: 20, height: 20, borderRadius: 3, overflow: 'hidden',
-                flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)',
-              }}>
-                <img
-                  src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
-                  alt={p.providerName}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-            ))}
-            {providers.length > 4 && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>+{providers.length - 4}</span>
-            )}
-          </>
+        {/* Own it: highlight the service they actually pay for */}
+        {providersLoaded && ownedProviders.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div title={ownedProviders[0].providerName} style={{
+              width: 18, height: 18, borderRadius: 3, overflow: 'hidden',
+              flexShrink: 0, border: '1px solid var(--amber)',
+            }}>
+              <img
+                src={`https://image.tmdb.org/t/p/w45${ownedProviders[0].logoPath}`}
+                alt={ownedProviders[0].providerName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 0.5, color: 'var(--amber)', fontWeight: 700 }}>
+              ✓ {ownedProviders[0].providerName.toUpperCase()}{ownedProviders.length > 1 ? ` +${ownedProviders.length - 1}` : ''}
+            </span>
+          </div>
         )}
-        {providersLoaded && providers.length === 0 && (hasRent || hasBuy) && (
+
+        {/* Don't own it streaming — point them to rent/buy instead */}
+        {providersLoaded && ownedProviders.length === 0 && (hasRent || hasBuy) && (
           <div style={{ display: 'flex', gap: 4 }}>
             {hasRent && (
               <span style={{
@@ -287,6 +291,24 @@ export default function VHSCard({
                 borderRadius: 2, padding: '2px 5px',
               }}>$$$ BUY</span>
             )}
+          </div>
+        )}
+
+        {/* Streaming, but not on anything they own and no rent/buy — still worth knowing */}
+        {providersLoaded && ownedProviders.length === 0 && !hasRent && !hasBuy && providers.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.55 }}>
+            <div title={providers[0].providerName} style={{
+              width: 18, height: 18, borderRadius: 3, overflow: 'hidden', flexShrink: 0,
+            }}>
+              <img
+                src={`https://image.tmdb.org/t/p/w45${providers[0].logoPath}`}
+                alt={providers[0].providerName}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 0.5, color: 'var(--muted)' }}>
+              ON {providers[0].providerName.toUpperCase()}
+            </span>
           </div>
         )}
       </div>

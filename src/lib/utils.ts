@@ -8,6 +8,7 @@ export function genreLabel(ids: number[]): string {
 
 export interface ProviderData {
   providers: { providerId: number; providerName: string; logoPath: string }[]
+  ownedProviders: { providerId: number; providerName: string; logoPath: string }[]
   hasRent: boolean
   hasBuy: boolean
 }

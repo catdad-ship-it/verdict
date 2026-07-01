@@ -38,6 +38,9 @@ export default function QueueRow({
   const [trailerLoading, setTrailerLoading]   = useState(false)
   const [removing, setRemoving]               = useState(false)
   const [providers, setProviders]             = useState<{ providerId: number; providerName: string; logoPath: string }[] | null>(null)
+  const [ownedProviders, setOwnedProviders]   = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
+  const [hasRent, setHasRent] = useState(false)
+  const [hasBuy, setHasBuy]   = useState(false)
 
   // Swipe right = mark watched, swipe left = dismiss (remove from queue/list).
   // Pointer Events unify mouse + touch; `touch-action: pan-y` on the draggable
@@ -114,7 +117,12 @@ export default function QueueRow({
       if (providers === null) {
         fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
           .then(r => r.json())
-          .then(d => setProviders(d.providers ?? []))
+          .then(d => {
+            setProviders(d.providers ?? [])
+            setOwnedProviders(d.ownedProviders ?? [])
+            setHasRent(d.hasRent ?? false)
+            setHasBuy(d.hasBuy ?? false)
+          })
           .catch(() => setProviders([]))
       }
     }
@@ -282,12 +290,47 @@ export default function QueueRow({
           ) : (
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>No description available.</p>
           )}
-          {/* Where to watch */}
+          {/* Where to watch — prioritize services they actually pay for */}
           {providers !== null && (
             <div style={{ marginBottom: 10 }}>
-              {providers.length > 0 ? (
+              {ownedProviders.length > 0 ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>STREAMING:</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--amber)', letterSpacing: 1, fontWeight: 700 }}>✓ ON YOUR SERVICES:</span>
+                  {ownedProviders.map(p => (
+                    <div key={p.providerId} title={p.providerName} style={{
+                      width: 24, height: 24, borderRadius: 4, overflow: 'hidden',
+                      position: 'relative', flexShrink: 0,
+                      border: '1px solid var(--amber)',
+                    }}>
+                      <img
+                        src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
+                        alt={p.providerName}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : hasRent || hasBuy ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>NOT ON YOUR SERVICES:</span>
+                  {hasRent && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 0.5,
+                      color: 'var(--cream-dim)', background: 'rgba(228,204,144,0.07)',
+                      border: '1px solid rgba(228,204,144,0.15)', borderRadius: 2, padding: '2px 6px',
+                    }}>$ RENT</span>
+                  )}
+                  {hasBuy && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 0.5,
+                      color: 'var(--muted)', background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 2, padding: '2px 6px',
+                    }}>$$$ BUY</span>
+                  )}
+                </div>
+              ) : providers.length > 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', opacity: 0.55 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>STREAMING (NOT YOUR SERVICE):</span>
                   {providers.slice(0, 4).map(p => (
                     <div key={p.providerId} title={p.providerName} style={{
                       width: 24, height: 24, borderRadius: 4, overflow: 'hidden',
@@ -301,9 +344,6 @@ export default function QueueRow({
                       />
                     </div>
                   ))}
-                  {providers.length > 4 && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>+{providers.length - 4}</span>
-                  )}
                 </div>
               ) : (
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>NOT STREAMING IN US</span>

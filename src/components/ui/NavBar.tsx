@@ -2,10 +2,25 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Play, LogOut } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface NavBarProps { queueCount?: number }
+
+// Retro VCR play/pause badge — replaces the old plain lucide Play icon in the
+// header. Built as inline SVG (not the Unicode ▶/⏏ characters — see the iOS
+// gotcha in CLAUDE.md about those triggering system media controls).
+function PlayPauseBadge({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="18.5" fill="#171009" stroke="var(--amber)" strokeWidth="2" />
+      <circle cx="20" cy="20" r="14.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+      <path d="M9,11 L9,29 L20,20 Z" fill="var(--cream)" />
+      <rect x="22.5" y="10.5" width="3.6" height="19" rx="0.8" fill="var(--cream)" />
+      <rect x="28" y="10.5" width="3.6" height="19" rx="0.8" fill="var(--cream)" />
+    </svg>
+  )
+}
 
 export default function NavBar({ queueCount = 0 }: NavBarProps) {
   const pathname  = usePathname()
@@ -58,8 +73,8 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
             <div className="flex items-center px-3 py-1.5" style={{ background: 'var(--amber)' }}>
               <span className="font-black text-xl tracking-tight" style={{ color: 'var(--bg)' }}>VERDICT</span>
             </div>
-            <div className="flex items-center px-2.5 py-1.5" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-              <Play size={14} style={{ color: 'var(--amber)', fill: 'var(--amber)' }} />
+            <div className="flex items-center px-2.5 py-1" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
+              <PlayPauseBadge size={26} />
             </div>
           </Link>
           {queueCount > 0 && (
@@ -83,6 +98,16 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
               {l.label}
             </Link>
           ))}
+          <Link href="/settings" title="Settings"
+            className="flex items-center justify-center rounded-sm transition-colors"
+            style={{
+              width: 32, height: 32,
+              color: pathname === '/settings' ? 'var(--amber)' : 'var(--muted)',
+            }}
+            onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
+            onMouseOut={e => (e.currentTarget.style.color = pathname === '/settings' ? 'var(--amber)' : 'var(--muted)')}>
+            <Settings size={16} />
+          </Link>
           <div className="w-px h-5 mx-2 hidden md:block" style={{ background: 'var(--border)' }} />
           <button onClick={signOut}
             className="text-xs font-semibold tracking-widest uppercase px-2.5 py-1.5 rounded-sm transition-colors"

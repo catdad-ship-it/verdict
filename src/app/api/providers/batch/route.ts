@@ -1,3 +1,4 @@
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import type { StreamProvider } from '../route'
 
@@ -11,11 +12,24 @@ interface BatchEntry {
 
 interface ProviderResult {
   providers: StreamProvider[]
+  ownedProviders: StreamProvider[]
   hasRent: boolean
   hasBuy: boolean
 }
 
-async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<ProviderResult> {
+async function getOwnedIds(): Promise<Set<number>> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return new Set()
+    const { data } = await supabase.from('profiles').select('streaming_provider_ids').eq('id', user.id).maybeSingle()
+    return new Set(data?.streaming_provider_ids ?? [])
+  } catch {
+    return new Set()
+  }
+}
+
+async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set<number>): Promise<ProviderResult> {
   const path = mediaType === 'tv' ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
   const url  = `${BASE}${path}?api_key=${KEY}`
 
@@ -35,11 +49,12 @@ async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<Prov
 
     return {
       providers,
+      ownedProviders: providers.filter(p => ownedIds.has(p.providerId)),
       hasRent: !!(us?.rent?.length),
       hasBuy:  !!(us?.buy?.length),
     }
   } catch {
-    return { providers: [], hasRent: false, hasBuy: false }
+    return { providers: [], ownedProviders: [], hasRent: false, hasBuy: false }
   }
 }
 
@@ -70,7 +85,8 @@ export async function POST(req: NextRequest) {
   }
 
   const entries = Array.from(seen.entries())
-  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType)))
+  const ownedIds = await getOwnedIds()
+  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType, ownedIds)))
 
   const results: Record<string, ProviderResult> = {}
   entries.forEach(([key], i) => {
