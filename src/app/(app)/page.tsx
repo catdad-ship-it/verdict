@@ -45,6 +45,7 @@ export default function HomePage() {
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState<'all' | 'movie' | 'tv'>('all')
   const [sort, setSort]             = useState<'added' | 'runtime' | 'title' | 'year' | 'rating'>('added')
+  const [defaultSort, setDefaultSort] = useState<'added' | 'runtime' | 'title' | 'year' | 'rating'>('added')
   const [search, setSearch]         = useState('')
   const [pinnedKey, setPinnedKey]   = useState<string | null>(null)
   const [addTarget, setAddTarget]   = useState<ActiveList>('queue')
@@ -88,6 +89,12 @@ export default function HomePage() {
   useEffect(() => {
     fetchQueue()
     fetchLists()
+    fetch('/api/settings/preferences').then(r => r.json()).then((d: { defaultQueueSort?: typeof sort }) => {
+      if (d.defaultQueueSort) {
+        setDefaultSort(d.defaultQueueSort)
+        setSort(d.defaultQueueSort)
+      }
+    }).catch(() => {})
     fetch('/api/trending').then(r => r.json()).then((d: { movies: TrendingItem[]; shows: TrendingItem[] }) => {
       setTrending(d)
       const items = [...d.movies, ...d.shows].map(item => ({
@@ -121,7 +128,9 @@ export default function HomePage() {
     setActiveList(id)
     setShowSelector(false)
     setFilter('all')
-    setSort('added')
+    // Custom lists always start on "date added"; the queue respects your
+    // saved default sort from Settings.
+    setSort(id === 'queue' ? defaultSort : 'added')
     if (id === 'queue') fetchQueue()
   }
 

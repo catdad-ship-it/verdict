@@ -46,6 +46,7 @@ interface SuggestionOptions {
   queueIds: number[]
   dismissedIds?: number[]
   topRatedMovieIds?: number[]   // movies rated 4-5 stars — used for TMDB recommendations
+  excludeGenreIds?: number[]    // genres explicitly hidden in Settings — never suggest these
 }
 
 export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movie[]> {
@@ -55,6 +56,7 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
     ...SEED_PROFILE.lovedTmdbIds,
     ...(opts.dismissedIds ?? []),
   ])
+  const excludeGenreSet = new Set(opts.excludeGenreIds ?? [])
 
   const sortedGenreIds = Object.entries(opts.genreScores).length > 0
     ? Object.entries(opts.genreScores)
@@ -68,18 +70,21 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
   const topRatedIds = shuffledTopRated.slice(0, 5) // cap at 5 API calls
 
   const [discoverResults, ...recArrays] = await Promise.all([
-    discoverMovies(sortedGenreIds, [...excludeSet]),
+    discoverMovies(sortedGenreIds, [...excludeSet], [...excludeGenreSet]),
     ...topRatedIds.map(id => getMovieRecommendations(id).catch(() => [] as Movie[])),
   ])
 
   // Track which movies came from direct recommendations (stronger signal → small boost)
   const recIdSet = new Set(recArrays.flat().map(m => m.id))
 
-  // Merge discover + recommendations, deduplicate, filter exclusions
+  // Merge discover + recommendations, deduplicate, filter exclusions. The
+  // recommendations endpoint has no genre filter of its own, so re-check
+  // excludeGenreSet here too — discoverMovies already applied it upstream.
   const seen = new Set<number>()
   const merged: Movie[] = []
   for (const m of [...discoverResults, ...recArrays.flat()]) {
-    if (!excludeSet.has(m.id) && !seen.has(m.id)) {
+    const hasExcludedGenre = m.genreIds.some(g => excludeGenreSet.has(g))
+    if (!excludeSet.has(m.id) && !seen.has(m.id) && !hasExcludedGenre) {
       seen.add(m.id)
       merged.push(m)
     }

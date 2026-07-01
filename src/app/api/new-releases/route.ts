@@ -4,16 +4,25 @@ import { createClient } from '@/lib/supabase/server'
 import { SEED_PROFILE, deriveGenrePreferences } from '@/lib/suggestions'
 import { NextResponse } from 'next/server'
 
-async function getUserTaste(): Promise<{ genres: number[]; exclude: Set<number> }> {
+interface UserTaste {
+  genres: number[]
+  exclude: Set<number>
+  excludeGenres: Set<number>
+  hiddenShelves: Set<string>
+}
+
+async function getUserTaste(): Promise<UserTaste> {
+  const empty: UserTaste = { genres: SEED_PROFILE.topGenreIds, exclude: new Set(), excludeGenres: new Set(), hiddenShelves: new Set() }
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { genres: SEED_PROFILE.topGenreIds, exclude: new Set() }
+    if (!user) return empty
 
-    const [{ data: watched }, { data: queue }, { data: tasteProfile }] = await Promise.all([
+    const [{ data: watched }, { data: queue }, { data: tasteProfile }, { data: profile }] = await Promise.all([
       supabase.from('watched_movies').select('tmdb_id, genre_ids, user_rating').eq('user_id', user.id),
       supabase.from('queue_items').select('tmdb_id').eq('user_id', user.id),
-      supabase.from('taste_profiles').select('disliked_tmdb_ids').eq('id', user.id).maybeSingle(),
+      supabase.from('taste_profiles').select('disliked_tmdb_ids, preferred_genre_ids, excluded_genre_ids').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('hidden_shelves').eq('id', user.id).maybeSingle(),
     ])
 
     const derived = deriveGenrePreferences(
@@ -21,10 +30,14 @@ async function getUserTaste(): Promise<{ genres: number[]; exclude: Set<number> 
       [],
       [],
     )
+    // Explicit Settings picks are a strong signal — always included whether
+    // or not the auto-derived history already covers them.
+    const preferredGenreIds = tasteProfile?.preferred_genre_ids ?? []
     const sortedGenres = Object.entries(derived)
       .filter(([, s]) => s > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([id]) => parseInt(id))
+    const genres = [...new Set([...preferredGenreIds, ...(sortedGenres.length > 0 ? sortedGenres : SEED_PROFILE.topGenreIds)])]
 
     const exclude = new Set<number>([
       ...(watched ?? []).map(w => w.tmdb_id),
@@ -33,26 +46,31 @@ async function getUserTaste(): Promise<{ genres: number[]; exclude: Set<number> 
     ])
 
     return {
-      genres: sortedGenres.length > 0 ? sortedGenres : SEED_PROFILE.topGenreIds,
+      genres,
       exclude,
+      excludeGenres: new Set(tasteProfile?.excluded_genre_ids ?? []),
+      hiddenShelves: new Set(profile?.hidden_shelves ?? []),
     }
   } catch {
-    return { genres: SEED_PROFILE.topGenreIds, exclude: new Set() }
+    return empty
   }
 }
 
 export async function GET() {
   try {
-    const [nowPlaying, upcoming, streaming, taste] = await Promise.all([
-      getNowPlaying(),
-      getUpcoming(),
-      getNewToStreaming(),
-      getUserTaste(),
+    const taste = await getUserTaste()
+    const { genres: preferredGenres, exclude, excludeGenres, hiddenShelves } = taste
+
+    const [nowPlaying, upcoming, streaming] = await Promise.all([
+      hiddenShelves.has('now_playing')       ? Promise.resolve([]) : getNowPlaying(),
+      hiddenShelves.has('coming_soon')       ? Promise.resolve([]) : getUpcoming(),
+      hiddenShelves.has('new_to_streaming')  ? Promise.resolve([]) : getNewToStreaming(),
     ])
 
-    const { genres: preferredGenres, exclude } = taste
     const matches = (m: { genreIds: number[]; id: number }) =>
-      m.genreIds.some(id => preferredGenres.includes(id)) && !exclude.has(m.id)
+      m.genreIds.some(id => preferredGenres.includes(id)) &&
+      !m.genreIds.some(id => excludeGenres.has(id)) &&
+      !exclude.has(m.id)
 
     const nowFiltered    = nowPlaying.filter(m => matches(m))
     const soonFiltered   = upcoming.filter(m => matches(m))

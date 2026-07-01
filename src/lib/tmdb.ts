@@ -171,12 +171,13 @@ export async function getMovieRecommendations(tmdbId: number): Promise<Movie[]> 
   }))
 }
 
-export async function discoverMovies(genreIds: number[], excludeIds: number[]): Promise<Movie[]> {
+export async function discoverMovies(genreIds: number[], excludeIds: number[], excludeGenreIds: number[] = []): Promise<Movie[]> {
   const params = {
     with_genres: genreIds.slice(0, 3).join('|'),
     sort_by: 'vote_average.desc',
     'vote_count.gte': '200',
-    without_genres: '99',  // no documentaries in suggestions
+    // No documentaries by default, plus whatever genres the user has explicitly hidden in Settings
+    without_genres: [99, ...excludeGenreIds].join('|'),
   }
   // Fetch 3 pages in parallel so we have a deep pool to draw from
   const [p1, p2, p3] = await Promise.all([
