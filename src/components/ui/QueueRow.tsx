@@ -1,8 +1,9 @@
 'use client'
 import Image from 'next/image'
 import { useState, useRef } from 'react'
-import { Clock, ChevronDown, ChevronUp, Play, Pin, PinOff, Check, X, GripVertical } from 'lucide-react'
+import { Clock, Check, X, GripVertical } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
+import TitleDetailModal from '@/components/modals/TitleDetailModal'
 
 interface QueueRowProps {
   tmdbId: number
@@ -46,15 +47,13 @@ export default function QueueRow({
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
 
-  const [expanded, setExpanded]           = useState(false)
-  const [synopsis, setSynopsis]         = useState<string | null>(overview ?? null)
-  const [synopsisLoading, setSynopsisLoading] = useState(false)
-  const [trailerLoading, setTrailerLoading]   = useState(false)
-  const [removing, setRemoving]               = useState(false)
-  const [providers, setProviders]             = useState<{ providerId: number; providerName: string; logoPath: string }[] | null>(null)
-  const [ownedProviders, setOwnedProviders]   = useState<{ providerId: number; providerName: string; logoPath: string }[]>([])
-  const [hasRent, setHasRent] = useState(false)
-  const [hasBuy, setHasBuy]   = useState(false)
+  // Click-to-expand: same TitleDetailModal used by New Releases/Suggestions,
+  // so a title looks and behaves the same whether you got to it from the
+  // queue, a list, or a suggestion shelf. Replaces the old inline accordion
+  // (which duplicated synopsis/provider/trailer fetching that the modal
+  // already does).
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   // Swipe right = mark watched, swipe left = dismiss (remove from queue/list).
   // Pointer Events unify mouse + touch; `touch-action: pan-y` on the draggable
@@ -68,7 +67,7 @@ export default function QueueRow({
   const [exitingRemove, setExitingRemove] = useState(false)
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (selectable || expanded || removing || exitingRemove) return
+    if (selectable || detailOpen || removing || exitingRemove) return
     if ((e.target as HTMLElement).closest('button')) return
     dragRef.current = { startX: e.clientX, startY: e.clientY, pointerId: e.pointerId, locked: false, active: true }
   }
@@ -113,44 +112,9 @@ export default function QueueRow({
     }
   }
 
-  const handleExpand = async () => {
+  const handleExpand = () => {
     if (suppressClickRef.current) { suppressClickRef.current = false; return }
-    const next = !expanded
-    setExpanded(next)
-    // Lazy-fetch synopsis + providers if not already loaded
-    if (next) {
-      if (!synopsis) {
-        setSynopsisLoading(true)
-        try {
-          const p = mediaType === 'tv' ? `/api/tv/${tmdbId}` : `/api/movie/${tmdbId}`
-          const data = await fetch(p).then(r => r.json())
-          setSynopsis(data.overview ?? null)
-        } catch { /* non-fatal */ }
-        finally { setSynopsisLoading(false) }
-      }
-      if (providers === null) {
-        fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-          .then(r => r.json())
-          .then(d => {
-            setProviders(d.providers ?? [])
-            setOwnedProviders(d.ownedProviders ?? [])
-            setHasRent(d.hasRent ?? false)
-            setHasBuy(d.hasBuy ?? false)
-          })
-          .catch(() => setProviders([]))
-      }
-    }
-  }
-
-  const handleTrailer = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setTrailerLoading(true)
-    try {
-      const data = await fetch(`/api/trailer?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json())
-      if (data.url) window.open(data.url, '_blank', 'noopener')
-    } finally {
-      setTrailerLoading(false)
-    }
+    setDetailOpen(true)
   }
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -187,6 +151,7 @@ export default function QueueRow({
   }
 
   return (
+    <>
     <div
       onDragOver={reorderEnabled ? handleDragOver : undefined}
       onDragLeave={reorderEnabled ? () => setDragOver(false) : undefined}
@@ -328,12 +293,9 @@ export default function QueueRow({
           )}
         </div>
 
-        {/* Chevron + action buttons — hidden in select mode, where tapping the row toggles selection instead */}
+        {/* Action buttons — hidden in select mode, where tapping the row toggles selection instead */}
         {!selectable && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', color: 'var(--muted)', marginBottom: 2 }}>
-              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </div>
             {onMarkWatched && (
               <button onClick={handleWatched} className="vcr-btn"
                 style={{ fontSize: 11, padding: '10px', letterSpacing: 1, whiteSpace: 'nowrap', minHeight: 44, minWidth: 44 }}>
@@ -355,118 +317,20 @@ export default function QueueRow({
           </div>
         )}
       </div>
-
-      {/* Expanded panel */}
-      {expanded && !selectable && (
-        <div style={{ paddingLeft: 72, paddingBottom: 14, paddingRight: 4 }}>
-          {synopsisLoading ? (
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>LOADING...</p>
-          ) : synopsis ? (
-            <p style={{ fontSize: 12, color: 'var(--cream-dim)', lineHeight: 1.6, margin: '0 0 10px' }}>{synopsis}</p>
-          ) : (
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginBottom: 10 }}>No description available.</p>
-          )}
-          {/* Where to watch — prioritize services they actually pay for */}
-          {providers !== null && (
-            <div style={{ marginBottom: 10 }}>
-              {ownedProviders.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1, fontWeight: 700 }}>✓ ON YOUR SERVICES:</span>
-                  {ownedProviders.map(p => (
-                    <div key={p.providerId} title={p.providerName} style={{
-                      width: 24, height: 24, borderRadius: 4, overflow: 'hidden',
-                      position: 'relative', flexShrink: 0,
-                      border: '1px solid var(--amber)',
-                    }}>
-                      <img
-                        src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
-                        alt={p.providerName}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : hasRent || hasBuy ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1 }}>NOT ON YOUR SERVICES:</span>
-                  {hasRent && (
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5,
-                      color: 'var(--cream-dim)', background: 'rgba(228,204,144,0.07)',
-                      border: '1px solid rgba(228,204,144,0.15)', borderRadius: 2, padding: '2px 6px',
-                    }}>$ RENT</span>
-                  )}
-                  {hasBuy && (
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5,
-                      color: 'var(--cream-dim)', background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 2, padding: '2px 6px',
-                    }}>$$$ BUY</span>
-                  )}
-                </div>
-              ) : providers.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1 }}>STREAMING (NOT YOUR SERVICE):</span>
-                  {providers.slice(0, 4).map(p => (
-                    <div key={p.providerId} title={p.providerName} style={{
-                      width: 24, height: 24, borderRadius: 4, overflow: 'hidden',
-                      position: 'relative', flexShrink: 0,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                    }}>
-                      <img
-                        src={`https://image.tmdb.org/t/p/w45${p.logoPath}`}
-                        alt={p.providerName}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', letterSpacing: 1 }}>NOT STREAMING IN US</span>
-              )}
-            </div>
-          )}
-          {providers === null && (
-            <div style={{ marginBottom: 10, height: 10 }} />
-          )}
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleTrailer}
-            disabled={trailerLoading}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: 'var(--raised)', border: '1px solid var(--amber-dim)',
-              borderRadius: 3, color: 'var(--amber)', cursor: 'pointer',
-              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-              padding: '7px 12px', opacity: trailerLoading ? 0.5 : 1,
-            }}
-          >
-            <Play size={10} fill="currentColor" />
-            {trailerLoading ? 'LOADING...' : 'WATCH TRAILER'}
-          </button>
-          {onPin && (
-            <button
-              onClick={e => { e.stopPropagation(); onPin() }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                background: isPinned ? 'rgba(192,120,24,0.12)' : 'var(--raised)',
-                border: `1px solid ${isPinned ? 'var(--amber)' : 'var(--border)'}`,
-                borderRadius: 3,
-                color: isPinned ? 'var(--amber)' : 'var(--cream-dim)',
-                cursor: 'pointer', fontFamily: 'var(--font-mono)',
-                fontSize: 11, letterSpacing: 1, padding: '7px 12px',
-              }}
-            >
-              {isPinned ? <PinOff size={10} /> : <Pin size={10} />}
-              {isPinned ? 'UNPIN' : 'ON DECK'}
-            </button>
-          )}
-          </div>
-        </div>
-      )}
       </div>
       </div>
     </div>
+    {detailOpen && (
+      <TitleDetailModal
+        tmdbId={tmdbId} title={title} posterPath={posterPath} mediaType={mediaType}
+        runtime={runtime} releaseYear={releaseYear} imdbRating={imdbRating} rtScore={rtScore}
+        overview={overview} currentSeason={currentSeason} totalSeasons={totalSeasons}
+        isInQueue isPinned={isPinned} onPin={onPin}
+        onMarkWatched={onMarkWatched}
+        onRemoveFromQueue={onRemoveFromQueue}
+        onClose={() => setDetailOpen(false)}
+      />
+    )}
+    </>
   )
 }

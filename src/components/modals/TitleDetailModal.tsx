@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { Play, Plus, Check, X, Tv } from 'lucide-react'
+import { Play, Plus, Check, X, Tv, Pin, PinOff } from 'lucide-react'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import type { TitleDetails } from '@/lib/tmdb'
 import type { ContentWarning } from '@/lib/dtdd'
@@ -24,6 +24,10 @@ interface TitleDetailModalProps {
   isInQueue?: boolean
   isWatched?: boolean
   isSoon?: boolean
+  // "On Deck" pin — only meaningful for queue/list rows (see QueueRow),
+  // VHSCard callers simply omit these and the button doesn't render.
+  isPinned?: boolean
+  onPin?: () => void
   onAddToQueue?: () => void
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
@@ -42,7 +46,7 @@ interface TitleDetailModalProps {
 export default function TitleDetailModal({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview, matchReason, currentSeason, totalSeasons,
-  isInQueue, isWatched, isSoon,
+  isInQueue, isWatched, isSoon, isPinned, onPin,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onClose,
 }: TitleDetailModalProps) {
   const imgUrl = posterUrl(posterPath, 'w500')
@@ -382,6 +386,23 @@ export default function TitleDetailModal({
               {onMarkWatched && (
                 <button onClick={() => onMarkWatched()} className="vcr-btn flex-1 py-3" style={{ fontSize: 12 }}>
                   ✓ MARK WATCHED
+                </button>
+              )}
+              {onPin && (
+                <button
+                  onClick={() => onPin()}
+                  className="flex items-center justify-center gap-2"
+                  style={{
+                    padding: '0 14px',
+                    background: isPinned ? 'rgba(192,120,24,0.12)' : 'var(--raised)',
+                    border: `1px solid ${isPinned ? 'var(--amber)' : 'var(--border)'}`,
+                    color: isPinned ? 'var(--amber)' : 'var(--cream-dim)',
+                    borderRadius: 3, cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
+                  }}
+                  title={isPinned ? 'Remove from On Deck' : 'Pin as On Deck'}
+                >
+                  {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
                 </button>
               )}
               {onRemoveFromQueue && (
