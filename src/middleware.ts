@@ -31,7 +31,11 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-  if (user && ['/login', '/signup', '/reset-password'].some(p => pathname.startsWith(p))) {
+  if (
+    user &&
+    pathname !== '/reset-password/confirm' &&
+    ['/login', '/signup', '/reset-password'].some(p => pathname.startsWith(p))
+  ) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
