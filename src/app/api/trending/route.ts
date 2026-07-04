@@ -1,7 +1,25 @@
 import { getTrendingMovies as getRedditMovies, getTrendingShows as getRedditShows } from '@/lib/reddit'
 import { getTrendingMovies as getTraktMovies, getTrendingShows as getTraktShows, traktConfigured } from '@/lib/trakt'
 import { getMovie, getShow, searchMovies, searchShows } from '@/lib/tmdb'
+import { Movie, Show } from '@/lib/types'
 import { NextResponse } from 'next/server'
+
+// The Home consumer needs one flat shape regardless of whether an item came
+// from getMovie (id/releaseYear) or getShow (id/firstAirYear) — normalize
+// here rather than translating field names at every downstream call site.
+function normalizeMovie(m: Movie & { watchers?: number }) {
+  const { id, releaseYear, ...rest } = m
+  return { ...rest, tmdbId: id, mediaType: 'movie' as const, releaseYear }
+}
+
+function normalizeShow(s: Show & { watchers?: number }) {
+  const { id, firstAirYear, episodeRuntime, ...rest } = s
+  return { ...rest, tmdbId: id, mediaType: 'tv' as const, releaseYear: firstAirYear, runtime: episodeRuntime }
+}
+
+function normalize(result: { movies: (Movie & { watchers?: number })[]; shows: (Show & { watchers?: number })[] }) {
+  return { movies: result.movies.map(normalizeMovie), shows: result.shows.map(normalizeShow) }
+}
 
 // Trakt gives us a direct TMDB id on every trending result, so once a
 // TRAKT_CLIENT_ID is configured this is a straight lookup — no more
@@ -26,7 +44,10 @@ async function trendingViaTrakt() {
       } catch { return null }
     })
   )
-  return { movies: movies.filter(Boolean), shows: shows.filter(Boolean) }
+  return {
+    movies: movies.filter((m): m is NonNullable<typeof m> => m !== null),
+    shows: shows.filter((s): s is NonNullable<typeof s> => s !== null),
+  }
 }
 
 async function trendingViaReddit() {
@@ -45,7 +66,10 @@ async function trendingViaReddit() {
       return { ...results[0], watchers: t.score }
     })
   )
-  return { movies: matchMovies.filter(Boolean), shows: matchShows.filter(Boolean) }
+  return {
+    movies: matchMovies.filter((m): m is NonNullable<typeof m> => m !== null),
+    shows: matchShows.filter((s): s is NonNullable<typeof s> => s !== null),
+  }
 }
 
 export async function GET() {
@@ -53,12 +77,12 @@ export async function GET() {
     const result = traktConfigured() ? await trendingViaTrakt() : await trendingViaReddit()
     // If Trakt came back empty (e.g. a bad response) still try Reddit rather than showing nothing.
     if (traktConfigured() && result.movies.length === 0 && result.shows.length === 0) {
-      return NextResponse.json(await trendingViaReddit())
+      return NextResponse.json(normalize(await trendingViaReddit()))
     }
-    return NextResponse.json(result)
+    return NextResponse.json(normalize(result))
   } catch {
     try {
-      return NextResponse.json(await trendingViaReddit())
+      return NextResponse.json(normalize(await trendingViaReddit()))
     } catch {
       return NextResponse.json({ movies: [], shows: [] }, { status: 500 })
     }

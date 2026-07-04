@@ -111,7 +111,7 @@ export default function HomePage() {
       setTrending(d)
       const items = [...d.movies, ...d.shows].map(item => ({
         tmdbId: item.tmdbId,
-        mediaType: (item.mediaType === 'show' ? 'tv' : 'movie') as 'movie' | 'tv',
+        mediaType: (item.mediaType === 'tv' ? 'tv' : 'movie') as 'movie' | 'tv',
       }))
       fetchProvidersBatch(items).then(map => setProvidersMap(prev => ({ ...prev, ...map })))
     }).catch(() => {})
@@ -799,11 +799,11 @@ export default function HomePage() {
                 <div key={idx} style={{ width: 140, flexShrink: 0 }}>
                   <VHSCard
                     tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
-                    mediaType={item.mediaType === 'show' ? 'tv' : 'movie'}
+                    mediaType={item.mediaType === 'tv' ? 'tv' : 'movie'}
                     runtime={item.runtime} releaseYear={item.releaseYear}
                     imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
                     isTrending trendingCount={item.watchers}
-                    providerData={providersMap[`${item.mediaType === 'show' ? 'tv' : 'movie'}:${item.tmdbId}`]}
+                    providerData={providersMap[`${item.mediaType === 'tv' ? 'tv' : 'movie'}:${item.tmdbId}`]}
                     onAddToQueue={() => addToQueue({
                       tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
                       mediaType: item.mediaType, genreIds: item.genreIds, runtime: item.runtime,
