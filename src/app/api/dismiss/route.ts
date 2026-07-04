@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
       dismissed_genre_ids: [...currentGenres, ...(genre_ids ?? [])],
       updated_at: new Date().toISOString(),
     })
-    if (upsertError) console.error('dismiss upsert error:', JSON.stringify(upsertError))
+    if (upsertError) {
+      console.error('dismiss upsert error:', JSON.stringify(upsertError))
+      return NextResponse.json({ error: 'Failed to save dismissal' }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ ok: true })
