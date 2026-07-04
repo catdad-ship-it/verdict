@@ -18,11 +18,11 @@ const SLICE_COLORS = [
 export default function SpinWheelModal({ items, onClose, onPick }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rotRef    = useRef(0)
+  const rafRef    = useRef<number | null>(null)
   const [spinning, setSpinning]   = useState(false)
   const [result, setResult]       = useState<QueueItem | null>(null)
 
   const movies = items.filter(i => i.mediaType === 'movie').slice(0, 12)
-  if (movies.length === 0) return null
 
   function draw(rot: number) {
     const cv = canvasRef.current
@@ -55,6 +55,10 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
 
   useEffect(() => { draw(rotRef.current) }, [movies.length])
 
+  useEffect(() => () => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+  }, [])
+
   function spin() {
     if (spinning) return
     setSpinning(true); setResult(null)
@@ -66,15 +70,17 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
       const ease = 1 - Math.pow(1 - p, 4)
       rotRef.current = r0 + total * ease
       draw(rotRef.current)
-      if (p < 1) { requestAnimationFrame(frame); return }
+      if (p < 1) { rafRef.current = requestAnimationFrame(frame); return }
 
       const n = movies.length, sliceA = (2 * Math.PI) / n
       const norm = ((-rotRef.current - Math.PI / 2) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
       const idx  = Math.floor(norm / sliceA) % n
       setResult(movies[idx]); setSpinning(false)
     }
-    requestAnimationFrame(frame)
+    rafRef.current = requestAnimationFrame(frame)
   }
+
+  if (movies.length === 0) return null
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4 z-50"
