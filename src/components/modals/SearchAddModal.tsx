@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Search, Plus, Tv, ChevronLeft, User } from 'lucide-react'
 import { posterUrl } from '@/lib/utils'
 import type { PersonResult, PersonCreditItem } from '@/lib/tmdb'
@@ -60,17 +60,25 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
   const [decadeFilter, setDecadeFilter] = useState<DecadeFilter>('all')
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all')
 
+  // Cancels the previous in-flight search whenever a newer one starts, so a
+  // slow response for an earlier keystroke can't land after — and overwrite
+  // — the result of a more recent one.
+  const searchAbortRef = useRef<AbortController | null>(null)
+
   const search = useCallback(async (q: string, type: Tab) => {
+    searchAbortRef.current?.abort()
     if (!q.trim()) { setResults([]); setPeopleResults([]); return }
+    const controller = new AbortController()
+    searchAbortRef.current = controller
     setLoading(true)
     try {
       if (type === 'people') {
-        const res = await fetch(`/api/people/search?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`/api/people/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
         const data = await res.json()
         setPeopleResults(Array.isArray(data) ? data : [])
       } else {
         const endpoint = type === 'movie' ? `/api/movies/search?q=${encodeURIComponent(q)}` : `/api/shows/search?q=${encodeURIComponent(q)}`
-        const res = await fetch(endpoint)
+        const res = await fetch(endpoint, { signal: controller.signal })
         const data: RawSearchItem[] = await res.json()
         setResults((Array.isArray(data) ? data : []).slice(0, 8).map(item => ({
           ...item,
@@ -78,8 +86,11 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
           genres: item.genreIds ?? [],  // numeric IDs for DB; genreNames() strings are display-only
         })))
       }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+      throw err
     } finally {
-      setLoading(false)
+      if (searchAbortRef.current === controller) setLoading(false)
     }
   }, [])
 

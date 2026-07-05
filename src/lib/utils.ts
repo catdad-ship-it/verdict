@@ -22,6 +22,22 @@ export function relativeTime(iso: string): string {
   return months < 1 ? '1mo ago' : `${months}mo ago`
 }
 
+export class ApiError extends Error {
+  status: number
+  constructor(status: number) {
+    super(`Request failed with status ${status}`)
+    this.status = status
+  }
+}
+
+// Thin wrapper around fetch that throws on a non-2xx response instead of
+// letting callers treat an error page/body as success data.
+export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const res = await fetch(input, init)
+  if (!res.ok) throw new ApiError(res.status)
+  return res
+}
+
 export interface ProviderData {
   providers: { providerId: number; providerName: string; logoPath: string }[]
   ownedProviders: { providerId: number; providerName: string; logoPath: string }[]

@@ -9,7 +9,7 @@ import SearchAddModal from '@/components/modals/SearchAddModal'
 import WatchTonightModal from '@/components/modals/WatchTonightModal'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import ActivityFeed from '@/components/ui/ActivityFeed'
-import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { RowListSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -81,21 +81,43 @@ export default function HomePage() {
 
   const fetchQueue = useCallback(async () => {
     setLoading(true)
-    const data = await fetch('/api/queue').then(r => r.json())
-    setQueue(Array.isArray(data) ? data : [])
-    setLoading(false)
+    try {
+      const data = await apiFetch('/api/queue').then(r => r.json())
+      setQueue(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('fetchQueue failed:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   const fetchLists = useCallback(async () => {
-    const data = await fetch('/api/lists').then(r => r.json())
-    setLists(Array.isArray(data) ? data : [])
+    try {
+      const data = await apiFetch('/api/lists').then(r => r.json())
+      setLists(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('fetchLists failed:', err)
+    }
   }, [])
 
+  // Tracks the most recently requested list so a slow response for a list
+  // the user has since switched away from can't land after — and overwrite
+  // — a faster response for the list actually on screen.
+  const listItemsRequestRef = useRef<string | null>(null)
+
   const fetchListItems = useCallback(async (listId: string) => {
+    listItemsRequestRef.current = listId
     setLoading(true)
-    const data = await fetch(`/api/lists/${listId}/items`).then(r => r.json())
-    setListItems(Array.isArray(data) ? data : [])
-    setLoading(false)
+    try {
+      const data = await apiFetch(`/api/lists/${listId}/items`).then(r => r.json())
+      if (listItemsRequestRef.current !== listId) return
+      setListItems(Array.isArray(data) ? data : [])
+    } catch (err) {
+      if (listItemsRequestRef.current !== listId) return
+      console.error('fetchListItems failed:', err)
+    } finally {
+      if (listItemsRequestRef.current === listId) setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
