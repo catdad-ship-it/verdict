@@ -21,6 +21,33 @@ function genreNames(ids: number[]): string[] {
   return ids.map(id => TMDB_GENRES[id]).filter(Boolean)
 }
 
+interface ToMovieOpts {
+  // List endpoints mostly zero out backdropPath (cards don't use it there);
+  // only search/now-playing pass the real value through.
+  includeBackdrop?: boolean
+  // Use TMDB's community score as an imdbRating stand-in until the
+  // OMDB-backed enrichment pass (see src/lib/enrich.ts) can run. Skipped
+  // for search results and upcoming releases, which don't show a rating.
+  voteAverageFallback?: boolean
+}
+
+function toMovie(d: TMDBMovieResult, opts: ToMovieOpts = {}): Movie {
+  return {
+    id: d.id,
+    title: d.title,
+    posterPath: d.poster_path,
+    backdropPath: opts.includeBackdrop ? d.backdrop_path : null,
+    overview: d.overview,
+    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
+    runtime: null,
+    genreIds: d.genre_ids ?? [],
+    genres: genreNames(d.genre_ids ?? []),
+    imdbRating: (opts.voteAverageFallback && d.vote_average) ? Math.round(d.vote_average * 10) / 10 : null,
+    rtScore: null,
+    mediaType: 'movie',
+  }
+}
+
 // ── Movie ──────────────────────────────────────────────
 export async function getMovie(tmdbId: number): Promise<Movie & { tmdbRating: number | null }> {
   const d = await get(`/movie/${tmdbId}`)
@@ -44,20 +71,7 @@ export async function getMovie(tmdbId: number): Promise<Movie & { tmdbRating: nu
 
 export async function searchMovies(query: string): Promise<Movie[]> {
   const data = await get('/search/movie', { query, include_adult: 'false' })
-  return data.results.slice(0, 10).map((d: TMDBMovieResult) => ({
-    id: d.id,
-    title: d.title,
-    posterPath: d.poster_path,
-    backdropPath: d.backdrop_path,
-    overview: d.overview,
-    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-    runtime: null,
-    genreIds: d.genre_ids ?? [],
-    genres: genreNames(d.genre_ids ?? []),
-    imdbRating: null,
-    rtScore: null,
-    mediaType: 'movie' as const,
-  }))
+  return data.results.slice(0, 10).map((d: TMDBMovieResult) => toMovie(d, { includeBackdrop: true }))
 }
 
 export async function getNowPlaying(): Promise<Movie[]> {
@@ -66,20 +80,7 @@ export async function getNowPlaying(): Promise<Movie[]> {
     get('/movie/now_playing', { region: 'US', page: '2' }),
   ])
   const results: TMDBMovieResult[] = [...(p1.results ?? []), ...(p2.results ?? [])]
-  return results.slice(0, 40).map((d: TMDBMovieResult) => ({
-    id: d.id,
-    title: d.title,
-    posterPath: d.poster_path,
-    backdropPath: d.backdrop_path,
-    overview: d.overview,
-    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-    runtime: null,
-    genreIds: d.genre_ids ?? [],
-    genres: genreNames(d.genre_ids ?? []),
-    imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
-    rtScore: null,
-    mediaType: 'movie' as const,
-  }))
+  return results.slice(0, 40).map((d: TMDBMovieResult) => toMovie(d, { includeBackdrop: true, voteAverageFallback: true }))
 }
 
 export async function getUpcoming(): Promise<Movie[]> {
@@ -88,20 +89,7 @@ export async function getUpcoming(): Promise<Movie[]> {
     get('/movie/upcoming', { region: 'US', page: '2' }),
   ])
   const results: TMDBMovieResult[] = [...(p1.results ?? []), ...(p2.results ?? [])]
-  return results.slice(0, 40).map((d: TMDBMovieResult) => ({
-    id: d.id,
-    title: d.title,
-    posterPath: d.poster_path,
-    backdropPath: null,
-    overview: d.overview,
-    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-    runtime: null,
-    genreIds: d.genre_ids ?? [],
-    genres: genreNames(d.genre_ids ?? []),
-    imdbRating: null,
-    rtScore: null,
-    mediaType: 'movie' as const,
-  }))
+  return results.slice(0, 40).map((d: TMDBMovieResult) => toMovie(d))
 }
 
 
@@ -111,7 +99,7 @@ export async function getNewToStreaming(): Promise<Movie[]> {
   cutoff.setDate(cutoff.getDate() - 120)
   const dateStr = cutoff.toISOString().split('T')[0]
 
-  const data = await get('/discover/movie', {
+  const params = {
     watch_region: 'US',
     with_watch_monetization_types: 'flatrate',
     // Netflix=8, Prime=9, Disney+=337, Hulu=15, Max=1899, Peacock=386, Paramount+=531
@@ -119,56 +107,17 @@ export async function getNewToStreaming(): Promise<Movie[]> {
     'primary_release_date.gte': dateStr,
     sort_by: 'popularity.desc',
     'vote_count.gte': '20',
-  })
-  const [p2, p3] = await Promise.all([
-    get('/discover/movie', {
-      watch_region: 'US', with_watch_monetization_types: 'flatrate',
-      with_watch_providers: '8|9|337|15|1899|386|531',
-      'primary_release_date.gte': dateStr,
-      sort_by: 'popularity.desc', 'vote_count.gte': '20', page: '2',
-    }),
-    get('/discover/movie', {
-      watch_region: 'US', with_watch_monetization_types: 'flatrate',
-      with_watch_providers: '8|9|337|15|1899|386|531',
-      'primary_release_date.gte': dateStr,
-      sort_by: 'popularity.desc', 'vote_count.gte': '20', page: '3',
-    }),
-  ])
-  const allResults: TMDBMovieResult[] = [
-    ...(data.results ?? []), ...(p2.results ?? []), ...(p3.results ?? []),
-  ]
-  return allResults.slice(0, 60).map((d: TMDBMovieResult) => ({
-    id: d.id,
-    title: d.title,
-    posterPath: d.poster_path,
-    backdropPath: null,
-    overview: d.overview,
-    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-    runtime: null,
-    genreIds: d.genre_ids ?? [],
-    genres: genreNames(d.genre_ids ?? []),
-    imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
-    rtScore: null,
-    mediaType: 'movie' as const,
-  }))
+  }
+  const pages = await Promise.all(
+    ['1', '2', '3'].map(page => get('/discover/movie', { ...params, page }))
+  )
+  const allResults: TMDBMovieResult[] = pages.flatMap(p => p.results ?? [])
+  return allResults.slice(0, 60).map((d: TMDBMovieResult) => toMovie(d, { voteAverageFallback: true }))
 }
 
 export async function getMovieRecommendations(tmdbId: number): Promise<Movie[]> {
   const data = await get(`/movie/${tmdbId}/recommendations`)
-  return data.results.slice(0, 10).map((d: TMDBMovieResult) => ({
-    id: d.id,
-    title: d.title,
-    posterPath: d.poster_path,
-    backdropPath: null,
-    overview: d.overview,
-    releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-    runtime: null,
-    genreIds: d.genre_ids ?? [],
-    genres: genreNames(d.genre_ids ?? []),
-    imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
-    rtScore: null,
-    mediaType: 'movie' as const,
-  }))
+  return data.results.slice(0, 10).map((d: TMDBMovieResult) => toMovie(d, { voteAverageFallback: true }))
 }
 
 export async function discoverMovies(genreIds: number[], excludeIds: number[], excludeGenreIds: number[] = []): Promise<Movie[]> {
@@ -192,20 +141,7 @@ export async function discoverMovies(genreIds: number[], excludeIds: number[], e
   return combined
     .filter((d: TMDBMovieResult) => !excludeSet.has(d.id))
     .slice(0, 60)
-    .map((d: TMDBMovieResult) => ({
-      id: d.id,
-      title: d.title,
-      posterPath: d.poster_path,
-      backdropPath: null,
-      overview: d.overview,
-      releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-      runtime: null,
-      genreIds: d.genre_ids ?? [],
-      genres: genreNames(d.genre_ids ?? []),
-      imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
-      rtScore: null,
-      mediaType: 'movie' as const,
-    }))
+    .map((d: TMDBMovieResult) => toMovie(d, { voteAverageFallback: true }))
 }
 
 export interface CreditInfo { id: number; name: string; role: 'director' | 'cast' }
@@ -238,20 +174,7 @@ export async function discoverMoviesByPerson(personId: number, excludeIds: numbe
   return results
     .filter(d => !excludeSet.has(d.id))
     .slice(0, 8)
-    .map(d => ({
-      id: d.id,
-      title: d.title,
-      posterPath: d.poster_path,
-      backdropPath: null,
-      overview: d.overview,
-      releaseYear: d.release_date ? parseInt(d.release_date) : 0,
-      runtime: null,
-      genreIds: d.genre_ids ?? [],
-      genres: genreNames(d.genre_ids ?? []),
-      imdbRating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : null,
-      rtScore: null,
-      mediaType: 'movie' as const,
-    }))
+    .map(d => toMovie(d, { voteAverageFallback: true }))
 }
 
 // ── People ─────────────────────────────────────────────
