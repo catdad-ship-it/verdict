@@ -3,6 +3,11 @@ import { getMovie, getShow } from '@/lib/tmdb'
 import { getRatings } from '@/lib/omdb'
 import { NextRequest, NextResponse } from 'next/server'
 
+// -1 is a sentinel meaning "we already tried to backfill this and TMDB has
+// no runtime data for it" — distinct from null ("never attempted yet") so
+// the GET backfill below doesn't re-fetch + re-write the same row forever.
+const NO_RUNTIME = -1
+
 function toQueueItem(row: any) {
   return {
     id:          row.id,
@@ -11,7 +16,7 @@ function toQueueItem(row: any) {
     title:       row.title,
     posterPath:  row.poster_path,
     genreIds:    row.genre_ids ?? [],
-    runtime:     row.runtime ?? null,
+    runtime:     row.runtime === NO_RUNTIME ? null : (row.runtime ?? null),
     releaseYear: row.release_year ?? null,
     imdbRating:  row.imdb_rating ?? null,
     rtScore:     row.rt_score ?? null,
@@ -50,11 +55,14 @@ export async function GET() {
 
           if (media_type === 'tv') {
             const detail = await getShow(row.tmdb_id)
-            runtime = detail.episodeRuntime ?? null
+            // TMDB often has no episode_run_time for a show — persist the
+            // sentinel rather than null so this row stops re-qualifying as
+            // "missing" on every subsequent GET.
+            runtime = detail.episodeRuntime ?? NO_RUNTIME
             releaseYear = releaseYear ?? detail.firstAirYear ?? null
           } else {
             const detail = await getMovie(row.tmdb_id)
-            runtime = detail.runtime ?? null
+            runtime = detail.runtime ?? NO_RUNTIME
             releaseYear = releaseYear ?? detail.releaseYear ?? null
             if (!imdbRating && detail.title) {
               const r = await getRatings(detail.title, detail.releaseYear)

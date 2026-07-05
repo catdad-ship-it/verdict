@@ -15,17 +15,15 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'order must be a non-empty array' }, { status: 400 })
   }
 
-  const results = await Promise.all(
-    order.map((id: string, index: number) =>
-      supabase.from('queue_items')
-        .update({ sort_order: index })
-        .eq('id', id)
-        .eq('user_id', user.id)
-    )
-  )
+  // One statement instead of one UPDATE round-trip per dragged row — see
+  // reorder_queue_items in supabase/migrations. Scoped to the caller's own
+  // rows inside the function itself (auth.uid() = user_id).
+  const { error } = await supabase.rpc('reorder_queue_items', {
+    p_ids: order,
+    p_positions: order.map((_: string, index: number) => index),
+  })
 
-  const failed = results.find(r => r.error)
-  if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }
