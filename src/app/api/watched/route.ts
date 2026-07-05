@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       tmdb_id, title, poster_path, genre_ids, status,
       current_season, total_seasons,
+      updated_at: new Date().toISOString(),
       ...(runtime != null ? { episode_runtime: runtime } : {}),
     }, { onConflict: 'user_id,tmdb_id' })
     if (error) {
