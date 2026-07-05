@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2, CheckSquare, Square } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
@@ -9,9 +9,11 @@ import SearchAddModal from '@/components/modals/SearchAddModal'
 import WatchTonightModal from '@/components/modals/WatchTonightModal'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import ActivityFeed from '@/components/ui/ActivityFeed'
+import BulkActionBar, { BulkActionButton, SelectModeToggle } from '@/components/ui/BulkActionBar'
 import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
+import { useBulkSelect } from '@/hooks/useBulkSelect'
 import { RowListSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
@@ -63,7 +65,7 @@ export default function HomePage() {
 
   // Multi-select bulk actions
   const [selectMode, setSelectMode] = useState(false)
-  const [selected, setSelected]     = useState<Set<string>>(new Set())
+  const { selected, toggle: toggleSelect, selectAll, clear: clearSelected } = useBulkSelect<string>()
   const [showBulkListPicker, setShowBulkListPicker] = useState(false)
 
   useEffect(() => {
@@ -296,20 +298,11 @@ export default function HomePage() {
 
   const toggleSelectMode = () => {
     setSelectMode(m => !m)
-    setSelected(new Set())
-  }
-
-  const toggleSelect = (key: string) => {
-    setSelected(s => {
-      const next = new Set(s)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    clearSelected()
   }
 
   const selectAllVisible = () => {
-    setSelected(new Set(displayItems.map(i => selectionKey(i.tmdbId, i.mediaType))))
+    selectAll(displayItems.map(i => selectionKey(i.tmdbId, i.mediaType)))
   }
 
   const handleBulkRemove = () => {
@@ -335,7 +328,7 @@ export default function HomePage() {
         }))
       }, { onUndo: () => setListItems(items => [...originals, ...items]) })
     }
-    setSelected(new Set())
+    clearSelected()
     setSelectMode(false)
   }
 
@@ -353,7 +346,7 @@ export default function HomePage() {
     }))
     const destName = targetListId === 'queue' ? 'queue' : (lists.find(l => l.id === targetListId)?.name ?? 'list')
     toast.show(`Added ${items.length} title${items.length > 1 ? 's' : ''} to ${destName.toUpperCase()}`)
-    setSelected(new Set())
+    clearSelected()
     setSelectMode(false)
   }
 
@@ -450,7 +443,7 @@ export default function HomePage() {
         setShowNewList(false)
         setShowBulkListPicker(false)
         setPostWatch(null)
-        if (selectMode) { setSelectMode(false); setSelected(new Set()) }
+        if (selectMode) { setSelectMode(false); clearSelected() }
         return
       }
 
@@ -466,7 +459,7 @@ export default function HomePage() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [anyModalOpen, openAddFlow, selectMode])
+  }, [anyModalOpen, openAddFlow, selectMode, clearSelected])
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
@@ -707,76 +700,17 @@ export default function HomePage() {
             }}>{label}</button>
           ))}
           {displayItems.length > 0 && (
-            <button
-              onClick={toggleSelectMode}
-              title={selectMode ? 'Exit select mode' : 'Select multiple titles'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
-                background: selectMode ? 'var(--amber)' : 'transparent',
-                color: selectMode ? 'var(--bg)' : 'var(--cream-dim)',
-                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-              }}
-            >
-              {selectMode ? <CheckSquare size={11} /> : <Square size={11} />}
-              SELECT
-            </button>
+            <SelectModeToggle active={selectMode} onClick={toggleSelectMode} compact />
           )}
         </div>
       </div>
 
       {/* Bulk action bar */}
       {selectMode && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          marginBottom: '1.25rem', padding: '0.6rem 0.75rem',
-          background: 'var(--surface)', border: '1px solid var(--amber-dim)', borderRadius: 4,
-        }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1, whiteSpace: 'nowrap' }}>
-            {selected.size} SELECTED
-          </span>
-          <button
-            onClick={selectAllVisible}
-            style={{
-              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
-              background: 'none', border: '1px solid var(--border)', borderRadius: 2,
-              padding: '0.3rem 0.6rem', cursor: 'pointer',
-            }}
-          >SELECT ALL</button>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setShowBulkListPicker(true)}
-              disabled={selected.size === 0}
-              style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-                color: 'var(--amber)', background: 'rgba(192,120,24,0.1)',
-                border: '1px solid var(--amber-dim)', borderRadius: 2,
-                padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
-                opacity: selected.size === 0 ? 0.4 : 1,
-              }}
-            >ADD TO LIST</button>
-            <button
-              onClick={handleBulkRemove}
-              disabled={selected.size === 0}
-              style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-                color: '#f87171', background: 'rgba(154,48,40,0.12)',
-                border: '1px solid rgba(154,48,40,0.4)', borderRadius: 2,
-                padding: '0.4rem 0.75rem', cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
-                opacity: selected.size === 0 ? 0.4 : 1,
-              }}
-            >REMOVE</button>
-            <button
-              onClick={toggleSelectMode}
-              style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-                color: 'var(--cream-dim)', background: 'none',
-                border: '1px solid var(--border)', borderRadius: 2,
-                padding: '0.4rem 0.75rem', cursor: 'pointer',
-              }}
-            >CANCEL</button>
-          </div>
-        </div>
+        <BulkActionBar count={selected.size} onSelectAll={selectAllVisible} onCancel={toggleSelectMode}>
+          <BulkActionButton label="ADD TO LIST" onClick={() => setShowBulkListPicker(true)} disabled={selected.size === 0} />
+          <BulkActionButton label="REMOVE" onClick={handleBulkRemove} disabled={selected.size === 0} variant="destructive" />
+        </BulkActionBar>
       )}
 
       {/* List */}
