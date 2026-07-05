@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isIntInRange, badRequest } from '@/lib/validate'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET() {
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest) {
         .eq('media_type', 'tv')
     }
   } else {
+    if (!isIntInRange(user_rating, 1, 5)) return badRequest('user_rating must be an integer 1-5')
+
     const { error } = await supabase.from('watched_movies').insert({
       user_id: user.id,
       tmdb_id, title, poster_path, genre_ids, runtime,

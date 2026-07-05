@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isFiniteNumber, isIntInRange, badRequest } from '@/lib/validate'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -7,6 +8,10 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { show_tmdb_id, season_number, user_rating, what_worked, notes } = await req.json()
+
+  if (!isFiniteNumber(show_tmdb_id)) return badRequest('show_tmdb_id is required')
+  if (!isIntInRange(season_number, 0, 100)) return badRequest('season_number must be an integer 0-100')
+  if (!isIntInRange(user_rating, 1, 5)) return badRequest('user_rating must be an integer 1-5')
 
   // Get show id
   const { data: show } = await supabase

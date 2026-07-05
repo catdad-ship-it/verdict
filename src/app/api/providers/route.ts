@@ -1,6 +1,7 @@
 import { canonicalizeAndDedupe } from '@/lib/streamingServices'
 import { getOwnedIds } from '@/lib/providers'
 import type { StreamProvider } from '@/lib/providers'
+import { badRequest } from '@/lib/validate'
 import { NextRequest, NextResponse } from 'next/server'
 
 const BASE = 'https://api.themoviedb.org/3'
@@ -10,7 +11,7 @@ const KEY  = process.env.TMDB_API_KEY
 export async function GET(req: NextRequest) {
   const tmdbId    = req.nextUrl.searchParams.get('tmdbId')
   const mediaType = req.nextUrl.searchParams.get('mediaType') ?? 'movie'
-  if (!tmdbId) return NextResponse.json({ providers: [] })
+  if (!tmdbId) return badRequest('tmdbId is required')
 
   const path = mediaType === 'tv' ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
   const url  = `${BASE}${path}?api_key=${KEY}`
