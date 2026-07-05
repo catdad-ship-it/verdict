@@ -76,15 +76,20 @@ export async function GET() {
     const soonFiltered   = upcoming.filter(m => matches(m))
     const streamFiltered = streaming.filter(m => matches(m))
 
+    // Bound OMDB enrichment — Now Playing can carry ~40 titles and every
+    // enrichment is an OMDB round trip against a 1,000/day free tier.
+    // The rest still ship with their TMDB-derived rating, just no RT score.
+    const nowToEnrich = nowFiltered.slice(0, 20)
+    const nowRest      = nowFiltered.slice(20)
     const nowWithRatings = await Promise.all(
-      nowFiltered.map(async m => {
+      nowToEnrich.map(async m => {
         const r = await getRatings(m.title, m.releaseYear)
         return { ...m, imdbRating: r.imdbRating ?? m.imdbRating, rtScore: r.rtScore }
       })
     )
 
     return NextResponse.json({
-      nowPlaying: nowWithRatings,
+      nowPlaying: [...nowWithRatings, ...nowRest],
       upcoming: soonFiltered,
       streaming: streamFiltered,
     })
