@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       tmdb_id, title, poster_path, genre_ids, status,
       current_season, total_seasons,
-      episode_runtime: runtime ?? null,
+      ...(runtime != null ? { episode_runtime: runtime } : {}),
     }, { onConflict: 'user_id,tmdb_id' })
     if (error) {
       console.error('Watched shows insert error:', JSON.stringify(error))
