@@ -795,45 +795,12 @@ export default function HomePage() {
 
       {/* List picker sheet */}
       {showListPicker && (
-        <div
-          className="fixed inset-0 flex flex-col justify-end md:justify-center md:items-center md:p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', zIndex: 60 }}
-          onClick={e => e.target === e.currentTarget && setShowListPicker(false)}
-        >
-          <div
-            className="w-full md:max-w-xs rounded-t-2xl md:rounded-sm overflow-hidden"
-            style={{
-              background: 'var(--surface)', border: '1px solid var(--amber)',
-              paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
-            }}
-          >
-            <div className="md:hidden flex justify-center pt-3 pb-1">
-              <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1rem 0.5rem' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 2 }}>ADD TO...</span>
-              <button onClick={() => setShowListPicker(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
-                <X size={16} />
-              </button>
-            </div>
-            {[{ id: 'queue' as const, name: 'MY QUEUE' }, ...lists.map(l => ({ id: l.id, name: l.name.toUpperCase() }))].map(opt => (
-              <button
-                key={opt.id}
-                onClick={() => { setAddTarget(opt.id); setShowListPicker(false); setShowSearch(true) }}
-                style={{
-                  width: '100%', textAlign: 'left', padding: '0.9rem 1rem',
-                  fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: 1,
-                  background: 'transparent', color: 'var(--cream)',
-                  border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,120,24,0.08)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                {opt.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ListPickerSheet
+          lists={lists}
+          onPick={listId => { setAddTarget(listId); setShowListPicker(false); setShowSearch(true) }}
+          onClose={() => setShowListPicker(false)}
+          onListCreated={l => setLists(prev => [...prev, l])}
+        />
       )}
 
       {/* Modals */}
