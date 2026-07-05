@@ -1,3 +1,4 @@
+import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
 // Server-only — bypasses RLS. Never import on the client.
