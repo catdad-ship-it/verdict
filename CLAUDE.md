@@ -48,7 +48,7 @@ src/
     tmdb.ts              # getMovie() returns tmdbRating (vote_average) as fallback
     types.ts             # Canonical types — use @/lib/types, NOT src/types/index.ts (deleted)
     utils.ts
-  middleware.ts           # Auth guard — must export named `middleware`. Includes /share in public prefixes.
+  middleware.ts           # Auth guard — must export named `middleware`. /share and /api/health skip auth entirely.
 ```
 
 ---
@@ -67,6 +67,7 @@ src/
 - `NEXT_PUBLIC_` vars must be in `[build.args]` in `fly.toml` — they're baked at build time. `fly secrets set` only sets runtime env vars and won't work for these.
 - `fly.toml` currently has `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as build args — this is intentional. The anon key is a publishable key, safe to expose.
 - Middleware must be at `src/middleware.ts` with `export async function middleware()` — a different export name means Next.js never runs it.
+- `Dockerfile` runs `node:22-alpine`. `fly.toml` has a health check against `/api/health` (no auth, no DB round trip) so a deploy that boots but 500s rolls back instead of going live.
 
 ### React Patterns
 - Define components at module scope, not inside render functions — inline component definitions cause React to see a new type on every render, unmounting/remounting all children (including re-firing provider fetches in VHSCard)
@@ -97,10 +98,11 @@ src/
 - `TitleDetailModal` plays the trailer inline via a YouTube iframe embed using `key` — no more tabbing out to YouTube
 
 ### Security
-- `src/middleware.ts` protects all routes except: `_next/static`, `_next/image`, `favicon.ico`, images, and `/share`
-- Security headers in `next.config.ts`: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- List ownership checked before POST insert in `lists/[id]/items/route.ts`
-- Share API uses explicit column selects (no `select('*')`) and excludes `user_id`
+- `src/middleware.ts`: `/share` and `/api/health` skip the auth check entirely (no `getUser()` round-trip — neither depends on session state). `/login`, `/signup`, `/reset-password` are reachable without a session but bounce a logged-in user to `/` (except `/reset-password/confirm`, which needs the session a recovery link creates). Everything else requires auth; unauthenticated `/api/*` gets a 401 JSON body, everything else redirects to `/login`.
+- Security headers in `next.config.ts`: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. CSP needs `'unsafe-inline'` on script-src/style-src (Next's App Router hydration scripts, and this app's inline `style={{}}` usage) — see the comment above the header for the full rationale.
+- List ownership checked both at the app layer (`lists/[id]/items/route.ts`) and via RLS (`list_items` INSERT/UPDATE requires the target `list_id` to belong to the caller — see `supabase/migrations/20260704_fix_list_items_ownership.sql`)
+- `/api/share/[id]` was deleted (dead/unreachable) — the public share page (`src/app/share/[id]/page.tsx`) queries Supabase directly via the service-role client instead
+- `src/lib/supabase/service.ts` (service-role client, bypasses RLS) has `import 'server-only'` — an accidental client-bundle import is a build error, not a silent leak
 
 ---
 
@@ -151,6 +153,16 @@ All labels use minimum 11px. Key sizes:
 
 ---
 
+## Tooling
+
+```bash
+npm run lint       # eslint — must pass with 0 errors
+npm run typecheck  # tsc --noEmit
+npm test           # vitest run — unit tests for pure logic (suggestions, finishTime, utils)
+```
+
+CI (`.github/workflows/ci.yml`) runs all three on every push to `main` and every PR.
+
 ## Deploy
 
 ```bash
@@ -161,3 +173,5 @@ fly deploy
 ```
 
 App: `verdict-bnieman` on Fly.io, region `iad`, 512mb shared CPU.
+
+Supabase migrations under `supabase/migrations/` are **not** run automatically anywhere (no CLI/pipeline wired up) — apply new ones manually in the Supabase SQL editor before or after deploying, as appropriate.
