@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getMovie, getShow } from '@/lib/tmdb'
-import { getRatings } from '@/lib/omdb'
+import { enrichTitle } from '@/lib/enrich'
 import { NextRequest, NextResponse } from 'next/server'
 
 // -1 is a sentinel meaning "we already tried to backfill this and TMDB has
@@ -62,29 +61,18 @@ export async function GET() {
       missing.map(async row => {
         try {
           const media_type = row.media_type === 'tv' ? 'tv' : 'movie'
-          let runtime: number | null = null
-          let releaseYear: number | null = row.release_year ?? null
-          let imdbRating: number | null = row.imdb_rating ?? null
-          let rtScore: number | null = row.rt_score ?? null
-
-          if (media_type === 'tv') {
-            const detail = await getShow(row.tmdb_id)
-            // TMDB often has no episode_run_time for a show — persist the
-            // sentinel rather than null so this row stops re-qualifying as
-            // "missing" on every subsequent GET.
-            runtime = detail.episodeRuntime ?? NO_RUNTIME
-            releaseYear = releaseYear ?? detail.firstAirYear ?? null
-          } else {
-            const detail = await getMovie(row.tmdb_id)
-            runtime = detail.runtime ?? NO_RUNTIME
-            releaseYear = releaseYear ?? detail.releaseYear ?? null
-            if (!imdbRating && detail.title) {
-              const r = await getRatings(detail.title, detail.releaseYear)
-              // Prefer IMDb/RT; fall back to TMDB community score for new releases
-              imdbRating = r.imdbRating ?? detail.tmdbRating ?? null
-              rtScore = r.rtScore ?? null
-            }
-          }
+          const enriched = await enrichTitle(row.tmdb_id, media_type, {
+            releaseYear: row.release_year,
+            imdbRating: row.imdb_rating,
+            rtScore: row.rt_score,
+          })
+          // TMDB often has no runtime data for a title — persist the
+          // sentinel rather than null so this row stops re-qualifying as
+          // "missing" on every subsequent GET.
+          const runtime = enriched.runtime ?? NO_RUNTIME
+          const releaseYear = enriched.releaseYear
+          const imdbRating = enriched.imdbRating
+          const rtScore = enriched.rtScore
 
           // Update the row in DB so we only pay this cost once
           await supabase.from('queue_items').update({
@@ -127,25 +115,11 @@ export async function POST(req: NextRequest) {
 
   // Enrich from TMDB detail if runtime is missing
   if (!runtime && tmdb_id) {
-    try {
-      if (media_type === 'tv') {
-        const detail = await getShow(tmdb_id)
-        runtime     = detail.episodeRuntime ?? null
-        releaseYear = releaseYear ?? detail.firstAirYear ?? null
-      } else {
-        const detail = await getMovie(tmdb_id)
-        runtime     = detail.runtime ?? null
-        releaseYear = releaseYear ?? detail.releaseYear ?? null
-        // Fetch ratings if missing; fall back to TMDB score for new releases
-        if (!imdbRating && detail.title) {
-          const r = await getRatings(detail.title, detail.releaseYear)
-          imdbRating = r.imdbRating ?? detail.tmdbRating ?? null
-          rtScore    = r.rtScore    ?? null
-        }
-      }
-    } catch {
-      // Non-fatal — proceed with nulls
-    }
+    const enriched = await enrichTitle(tmdb_id, media_type, { releaseYear, imdbRating, rtScore })
+    runtime     = enriched.runtime
+    releaseYear = enriched.releaseYear
+    imdbRating  = enriched.imdbRating
+    rtScore     = enriched.rtScore
   }
 
   const { error } = await supabase.from('queue_items').upsert({

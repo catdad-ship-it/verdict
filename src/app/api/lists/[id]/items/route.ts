@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getMovie, getShow } from '@/lib/tmdb'
-import { getRatings } from '@/lib/omdb'
+import { enrichTitle } from '@/lib/enrich'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET /api/lists/[id]/items
@@ -51,22 +50,11 @@ export async function POST(
 
   // Enrich from TMDB if runtime missing
   if (!runtime && tmdb_id) {
-    try {
-      if (media_type === 'tv') {
-        const detail = await getShow(tmdb_id)
-        runtime     = detail.episodeRuntime ?? null
-        releaseYear = releaseYear ?? detail.firstAirYear ?? null
-      } else {
-        const detail = await getMovie(tmdb_id)
-        runtime     = detail.runtime ?? null
-        releaseYear = releaseYear ?? detail.releaseYear ?? null
-        if (!imdbRating && !rtScore && detail.title) {
-          const r = await getRatings(detail.title, detail.releaseYear)
-          imdbRating = r.imdbRating ?? null
-          rtScore    = r.rtScore    ?? null
-        }
-      }
-    } catch { /* non-fatal */ }
+    const enriched = await enrichTitle(tmdb_id, media_type, { releaseYear, imdbRating, rtScore })
+    runtime     = enriched.runtime
+    releaseYear = enriched.releaseYear
+    imdbRating  = enriched.imdbRating
+    rtScore     = enriched.rtScore
   }
 
   const { error } = await supabase.from('list_items').upsert({
