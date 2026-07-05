@@ -35,6 +35,15 @@ export async function POST(req: NextRequest) {
       console.error('Watched shows insert error:', JSON.stringify(error))
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Remove from queue (only on first watch)
+    if (tmdb_id) {
+      await supabase.from('queue_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('tmdb_id', tmdb_id)
+        .eq('media_type', 'tv')
+    }
   } else {
     const { error } = await supabase.from('watched_movies').insert({
       user_id: user.id,
