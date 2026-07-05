@@ -69,7 +69,10 @@ export async function GET(req: NextRequest) {
     .filter(Boolean)
 
   const excludeIdSet = new Set([...watchedIds, ...queueIds, ...dismissedIds, ...extraExclude])
-  const castCrewCandidates = await getCastCrewCandidates(topRatedMovieIds, excludeIdSet)
+  // Kicked off (not awaited) so it runs concurrently with the
+  // discover/recommendations fan-out inside getMovieSuggestions instead of
+  // fully completing before that work even starts.
+  const castCrewCandidatesPromise = getCastCrewCandidates(topRatedMovieIds, excludeIdSet)
 
   const movies = await getMovieSuggestions({
     genreScores,
@@ -78,7 +81,7 @@ export async function GET(req: NextRequest) {
     dismissedIds: [...dismissedIds, ...extraExclude],
     topRatedMovieIds,
     excludeGenreIds: excludedGenreIds,
-    castCrewCandidates,
+    castCrewCandidatesPromise,
   })
 
   const withRatings = await Promise.all(

@@ -2,6 +2,7 @@ import { getTrendingMovies as getRedditMovies, getTrendingShows as getRedditShow
 import { getTrendingMovies as getTraktMovies, getTrendingShows as getTraktShows, traktConfigured } from '@/lib/trakt'
 import { getMovie, getShow, searchMovies, searchShows } from '@/lib/tmdb'
 import { Movie, Show } from '@/lib/types'
+import { unstable_cache } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 // The Home consumer needs one flat shape regardless of whether an item came
@@ -72,19 +73,28 @@ async function trendingViaReddit() {
   }
 }
 
-export async function GET() {
+async function computeTrending() {
   try {
     const result = traktConfigured() ? await trendingViaTrakt() : await trendingViaReddit()
     // If Trakt came back empty (e.g. a bad response) still try Reddit rather than showing nothing.
     if (traktConfigured() && result.movies.length === 0 && result.shows.length === 0) {
-      return NextResponse.json(normalize(await trendingViaReddit()))
+      return normalize(await trendingViaReddit())
     }
-    return NextResponse.json(normalize(result))
+    return normalize(result)
   } catch {
     try {
-      return NextResponse.json(normalize(await trendingViaReddit()))
+      return normalize(await trendingViaReddit())
     } catch {
-      return NextResponse.json({ movies: [], shows: [] }, { status: 500 })
+      return { movies: [], shows: [] }
     }
   }
+}
+
+// Trending is user-independent but was re-running the full Trakt/Reddit +
+// per-item TMDB detail fan-out on every request. Cache the computed result
+// for 30 minutes instead.
+const getCachedTrending = unstable_cache(computeTrending, ['trending'], { revalidate: 1800 })
+
+export async function GET() {
+  return NextResponse.json(await getCachedTrending())
 }

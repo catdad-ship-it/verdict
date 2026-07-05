@@ -47,7 +47,11 @@ interface SuggestionOptions {
   dismissedIds?: number[]
   topRatedMovieIds?: number[]   // movies rated 4-5 stars — used for TMDB recommendations
   excludeGenreIds?: number[]    // genres explicitly hidden in Settings — never suggest these
-  castCrewCandidates?: Movie[]  // "more from this director/actor" pool — see getCastCrewCandidates()
+  // "more from this director/actor" pool — see getCastCrewCandidates(). Taken
+  // as a promise (not an awaited value) so the caller can kick it off before
+  // calling getMovieSuggestions and have it run concurrently with the
+  // discover/recommendations fan-out below instead of blocking ahead of it.
+  castCrewCandidatesPromise?: Promise<Movie[]>
 }
 
 // Second signal alongside genre scoring: pull credits for a sample of the
@@ -127,14 +131,14 @@ export async function getMovieSuggestions(opts: SuggestionOptions): Promise<Movi
   const shuffledTopRated = shuffleArray([...(opts.topRatedMovieIds ?? [])])
   const topRatedIds = shuffledTopRated.slice(0, 5) // cap at 5 API calls
 
-  const [discoverResults, ...recArrays] = await Promise.all([
+  const [discoverResults, castCrewCandidates, ...recArrays] = await Promise.all([
     discoverMovies(sortedGenreIds, [...excludeSet], [...excludeGenreSet]),
+    opts.castCrewCandidatesPromise ?? Promise.resolve([] as Movie[]),
     ...topRatedIds.map(id => getMovieRecommendations(id).catch(() => [] as Movie[])),
   ])
 
   // Track which movies came from direct recommendations (stronger signal → small boost)
   const recIdSet = new Set(recArrays.flat().map(m => m.id))
-  const castCrewCandidates = opts.castCrewCandidates ?? []
   const castCrewIdSet = new Set(castCrewCandidates.map(m => m.id))
 
   // Merge discover + recommendations + cast/crew picks, deduplicate, filter
