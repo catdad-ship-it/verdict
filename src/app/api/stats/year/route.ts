@@ -9,19 +9,19 @@ export async function GET() {
 
   const year = new Date().getFullYear()
   const start = `${year}-01-01`
-  const end   = `${year}-12-31`
+  const end   = `${year + 1}-01-01`
 
   const [{ data: movies }, { data: shows }] = await Promise.all([
     supabase.from('watched_movies')
       .select('title, poster_path, user_rating, runtime, watched_at, genre_ids, what_worked')
       .eq('user_id', user.id)
       .gte('watched_at', start)
-      .lte('watched_at', end),
+      .lt('watched_at', end),
     supabase.from('watched_shows')
       .select('genre_ids, updated_at')
       .eq('user_id', user.id)
       .gte('updated_at', start)
-      .lte('updated_at', end),
+      .lt('updated_at', end),
   ])
 
   const m = movies ?? []
