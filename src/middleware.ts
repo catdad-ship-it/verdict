@@ -2,6 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // /share never depends on auth state — skip the getUser() network
+  // round-trip entirely instead of paying it just to fall through as public.
+  if (pathname.startsWith('/share')) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -22,20 +30,21 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
 
-  // Public routes — no auth needed
-  const publicPrefixes = ['/login', '/signup', '/reset-password', '/share']
-  const isPublic = publicPrefixes.some(p => pathname.startsWith(p))
+  // Auth routes are reachable without a session, but a logged-in user
+  // visiting them (e.g. a stale /login tab) gets bounced to '/' — except
+  // the password-recovery confirm page, which needs the session a recovery
+  // link creates.
+  const authPrefixes = ['/login', '/signup', '/reset-password']
+  const isAuthRoute = authPrefixes.some(p => pathname.startsWith(p))
 
-  if (!user && !isPublic) {
+  if (!user && !isAuthRoute) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     return NextResponse.redirect(new URL('/login', request.url))
   }
-  if (
-    user &&
-    pathname !== '/reset-password/confirm' &&
-    ['/login', '/signup', '/reset-password'].some(p => pathname.startsWith(p))
-  ) {
+  if (user && isAuthRoute && pathname !== '/reset-password/confirm') {
     return NextResponse.redirect(new URL('/', request.url))
   }
 

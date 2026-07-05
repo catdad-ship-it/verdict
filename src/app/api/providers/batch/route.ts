@@ -35,7 +35,7 @@ async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set
   const url  = `${BASE}${path}?api_key=${KEY}`
 
   try {
-    const data = await fetch(url, { next: { revalidate: 86400 } }).then(r => r.json())
+    const data = await fetch(url, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) }).then(r => r.json())
     const us   = data?.results?.US
 
     type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }

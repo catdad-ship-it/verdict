@@ -23,6 +23,7 @@ async function traktGet(path: string) {
       'trakt-api-key': CLIENT_ID ?? '',
     },
     next: { revalidate: 1800 },
+    signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) throw new Error(`Trakt ${res.status}: ${path}`)
   return res.json()

@@ -24,7 +24,7 @@ function pickBest(entries: FanartLogoEntry[] | undefined): string | null {
 export async function getMovieLogo(tmdbId: number): Promise<string | null> {
   if (!KEY) return null
   try {
-    const res = await fetch(`${BASE}/movies/${tmdbId}?api_key=${KEY}`, { next: { revalidate: 86400 } })
+    const res = await fetch(`${BASE}/movies/${tmdbId}?api_key=${KEY}`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const data: FanartMovieResponse = await res.json()
     return pickBest(data.hdmovielogo) ?? pickBest(data.movielogo)
@@ -38,7 +38,7 @@ export async function getShowLogo(tmdbId: number): Promise<string | null> {
   try {
     const tvdbId = await getTvdbId(tmdbId)
     if (!tvdbId) return null
-    const res = await fetch(`${BASE}/tv/${tvdbId}?api_key=${KEY}`, { next: { revalidate: 86400 } })
+    const res = await fetch(`${BASE}/tv/${tvdbId}?api_key=${KEY}`, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const data: FanartTvResponse = await res.json()
     return pickBest(data.hdtvlogo) ?? pickBest(data.clearlogo)

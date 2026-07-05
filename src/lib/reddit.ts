@@ -24,6 +24,7 @@ async function fetchSubreddit(sub: string, sort: 'hot' | 'top' = 'hot'): Promise
       {
         headers: { 'User-Agent': 'verdict-app/1.0' },
         next: { revalidate: 1800 },
+        signal: AbortSignal.timeout(8000),
       }
     )
     const data = await res.json()

@@ -12,7 +12,7 @@ async function get(path: string, params: Record<string, string> = {}) {
   const url = new URL(`${BASE_URL}${path}`)
   url.searchParams.set('api_key', KEY ?? '')
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) })
   if (!res.ok) throw new Error(`TMDB ${res.status}: ${path}`)
   return res.json()
 }

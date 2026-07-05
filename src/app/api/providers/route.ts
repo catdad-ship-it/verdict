@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const [data, ownedIds] = await Promise.all([
-      fetch(url, { next: { revalidate: 86400 } }).then(r => r.json()),
+      fetch(url, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) }).then(r => r.json()),
       getOwnedIds(),
     ])
     const us = data?.results?.US

@@ -40,6 +40,7 @@ export async function getRatings(title: string, year?: number): Promise<OMDBRati
     })
     const res = await fetch(`https://www.omdbapi.com/?${params}`, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(8000),
     })
     const data = await res.json()
     if (data.Response === 'False') {

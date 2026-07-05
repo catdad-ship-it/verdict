@@ -20,6 +20,7 @@ async function dddGet(path: string) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'X-API-KEY': KEY ?? '' },
     next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) {
     // Surface the real cause server-side (check `fly logs` in prod, or the
