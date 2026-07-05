@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       })
     )
     return NextResponse.json(withRatings)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })
   }
 }

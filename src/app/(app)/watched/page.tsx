@@ -50,8 +50,11 @@ export default function WatchedPage() {
   const [selectedMovies, setSelectedMovies] = useState<Set<number>>(new Set())
   const [selectedShows, setSelectedShows]   = useState<Set<string>>(new Set())
 
+  // loading defaults to true, so the initial mount fetch already shows the
+  // skeleton without setting it here — the refetch after a rewatch save
+  // intentionally doesn't flip it back on, so the list updates in place
+  // instead of flashing the skeleton over content already on screen.
   const loadData = () => {
-    setLoading(true)
     fetch('/api/watched')
       .then(r => r.json())
       .then(d => { setMovies(d.movies ?? []); setShows(d.shows ?? []) })
@@ -317,7 +320,7 @@ export default function WatchedPage() {
                       {/* Notes */}
                       {latest.notes && (
                         <p style={{ fontSize: 11, color: 'var(--cream-dim)', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>
-                          "{latest.notes}"
+                          &quot;{latest.notes}&quot;
                         </p>
                       )}
 

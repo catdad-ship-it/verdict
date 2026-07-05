@@ -7,7 +7,6 @@ import { formatRuntime } from '@/lib/utils'
 interface Props {
   items: QueueItem[]
   onClose: () => void
-  onPick: (item: QueueItem) => void
 }
 
 const SLICE_COLORS = [
@@ -15,7 +14,7 @@ const SLICE_COLORS = [
   '#181614','#200C38','#38081C','#181410',
 ]
 
-export default function SpinWheelModal({ items, onClose, onPick }: Props) {
+export default function SpinWheelModal({ items, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rotRef    = useRef(0)
   const rafRef    = useRef<number | null>(null)
@@ -53,6 +52,10 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
     ctx.fillText('▶', cx, cy + 1)
   }
 
+  // draw is redefined every render (it closes over movies), so adding it here
+  // would fire this effect on every render — only movies.length actually
+  // matters for when the wheel needs to be redrawn from scratch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { draw(rotRef.current) }, [movies.length])
 
   useEffect(() => () => {
@@ -95,7 +98,7 @@ export default function SpinWheelModal({ items, onClose, onPick }: Props) {
         <div className="inline-block mb-2" style={{ borderBottom: '2px solid var(--amber)', paddingBottom: '6px' }}>
           <span className="font-bold text-lg tracking-wider uppercase" style={{ color: 'var(--amber)' }}>SPIN THE WHEEL</span>
         </div>
-        <p className="text-xs mb-5" style={{ color: 'var(--cream-dim)' }}>Can't decide? Let fate pick from your queue.</p>
+        <p className="text-xs mb-5" style={{ color: 'var(--cream-dim)' }}>Can&apos;t decide? Let fate pick from your queue.</p>
 
         {/* Wheel */}
         <div className="relative inline-block mb-3">

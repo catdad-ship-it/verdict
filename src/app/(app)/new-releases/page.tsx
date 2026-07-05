@@ -79,7 +79,8 @@ export default function NewReleasesPage() {
     fetch('/api/new-releases')
       .then(r => r.json())
       .then(d => {
-        const map = (m: any) => ({ ...m, tmdbId: m.id, genreIds: m.genreIds ?? [] })
+        const map = (m: Record<string, unknown> & { id: number; genreIds?: number[] }) =>
+          ({ ...m, tmdbId: m.id, genreIds: m.genreIds ?? [] })
         const now = (d.nowPlaying ?? []).map(map)
         const soon = (d.upcoming ?? []).map(map)
         const stream = (d.streaming ?? []).map(map)

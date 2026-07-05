@@ -17,7 +17,6 @@ interface VHSCardProps {
   overview?: string | null
   isNew?: boolean
   isSoon?: boolean
-  isStream?: boolean
   isTrending?: boolean
   trendingCount?: number
   isInQueue?: boolean
@@ -46,7 +45,7 @@ interface VHSCardProps {
 export default function VHSCard({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview,
-  isNew, isSoon, isStream, isTrending, trendingCount,
+  isNew, isSoon, isTrending, trendingCount,
   isInQueue, isWatched, currentSeason, totalSeasons, matchReason,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
   providerData, batchManaged,

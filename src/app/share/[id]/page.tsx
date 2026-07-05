@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/service'
 
@@ -46,7 +47,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
             {safeItems.length} {safeItems.length === 1 ? 'TITLE' : 'TITLES'}
           </p>
         </div>
-        <a
+        <Link
           href="/"
           style={{
             fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0,
@@ -56,7 +57,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
           }}
         >
           GET VERDICT ↗
-        </a>
+        </Link>
       </div>
 
       {/* Items */}

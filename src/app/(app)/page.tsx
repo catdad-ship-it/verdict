@@ -79,8 +79,11 @@ export default function HomePage() {
     }
   }, [])
 
+  // loading defaults to true, so the initial mount fetch already shows the
+  // skeleton without setting it here — and later refetches (after an
+  // add/remove) intentionally don't flip it back on, so the list updates in
+  // place instead of flashing the skeleton over content already on screen.
   const fetchQueue = useCallback(async () => {
-    setLoading(true)
     try {
       const data = await apiFetch('/api/queue').then(r => r.json())
       setQueue(Array.isArray(data) ? data : [])
@@ -107,6 +110,9 @@ export default function HomePage() {
 
   const fetchListItems = useCallback(async (listId: string) => {
     listItemsRequestRef.current = listId
+    // listItems is one shared array reused across whichever list is active —
+    // without this, switching lists would flash the *previous* list's items
+    // under the new tab's label until the fetch resolves.
     setLoading(true)
     try {
       const data = await apiFetch(`/api/lists/${listId}/items`).then(r => r.json())
@@ -121,6 +127,11 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    // fetchQueue/fetchLists are shared with imperative refetches elsewhere
+    // (add/remove handlers, list switching) — inlining their fetch logic
+    // here to dodge this lint rule would mean duplicating it at every call
+    // site instead.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchQueue()
     fetchLists()
     fetch('/api/settings/preferences').then(r => r.json()).then((d: { defaultQueueSort?: typeof sort }) => {
@@ -140,13 +151,18 @@ export default function HomePage() {
   }, [fetchQueue, fetchLists])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeList !== 'queue') fetchListItems(activeList)
   }, [activeList, fetchListItems])
 
-  // Load/clear pin when active list changes
+  // Load/clear pin when active list changes — reads localStorage, which
+  // isn't available during SSR, so this has to run post-mount rather than
+  // as a lazy useState initializer (that would make the client's first
+  // render disagree with the server-rendered HTML).
   useEffect(() => {
     if (typeof window === 'undefined') return
     const stored = localStorage.getItem(`verdict_pin_${activeList}`)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPinnedKey(stored ?? null)
     setSearch('')
   }, [activeList])
@@ -386,6 +402,10 @@ export default function HomePage() {
 
   const sourceItems = activeList === 'queue' ? queue : listAsQueue
 
+  // React Compiler can't verify it would produce equivalent auto-memoization
+  // for this filter/sort chain and skips optimizing the component as a
+  // result — the manual useMemo below is unaffected and still works.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const displayItems = useMemo(() => sourceItems
     .filter(i => filter === 'all' || i.mediaType === filter)
     .filter(i => !search || i.title.toLowerCase().includes(search.toLowerCase()))
@@ -893,7 +913,7 @@ export default function HomePage() {
       )}
 
       {/* Modals */}
-      {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} onPick={() => {}} />}
+      {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} />}
       {showWatchTonight && (
         <WatchTonightModal
           items={queue}

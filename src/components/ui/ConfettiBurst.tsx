@@ -20,6 +20,7 @@ export default function ConfettiBurst({ onDone }: { onDone: () => void }) {
   const [pieces, setPieces] = useState<Piece[]>([])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPieces(Array.from({ length: 22 }, (_, i) => ({
       id: i,
       left: `${Math.round(Math.random() * 100)}%`,

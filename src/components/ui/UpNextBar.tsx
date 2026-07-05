@@ -31,6 +31,10 @@ export default function UpNextBar() {
   }, [])
 
   useEffect(() => {
+    // sync() also runs on mount to establish initial state, not just as the
+    // event listener callback — otherwise the bar would stay empty until
+    // the first pin-changed/storage event fires.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     sync()
     window.addEventListener('verdict:pin-changed', sync)
     window.addEventListener('storage', sync)

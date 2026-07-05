@@ -38,8 +38,12 @@ export default function ActivityFeed() {
   const [loaded, setLoaded] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
+  // Reads localStorage, which isn't available during SSR, so this has to
+  // run post-mount rather than as a lazy useState initializer (that would
+  // make the client's first render disagree with the server-rendered HTML).
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCollapsed(localStorage.getItem(STORAGE_KEY) === '1')
   }, [])
 

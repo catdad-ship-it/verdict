@@ -34,8 +34,12 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
   const [pickIdx, setPickIdx]       = useState(0)
   const [pinned, setPinned]         = useState(false)
 
-  // Recompute candidates whenever limit changes
+  // Recompute candidates whenever limit changes. This has to be an effect
+  // rather than a plain derived value: shuffle() uses Math.random(), so
+  // recomputing it during render would reshuffle on every unrelated
+  // re-render instead of only when limit/items actually change.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (limit === null) { setCandidates([]); setPickIdx(0); setPinned(false); return }
     const filtered = items.filter(i => {
       if (limit === Infinity) return true          // 3+ hrs: show everything
@@ -94,7 +98,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
             ◼ WHAT DO YOU HAVE TONIGHT?
           </p>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginBottom: '1.25rem' }}>
-            Pick your window — I'll find something that fits.
+            Pick your window — I&apos;ll find something that fits.
           </p>
 
           {/* Time selector */}

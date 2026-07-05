@@ -83,7 +83,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
 
           {/* Rating */}
           <div className="mb-5">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>How'd you rate it?</p>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>How&apos;d you rate it?</p>
             <div className="flex items-center gap-2 flex-wrap">
               {[1,2,3,4,5].map(n => (
                 <button key={n}

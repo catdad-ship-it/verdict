@@ -8,7 +8,21 @@ import { NextRequest, NextResponse } from 'next/server'
 // the GET backfill below doesn't re-fetch + re-write the same row forever.
 const NO_RUNTIME = -1
 
-function toQueueItem(row: any) {
+interface QueueRow {
+  id: string
+  tmdb_id: number
+  media_type: string
+  title: string
+  poster_path: string | null
+  genre_ids: number[] | null
+  runtime: number | null
+  release_year: number | null
+  imdb_rating: number | null
+  rt_score: number | null
+  added_at: string
+}
+
+function toQueueItem(row: QueueRow) {
   return {
     id:          row.id,
     tmdbId:      row.tmdb_id,
