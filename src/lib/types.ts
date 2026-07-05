@@ -87,12 +87,6 @@ export interface PostWatchAnswers {
   notes?: string
 }
 
-export interface FinishTime {
-  endTime: string       // e.g. "11:28 PM"
-  duration: string      // e.g. "2h 28m"
-  isLate: boolean       // past midnight
-}
-
 // TMDB genre map
 export const TMDB_GENRES: Record<number, string> = {
   28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy',

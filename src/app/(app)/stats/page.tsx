@@ -59,19 +59,22 @@ function CardLabel({ children }: { children: React.ReactNode }) {
 function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) {
   const countByDate = new Map(days.map(d => [d.date, d.count]))
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  // UTC throughout — the server buckets heatmapDays by UTC day, so
+  // stepping/keying this grid in local time would shift every cell by a
+  // day for anyone not at UTC+0 (worse, by a variable amount across DST).
+  const now = new Date()
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const TOTAL_DAYS = 371 // 53 weeks
   const start = new Date(today)
-  start.setDate(start.getDate() - (TOTAL_DAYS - 1))
-  start.setDate(start.getDate() - start.getDay()) // back up to the preceding Sunday
+  start.setUTCDate(start.getUTCDate() - (TOTAL_DAYS - 1))
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay()) // back up to the preceding Sunday
 
   const cells: { date: string; count: number }[] = []
   const cursor = new Date(start)
   while (cursor <= today) {
     const iso = cursor.toISOString().slice(0, 10)
     cells.push({ date: iso, count: countByDate.get(iso) ?? 0 })
-    cursor.setDate(cursor.getDate() + 1)
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
   }
 
   const weeks: { date: string; count: number }[][] = []
@@ -89,8 +92,8 @@ function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) 
       <div style={{ display: 'flex', gap: 3, paddingTop: 14, width: 'max-content' }}>
         {weeks.map((week, wi) => {
           const firstDay = new Date(week[0].date)
-          const prevMonth = wi > 0 ? new Date(weeks[wi - 1][0].date).getMonth() : null
-          const isNewMonth = prevMonth !== null && prevMonth !== firstDay.getMonth()
+          const prevMonth = wi > 0 ? new Date(weeks[wi - 1][0].date).getUTCMonth() : null
+          const isNewMonth = prevMonth !== null && prevMonth !== firstDay.getUTCMonth()
           return (
             <div key={week[0].date} style={{ display: 'flex', flexDirection: 'column', gap: 3, position: 'relative' }}>
               {isNewMonth && (
@@ -98,7 +101,7 @@ function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) 
                   position: 'absolute', top: -14, left: 0, whiteSpace: 'nowrap',
                   fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
                 }}>
-                  {firstDay.toLocaleDateString('en-US', { month: 'short' })}
+                  {firstDay.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })}
                 </span>
               )}
               {week.map(day => (

@@ -45,7 +45,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from('queue_items')
-    .select('*')
+    .select('id, tmdb_id, media_type, title, poster_path, genre_ids, runtime, release_year, imdb_rating, rt_score, added_at')
     .eq('user_id', user.id)
     // Manually-dragged rows (sort_order set) come first in that exact order;
     // anything never touched by drag-to-reorder (sort_order null) falls back
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   if (!isFiniteNumber(tmdb_id)) return badRequest('tmdb_id is required')
   if (!isNonEmptyString(title)) return badRequest('title is required')
 
-  let runtime     = body.runtime     ?? body.runtime     ?? null
+  let runtime     = body.runtime     ?? null
   let releaseYear = body.releaseYear ?? body.release_year ?? null
   let imdbRating  = body.imdbRating  ?? body.imdb_rating  ?? null
   let rtScore     = body.rtScore     ?? body.rt_score     ?? null

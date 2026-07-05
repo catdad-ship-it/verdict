@@ -27,6 +27,7 @@ async function fetchSubreddit(sub: string, sort: 'hot' | 'top' = 'hot'): Promise
         signal: AbortSignal.timeout(8000),
       }
     )
+    if (!res.ok) return []
     const data = await res.json()
     return data.data?.children?.map((c: { data: RedditPost }) => c.data) ?? []
   } catch {

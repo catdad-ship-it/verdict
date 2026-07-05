@@ -354,7 +354,7 @@ export default function TitleDetailModal({
               <iframe
                 src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
                 title="Trailer"
-                allow="accelerate-compute; encrypted-media; picture-in-picture; autoplay"
+                allow="accelerometer; encrypted-media; picture-in-picture; autoplay"
                 allowFullScreen
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
               />

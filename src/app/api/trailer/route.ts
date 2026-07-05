@@ -26,6 +26,6 @@ export async function GET(req: NextRequest) {
     if (!trailer) return NextResponse.json({ url: null, key: null })
     return NextResponse.json({ url: `https://www.youtube.com/watch?v=${trailer.key}`, key: trailer.key })
   } catch {
-    return NextResponse.json({ url: null })
+    return NextResponse.json({ url: null, key: null })
   }
 }

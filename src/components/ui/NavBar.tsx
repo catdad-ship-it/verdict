@@ -89,17 +89,13 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
             style={{
               width: 32, height: 32,
               color: pathname === '/settings' ? 'var(--amber)' : 'var(--cream-dim)',
-            }}
-            onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
-            onMouseOut={e => (e.currentTarget.style.color = pathname === '/settings' ? 'var(--amber)' : 'var(--cream-dim)')}>
+            }}>
             <Settings size={16} />
           </Link>
           <div className="w-px h-5 mx-2 hidden md:block" style={{ background: 'var(--border)' }} />
           <button onClick={signOut}
             className="text-xs font-semibold tracking-widest uppercase px-2.5 py-1.5 rounded-sm transition-colors"
-            style={{ color: 'var(--cream-dim)', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}
-            onMouseOver={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
-            onMouseOut={e => (e.currentTarget.style.color = 'var(--cream-dim)')}>
+            style={{ color: 'var(--cream-dim)', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}>
             <LogOut size={13} /> OUT
           </button>
         </div>

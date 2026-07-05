@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Play } from 'lucide-react'
@@ -12,6 +12,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Rendered client-only — computing this during SSR would produce a
+  // different string than the client's hydration pass, causing a
+  // hydration mismatch.
+  const [time, setTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }))
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -57,7 +66,7 @@ export default function LoginPage() {
           </h2>
           <div className="font-led text-xs px-2 py-1 rounded-sm"
                style={{ background: '#070604', border: '1px solid #1A1610', color: 'var(--led-orange)', textShadow: '0 0 6px var(--led-glow)' }}>
-            {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {time}
           </div>
         </div>
 

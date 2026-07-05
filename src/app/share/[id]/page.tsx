@@ -20,7 +20,9 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
 
   const [{ data: list }, { data: items }] = await Promise.all([
     supabase.from('lists').select('id, name').eq('id', id).single(),
-    supabase.from('list_items').select('*').eq('list_id', id).order('added_at', { ascending: false }),
+    supabase.from('list_items')
+      .select('id, tmdb_id, title, poster_path, media_type, release_year, runtime, imdb_rating, rt_score')
+      .eq('list_id', id).order('added_at', { ascending: false }),
   ])
 
   if (!list) notFound()

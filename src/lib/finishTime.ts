@@ -15,9 +15,7 @@ export function calcFinishTime(runtimeMinutes: number, startDate?: Date): Finish
   const h12   = hours % 12 || 12
   const endTime = `${h12}:${String(mins).padStart(2, '0')} ${ampm}`
 
-  const h = Math.floor(runtimeMinutes / 60)
-  const m = runtimeMinutes % 60
-  const duration = h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`
+  const duration = formatRuntime(runtimeMinutes)
 
   const day = now.getDay()  // 0=Sun, 6=Sat
   const isWeekend = day === 0 || day === 5 || day === 6

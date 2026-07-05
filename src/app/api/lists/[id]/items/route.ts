@@ -14,7 +14,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('list_items')
-    .select('*')
+    .select('id, list_id, tmdb_id, media_type, title, poster_path, genre_ids, runtime, release_year, imdb_rating, rt_score, overview, added_at')
     .eq('list_id', id)
     .eq('user_id', user.id)
     .order('added_at', { ascending: false })

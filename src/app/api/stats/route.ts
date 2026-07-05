@@ -69,20 +69,21 @@ export async function GET() {
     .sort(([, a], [, b]) => b - a)
     .map(([tag, count]) => ({ tag, count }))
 
-  // Monthly activity — last 12 months
+  // Monthly activity — last 12 months. UTC throughout (matches the daily
+  // heatmap below) so bucketing doesn't depend on the server's local TZ.
   const now = new Date()
   const monthlyActivity = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-    const year = d.getFullYear()
-    const month = d.getMonth()
-    const label = d.toLocaleDateString('en-US', { month: 'short' })
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1))
+    const year = d.getUTCFullYear()
+    const month = d.getUTCMonth()
+    const label = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
     const moviesWatched = m.filter(mov => {
       const w = new Date(mov.watched_at)
-      return w.getFullYear() === year && w.getMonth() === month
+      return w.getUTCFullYear() === year && w.getUTCMonth() === month
     }).length
     const showsUpdated = s.filter(show => {
       const w = new Date(show.updated_at)
-      return w.getFullYear() === year && w.getMonth() === month
+      return w.getUTCFullYear() === year && w.getUTCMonth() === month
     }).length
     return { month: label, movies: moviesWatched, shows: showsUpdated }
   })
