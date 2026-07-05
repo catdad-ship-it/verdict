@@ -7,6 +7,7 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import { WatchedListSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
+import { useMarkWatched } from '@/hooks/useMarkWatched'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface WatchedMovie {
@@ -37,6 +38,7 @@ function Stars({ n }: { n: number | null }) {
 
 export default function WatchedPage() {
   const toast = useToast()
+  const markWatched = useMarkWatched()
   const [movies, setMovies]       = useState<WatchedMovie[]>([])
   const [shows, setShows]         = useState<WatchedShow[]>([])
   const [tab, setTab]             = useState<'movies' | 'shows'>('movies')
@@ -65,22 +67,14 @@ export default function WatchedPage() {
 
   const handleRewatch = async (answers: PostWatchAnswers) => {
     if (!replayTarget) return
-    await fetch('/api/watched', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type:  'movie',
-        tmdb_id:     replayTarget.tmdbId,
-        title:       replayTarget.title,
-        poster_path: replayTarget.posterPath,
-        runtime:     replayTarget.runtime,
-        user_rating: answers.userRating,
-        what_worked: answers.whatWorked,
-        want_more:   answers.wantMoreLikeThis,
-        notes:       answers.notes ?? null,
-        is_rewatch:  true,
-      }),
-    })
+    await markWatched({
+      mediaType:  'movie',
+      tmdbId:     replayTarget.tmdbId,
+      title:      replayTarget.title,
+      posterPath: replayTarget.posterPath,
+      runtime:    replayTarget.runtime,
+      isRewatch:  true,
+    }, answers)
     setReplayTarget(null)
     loadData()
   }

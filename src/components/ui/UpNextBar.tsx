@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react'
 import Image from 'next/image'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import PostWatchModal from '@/components/modals/PostWatchModal'
+import { useMarkWatched } from '@/hooks/useMarkWatched'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 const PIN_KEY = 'verdict_pin_queue'
@@ -17,6 +18,7 @@ const PIN_KEY = 'verdict_pin_queue'
 export default function UpNextBar() {
   const [item, setItem] = useState<QueueItem | null>(null)
   const [postWatch, setPostWatch] = useState(false)
+  const markWatched = useMarkWatched()
 
   const sync = useCallback(async () => {
     const pinnedKey = typeof window !== 'undefined' ? localStorage.getItem(PIN_KEY) : null
@@ -46,23 +48,14 @@ export default function UpNextBar() {
 
   const handleSave = async (answers: PostWatchAnswers) => {
     if (!item) return
-    await fetch('/api/watched', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type:  item.mediaType,
-        tmdb_id:     item.tmdbId,
-        title:       item.title,
-        poster_path: item.posterPath,
-        genre_ids:   item.genreIds,
-        runtime:     item.runtime,
-        user_rating: answers.userRating,
-        what_worked: answers.whatWorked,
-        want_more:   answers.wantMoreLikeThis,
-        notes:       answers.notes ?? null,
-        status:      item.mediaType === 'tv' ? 'watching' : undefined,
-      }),
-    })
+    await markWatched({
+      mediaType:   item.mediaType,
+      tmdbId:      item.tmdbId,
+      title:       item.title,
+      posterPath:  item.posterPath,
+      genreIds:    item.genreIds,
+      runtime:     item.runtime,
+    }, answers)
     localStorage.removeItem(PIN_KEY)
     setPostWatch(false)
     setItem(null)

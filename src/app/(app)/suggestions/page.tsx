@@ -6,6 +6,7 @@ import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
+import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { CardGridSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
@@ -34,6 +35,7 @@ type RatingFilter = 'all' | 'high'
 
 export default function SuggestionsPage() {
   const toast = useToast()
+  const markWatched = useMarkWatched()
   const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
@@ -163,16 +165,14 @@ export default function SuggestionsPage() {
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
-    await fetch('/api/watched', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type: 'movie', tmdb_id: postWatch.id, title: postWatch.title,
-        poster_path: postWatch.posterPath, genre_ids: postWatch.genreIds ?? [],
-        runtime: postWatch.runtime, user_rating: answers.userRating,
-        what_worked: answers.whatWorked, want_more: answers.wantMoreLikeThis,
-      }),
-    })
+    await markWatched({
+      mediaType:  'movie',
+      tmdbId:     postWatch.id,
+      title:      postWatch.title,
+      posterPath: postWatch.posterPath,
+      genreIds:   postWatch.genreIds ?? [],
+      runtime:    postWatch.runtime,
+    }, answers)
     setPostWatch(null)
   }
 

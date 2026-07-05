@@ -6,6 +6,7 @@ import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
+import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { ShelfSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
@@ -63,6 +64,7 @@ function Shelf({
 
 export default function NewReleasesPage() {
   const toast = useToast()
+  const markWatched = useMarkWatched()
   const [nowPlaying, setNowPlaying]   = useState<Movie[]>([])
   const [upcoming, setUpcoming]       = useState<Movie[]>([])
   const [streaming, setStreaming]     = useState<Movie[]>([])
@@ -140,16 +142,14 @@ export default function NewReleasesPage() {
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
-    await fetch('/api/watched', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type: 'movie', tmdb_id: postWatch.tmdbId, title: postWatch.title,
-        poster_path: postWatch.posterPath, genre_ids: postWatch.genreIds ?? [],
-        runtime: postWatch.runtime, user_rating: answers.userRating,
-        what_worked: answers.whatWorked, want_more: answers.wantMoreLikeThis,
-      }),
-    })
+    await markWatched({
+      mediaType:  'movie',
+      tmdbId:     postWatch.tmdbId!,
+      title:      postWatch.title,
+      posterPath: postWatch.posterPath,
+      genreIds:   postWatch.genreIds ?? [],
+      runtime:    postWatch.runtime,
+    }, answers)
     setPostWatch(null)
   }
 

@@ -11,6 +11,7 @@ import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import ActivityFeed from '@/components/ui/ActivityFeed'
 import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
+import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { RowListSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
@@ -34,6 +35,7 @@ type ActiveList = 'queue' | string
 
 export default function HomePage() {
   const toast = useToast()
+  const markWatched = useMarkWatched()
   const [queue, setQueue]           = useState<QueueItem[]>([])
   const [lists, setLists]           = useState<UserList[]>([])
   const [activeList, setActiveList] = useState<ActiveList>('queue')
@@ -357,23 +359,14 @@ export default function HomePage() {
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
-    await fetch('/api/watched', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media_type:  postWatch.mediaType,
-        tmdb_id:     postWatch.tmdbId,
-        title:       postWatch.title,
-        poster_path: postWatch.posterPath,
-        genre_ids:   postWatch.genreIds,
-        runtime:     postWatch.runtime,
-        user_rating: answers.userRating,
-        what_worked: answers.whatWorked,
-        want_more:   answers.wantMoreLikeThis,
-        notes:       answers.notes ?? null,
-        status:      postWatch.mediaType === 'tv' ? 'watching' : undefined,
-      }),
-    })
+    await markWatched({
+      mediaType:   postWatch.mediaType,
+      tmdbId:      postWatch.tmdbId,
+      title:       postWatch.title,
+      posterPath:  postWatch.posterPath,
+      genreIds:    postWatch.genreIds,
+      runtime:     postWatch.runtime,
+    }, answers)
     if (activeList === 'queue') await fetchQueue()
     else await fetchListItems(activeList)
     setPostWatch(null)
