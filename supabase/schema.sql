@@ -44,7 +44,7 @@ create table public.queue_items (
   imdb_rating numeric(3,1),
   rt_score integer,
   added_at timestamptz default now(),
-  sort_order integer default 0
+  sort_order integer  -- null = no manual position yet (falls back to added_at ordering)
 );
 
 alter table public.queue_items enable row level security;
