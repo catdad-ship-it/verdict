@@ -4,9 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // /share never depends on auth state — skip the getUser() network
-  // round-trip entirely instead of paying it just to fall through as public.
-  if (pathname.startsWith('/share')) {
+  // /share and /api/health never depend on auth state — skip the getUser()
+  // network round-trip entirely instead of paying it just to fall through
+  // as public. The health check in particular needs to stay fast and cheap
+  // since Fly hits it on every machine.
+  if (pathname.startsWith('/share') || pathname === '/api/health') {
     return NextResponse.next()
   }
 
