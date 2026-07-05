@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Verdict
 
-## Getting Started
+A personal movie/TV tracker with a VHS aesthetic — queue, watched history,
+suggestions, new releases, stats, and shareable lists. Built with Next.js
+(App Router), Supabase (Postgres + Auth + RLS), TMDB, and OMDB. Deployed on
+Fly.io.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
+cp .env.local.example .env.local   # fill in the keys below
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See `.env.local.example` for the full list and where to get each key.
+Required: Supabase project URL/anon key/service role key, and a TMDB API
+key. Optional (each degrades gracefully without it): OMDB, Trakt, Fanart.tv,
+Does The Dog Die.
 
-## Learn More
+### Database
 
-To learn more about Next.js, take a look at the following resources:
+Run `supabase/schema.sql` in a fresh Supabase project's SQL editor, then
+apply everything in `supabase/migrations/` in filename order.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run dev         # start the dev server
+npm run build        # production build
+npm run lint         # eslint
+npm run typecheck    # tsc --noEmit
+npm test             # vitest run
+```
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+git push
+fly deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deployed as `verdict-bnieman` on Fly.io (region `iad`). `NEXT_PUBLIC_*`
+env vars are baked in at build time via `[build.args]` in `fly.toml` —
+`fly secrets set` only affects runtime env vars and won't update them.
