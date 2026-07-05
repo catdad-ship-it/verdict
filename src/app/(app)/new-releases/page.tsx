@@ -46,7 +46,7 @@ function Shelf({
                 tmdbId={m.tmdbId!} title={m.title} posterPath={m.posterPath}
                 mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
                 imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
-                providerData={providersMap[`movie:${m.tmdbId}`]}
+                providerData={providersMap[`movie:${m.tmdbId}`]} batchManaged
                 isNew={!soon && !stream} isSoon={soon}
                 isInQueue={addedIds.has(m.tmdbId!)}
                 onAddToQueue={addedIds.has(m.tmdbId!) ? undefined : () => onAddToQueue(m)}

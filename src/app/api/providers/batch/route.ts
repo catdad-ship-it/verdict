@@ -62,6 +62,9 @@ async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set
 // Lets the page fetch provider data for an entire screen of cards in one
 // round trip instead of one fetch per VHSCard (was causing 20-40+ parallel
 // client requests on pages like Home/Suggestions/New Releases).
+const MAX_ITEMS = 200
+const MAX_ENTRIES = 60
+
 export async function POST(req: NextRequest) {
   let items: BatchEntry[] = []
   try {
@@ -69,6 +72,10 @@ export async function POST(req: NextRequest) {
     items = Array.isArray(body?.items) ? body.items : []
   } catch {
     return NextResponse.json({ results: {} })
+  }
+
+  if (items.length > MAX_ITEMS) {
+    return NextResponse.json({ error: `items exceeds max of ${MAX_ITEMS}` }, { status: 400 })
   }
 
   if (!KEY || items.length === 0) {
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
     seen.set(`${mediaType}:${item.tmdbId}`, { tmdbId: item.tmdbId, mediaType })
   }
 
-  const entries = Array.from(seen.entries())
+  const entries = Array.from(seen.entries()).slice(0, MAX_ENTRIES)
   const ownedIds = await getOwnedIds()
   const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType, ownedIds)))
 

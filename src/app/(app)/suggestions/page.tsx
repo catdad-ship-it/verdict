@@ -246,7 +246,7 @@ export default function SuggestionsPage() {
               imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
               isInQueue={addedIds.has(m.id)}
               matchReason={m.matchReason}
-              providerData={providersMap[`movie:${m.id}`]}
+              providerData={providersMap[`movie:${m.id}`]} batchManaged
               onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
               onMarkWatched={() => setPostWatch(m)}
               onDismiss={() => handleDismiss(m.id, m.genreIds ?? [], m.title)}

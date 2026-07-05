@@ -36,6 +36,11 @@ interface VHSCardProps {
   // (see /api/providers/batch). When omitted, the card falls back to its
   // own fetch — keep that fallback for any callers that don't batch yet.
   providerData?: ProviderData
+  // Set by a parent that owns batching for every card it renders, even
+  // while its own batch request is still in flight (providerData is
+  // undefined during that window too) — suppresses the self-fetch so
+  // dozens of cards don't each fire /api/providers before the batch lands.
+  batchManaged?: boolean
 }
 
 export default function VHSCard({
@@ -44,7 +49,7 @@ export default function VHSCard({
   isNew, isSoon, isStream, isTrending, trendingCount,
   isInQueue, isWatched, currentSeason, totalSeasons, matchReason,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
-  providerData,
+  providerData, batchManaged,
 }: VHSCardProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
@@ -61,9 +66,11 @@ export default function VHSCard({
   const [fetchedHasBuy, setFetchedHasBuy]   = useState(false)
   const [selfFetchLoaded, setSelfFetchLoaded] = useState(false)
 
-  // Only self-fetch when the parent hasn't already batched provider data for us.
+  // Only self-fetch when no parent owns batching for us. A batch-managed
+  // card waits for providerData to arrive rather than firing its own
+  // request during the window before the parent's batch resolves.
   useEffect(() => {
-    if (providerData) return
+    if (providerData || batchManaged) return
     let cancelled = false
     fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
       .then(r => r.json())
@@ -77,7 +84,7 @@ export default function VHSCard({
       })
       .catch(() => !cancelled && setSelfFetchLoaded(true))
     return () => { cancelled = true }
-  }, [tmdbId, mediaType, providerData])
+  }, [tmdbId, mediaType, providerData, batchManaged])
 
   const providers       = providerData ? providerData.providers      : fetchedProviders
   const ownedProviders  = providerData ? providerData.ownedProviders : fetchedOwnedProviders

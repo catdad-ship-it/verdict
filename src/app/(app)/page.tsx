@@ -803,7 +803,7 @@ export default function HomePage() {
                     runtime={item.runtime} releaseYear={item.releaseYear}
                     imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
                     isTrending trendingCount={item.watchers}
-                    providerData={providersMap[`${item.mediaType === 'tv' ? 'tv' : 'movie'}:${item.tmdbId}`]}
+                    providerData={providersMap[`${item.mediaType === 'tv' ? 'tv' : 'movie'}:${item.tmdbId}`]} batchManaged
                     onAddToQueue={() => addToQueue({
                       tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
                       mediaType: item.mediaType, genreIds: item.genreIds, runtime: item.runtime,
