@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
 import { canonicalizeAndDedupe } from '@/lib/streamingServices'
+import { getOwnedIds } from '@/lib/providers'
+import type { StreamProvider } from '@/lib/providers'
 import { NextRequest, NextResponse } from 'next/server'
-import type { StreamProvider } from '../route'
 
 const BASE = 'https://api.themoviedb.org/3'
 const KEY  = process.env.TMDB_API_KEY
@@ -16,18 +16,6 @@ interface ProviderResult {
   ownedProviders: StreamProvider[]
   hasRent: boolean
   hasBuy: boolean
-}
-
-async function getOwnedIds(): Promise<Set<number>> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return new Set()
-    const { data } = await supabase.from('profiles').select('streaming_provider_ids').eq('id', user.id).maybeSingle()
-    return new Set(data?.streaming_provider_ids ?? [])
-  } catch {
-    return new Set()
-  }
 }
 
 async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set<number>): Promise<ProviderResult> {

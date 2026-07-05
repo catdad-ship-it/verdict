@@ -1,15 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import type { ActivityItem } from '@/lib/activity'
 import { NextResponse } from 'next/server'
-
-export interface ActivityItem {
-  id: string
-  type: 'added' | 'watched_movie' | 'watched_show'
-  title: string
-  posterPath: string | null
-  timestamp: string
-  rating?: number | null
-  status?: string
-}
 
 // Merges the three tables that already track "when did the user do something"
 // (queue adds, watched movies, watched shows) into one recency-sorted feed.
