@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Search, Plus, Tv, ChevronLeft, User } from 'lucide-react'
 import { posterUrl } from '@/lib/utils'
 import type { PersonResult, PersonCreditItem } from '@/lib/tmdb'
+import FilterChips from '@/components/ui/FilterChips'
 import Image from 'next/image'
 
 interface SearchResult {
@@ -256,28 +257,16 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
         {/* Filter chips — movie/show results only */}
         {view === 'search' && tab !== 'people' && results.length > 0 && (
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', padding: '0 1rem 0.75rem', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>DECADE:</span>
-              {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
-                <button key={v} onClick={() => setDecadeFilter(v)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.4rem',
-                  background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
-                  color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
-                  border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-                }}>{label}</button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RATING:</span>
-              {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
-                <button key={v} onClick={() => setRatingFilter(v)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.4rem',
-                  background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
-                  color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
-                  border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-                }}>{label}</button>
-              ))}
-            </div>
+            <FilterChips
+              label="DECADE:" compact
+              options={[['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const}
+              active={decadeFilter} onChange={setDecadeFilter}
+            />
+            <FilterChips
+              label="RATING:" compact
+              options={[['all','ALL'],['high','7+ ★']] as const}
+              active={ratingFilter} onChange={setRatingFilter}
+            />
           </div>
         )}
 

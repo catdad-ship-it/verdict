@@ -10,6 +10,7 @@ import WatchTonightModal from '@/components/modals/WatchTonightModal'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import ActivityFeed from '@/components/ui/ActivityFeed'
 import BulkActionBar, { BulkActionButton, SelectModeToggle } from '@/components/ui/BulkActionBar'
+import FilterChips from '@/components/ui/FilterChips'
 import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
@@ -690,15 +691,11 @@ export default function HomePage() {
           }}>{label}</button>
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>SORT:</span>
-          {([['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const).map(([s, label]) => (
-            <button key={s} onClick={() => setSort(s)} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
-              background: sort === s ? 'var(--amber-dim)' : 'transparent',
-              color: sort === s ? 'var(--amber)' : 'var(--cream-dim)',
-              border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-            }}>{label}</button>
-          ))}
+          <FilterChips
+            label="SORT:"
+            options={[['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const}
+            active={sort} onChange={setSort}
+          />
           {displayItems.length > 0 && (
             <SelectModeToggle active={selectMode} onClick={toggleSelectMode} compact />
           )}

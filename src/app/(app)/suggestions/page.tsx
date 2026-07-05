@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { usePickList } from '@/hooks/usePickList'
 import { CardGridSkeleton } from '@/components/ui/Skeleton'
+import FilterChips from '@/components/ui/FilterChips'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
@@ -182,39 +183,21 @@ export default function SuggestionsPage() {
       </p>
       {!loading && state.visible.length > 0 && (
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>DECADE:</span>
-            {([['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const).map(([v, label]) => (
-              <button key={v} onClick={() => setDecadeFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
-                background: decadeFilter === v ? 'var(--amber-dim)' : 'transparent',
-                color: decadeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
-                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-              }}>{label}</button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RUNTIME:</span>
-            {([['all','ALL'],['short','UNDER 2H']] as const).map(([v, label]) => (
-              <button key={v} onClick={() => setRuntimeFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
-                background: runtimeFilter === v ? 'var(--amber-dim)' : 'transparent',
-                color: runtimeFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
-                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-              }}>{label}</button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>RATING:</span>
-            {([['all','ALL'],['high','7+ ★']] as const).map(([v, label]) => (
-              <button key={v} onClick={() => setRatingFilter(v)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.2rem 0.5rem',
-                background: ratingFilter === v ? 'var(--amber-dim)' : 'transparent',
-                color: ratingFilter === v ? 'var(--amber)' : 'var(--cream-dim)',
-                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-              }}>{label}</button>
-            ))}
-          </div>
+          <FilterChips
+            label="DECADE:"
+            options={[['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const}
+            active={decadeFilter} onChange={setDecadeFilter}
+          />
+          <FilterChips
+            label="RUNTIME:"
+            options={[['all','ALL'],['short','UNDER 2H']] as const}
+            active={runtimeFilter} onChange={setRuntimeFilter}
+          />
+          <FilterChips
+            label="RATING:"
+            options={[['all','ALL'],['high','7+ ★']] as const}
+            active={ratingFilter} onChange={setRatingFilter}
+          />
         </div>
       )}
       {loading ? (
