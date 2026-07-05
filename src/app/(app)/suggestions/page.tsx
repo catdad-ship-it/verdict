@@ -7,6 +7,7 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
+import { usePickList } from '@/hooks/usePickList'
 import { CardGridSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
@@ -36,6 +37,7 @@ type RatingFilter = 'all' | 'high'
 export default function SuggestionsPage() {
   const toast = useToast()
   const markWatched = useMarkWatched()
+  const pickList = usePickList()
   const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
   const [loading, setLoading]     = useState(true)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
@@ -89,19 +91,10 @@ export default function SuggestionsPage() {
     if (!m) return
     setPendingAdd(null)
 
-    const body = {
-      tmdbId: m.id, mediaType: 'movie', title: m.title,
-      posterPath: m.posterPath, genreIds: m.genreIds ?? [],
+    await pickList(listId, {
+      tmdbId: m.id, title: m.title, posterPath: m.posterPath, genreIds: m.genreIds,
       runtime: m.runtime, releaseYear: m.releaseYear,
-      imdbRating: m.imdbRating, rtScore: m.rtScore,
-      overview: m.overview,
-    }
-
-    const url = listId === 'queue' ? '/api/queue' : `/api/lists/${listId}/items`
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      imdbRating: m.imdbRating, rtScore: m.rtScore, overview: m.overview,
     })
     setAddedIds(s => new Set([...s, m.id]))
   }

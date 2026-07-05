@@ -7,6 +7,7 @@ import PostWatchModal from '@/components/modals/PostWatchModal'
 import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
+import { usePickList } from '@/hooks/usePickList'
 import { ShelfSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
@@ -65,6 +66,7 @@ function Shelf({
 export default function NewReleasesPage() {
   const toast = useToast()
   const markWatched = useMarkWatched()
+  const pickList = usePickList()
   const [nowPlaying, setNowPlaying]   = useState<Movie[]>([])
   const [upcoming, setUpcoming]       = useState<Movie[]>([])
   const [streaming, setStreaming]     = useState<Movie[]>([])
@@ -103,21 +105,13 @@ export default function NewReleasesPage() {
     if (!m) return
     setPendingAdd(null)
 
-    const body = {
-      tmdbId: m.tmdbId ?? m.id, mediaType: 'movie', title: m.title,
-      posterPath: m.posterPath, genreIds: m.genreIds ?? [],
+    const tmdbId = m.tmdbId ?? m.id!
+    await pickList(listId, {
+      tmdbId, title: m.title, posterPath: m.posterPath, genreIds: m.genreIds,
       runtime: m.runtime, releaseYear: m.releaseYear,
-      imdbRating: m.imdbRating, rtScore: m.rtScore,
-      overview: m.overview,
-    }
-
-    const url = listId === 'queue' ? '/api/queue' : `/api/lists/${listId}/items`
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      imdbRating: m.imdbRating, rtScore: m.rtScore, overview: m.overview,
     })
-    setAddedIds(s => new Set([...s, m.tmdbId ?? m.id!]))
+    setAddedIds(s => new Set([...s, tmdbId]))
   }
 
   const handleDismiss = (m: Movie) => {
