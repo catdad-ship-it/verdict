@@ -68,12 +68,16 @@ create table public.watched_movies (
   user_rating integer check (user_rating between 1 and 5),
   what_worked text[],       -- array of tags: 'The Concept', 'The Cast', etc.
   want_more_like_this boolean default true,
+  notes text,
+  is_rewatch boolean default false,
   watched_at timestamptz default now()
 );
 
 alter table public.watched_movies enable row level security;
 create policy "Users manage own watched" on public.watched_movies
   for all using (auth.uid() = user_id);
+
+create index watched_movies_user_id_watched_at_idx on public.watched_movies (user_id, watched_at desc);
 
 -- ── Watched shows (season-level tracking) ──
 create table public.watched_shows (
@@ -97,20 +101,30 @@ create policy "Users manage own shows" on public.watched_shows
 create unique index show_unique on public.watched_shows (user_id, tmdb_id);
 
 -- ── Season ratings ──
+-- Keyed off watched_shows.id rather than (user_id, show_tmdb_id) directly —
+-- ownership is checked via a join to watched_shows below.
 create table public.season_ratings (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users(id) on delete cascade not null,
-  show_tmdb_id integer not null,
+  watched_show_id uuid references public.watched_shows(id) on delete cascade not null,
   season_number integer not null,
   user_rating integer check (user_rating between 1 and 5),
   what_worked text[],
   want_more_like_this boolean default true,
-  rated_at timestamptz default now()
+  notes text,
+  rated_at timestamptz default now(),
+
+  unique (watched_show_id, season_number)
 );
 
 alter table public.season_ratings enable row level security;
 create policy "Users manage own season ratings" on public.season_ratings
-  for all using (auth.uid() = user_id);
+  for all using (
+    exists (
+      select 1 from public.watched_shows
+      where watched_shows.id = season_ratings.watched_show_id
+        and watched_shows.user_id = auth.uid()
+    )
+  );
 
 -- ── User taste profile (for suggestion engine) ──
 create table public.taste_profiles (
