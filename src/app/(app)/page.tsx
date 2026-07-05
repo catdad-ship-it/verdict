@@ -36,6 +36,224 @@ interface TrendingItem {
 
 type ActiveList = 'queue' | string
 
+// Defined at module scope so React doesn't see a new component type on each
+// render (see new-releases/page.tsx's Shelf for the same pattern) — a new
+// type would unmount/remount every VHSCard and re-fire its provider fetch.
+function TrendingShelf({
+  trending, providersMap, onAddToQueue,
+}: {
+  trending: { movies: TrendingItem[]; shows: TrendingItem[] }
+  providersMap: Record<string, ProviderData>
+  onAddToQueue: (item: TrendingItem) => void
+}) {
+  if (trending.movies.length === 0 && trending.shows.length === 0) return null
+  return (
+    <section style={{ marginTop: '3rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
+        <TrendingUp size={16} color="var(--amber)" />
+        <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>TRENDING NOW</h2>
+      </div>
+      <div className="hscroll" style={{ overflowX: 'auto', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: '1rem', minWidth: 'max-content' }}>
+          {[...trending.movies, ...trending.shows].map((item, idx) => (
+            <div key={idx} style={{ width: 140, flexShrink: 0 }}>
+              <VHSCard
+                tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
+                mediaType={item.mediaType === 'tv' ? 'tv' : 'movie'}
+                runtime={item.runtime} releaseYear={item.releaseYear}
+                imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
+                isTrending trendingCount={item.watchers}
+                providerData={providersMap[`${item.mediaType === 'tv' ? 'tv' : 'movie'}:${item.tmdbId}`]} batchManaged
+                onAddToQueue={() => onAddToQueue(item)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+interface ListSelectorDropdownProps {
+  containerRef: React.RefObject<HTMLDivElement | null>
+  activeListName: string
+  activeList: ActiveList
+  lists: UserList[]
+  showSelector: boolean
+  onToggleSelector: () => void
+  onSwitchList: (id: ActiveList) => void
+  pendingDelete: string | null
+  onRequestDelete: (id: string | null) => void
+  onDeleteList: (id: string) => void
+  showNewList: boolean
+  onShowNewList: () => void
+  newListName: string
+  onNewListNameChange: (name: string) => void
+  onCreateList: () => void
+  onCancelNewList: () => void
+}
+
+// Same module-scope rationale as TrendingShelf above.
+function ListSelectorDropdown({
+  containerRef, activeListName, activeList, lists, showSelector, onToggleSelector,
+  onSwitchList, pendingDelete, onRequestDelete, onDeleteList,
+  showNewList, onShowNewList, newListName, onNewListNameChange, onCreateList, onCancelNewList,
+}: ListSelectorDropdownProps) {
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <button
+        onClick={onToggleSelector}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20,
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: 2,
+        }}
+      >
+        {activeListName}
+        <ChevronDown size={16} style={{
+          opacity: 0.7,
+          transform: showSelector ? 'rotate(180deg)' : 'none',
+          transition: 'transform 0.2s',
+        }} />
+      </button>
+
+      {showSelector && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 40,
+          background: 'var(--surface)', border: '1px solid var(--amber-dim)',
+          borderRadius: 4, minWidth: 220, maxWidth: 'calc(100vw - 2rem)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden',
+        }}>
+          {/* Queue */}
+          <button
+            onClick={() => onSwitchList('queue')}
+            style={{
+              width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
+              fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
+              background: activeList === 'queue' ? 'rgba(192,120,24,0.1)' : 'transparent',
+              color: activeList === 'queue' ? 'var(--amber)' : 'var(--cream)',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            {activeList === 'queue' && <Check size={12} />}
+            MY QUEUE
+          </button>
+
+          {lists.length > 0 && <div style={{ height: 1, background: 'var(--border)' }} />}
+
+          {/* Custom lists */}
+          {lists.map(l => (
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center', borderTop: '1px solid var(--border)' }}>
+              {pendingDelete === l.id ? (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 1rem', gap: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f87171', letterSpacing: 1 }}>
+                    DELETE {l.name.toUpperCase()}?
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => { onDeleteList(l.id); onRequestDelete(null) }}
+                      style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
+                        background: '#f87171', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontWeight: 700,
+                      }}
+                    >YES</button>
+                    <button
+                      onClick={() => onRequestDelete(null)}
+                      style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
+                        background: 'var(--raised)', color: 'var(--cream-dim)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer',
+                      }}
+                    >NO</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onSwitchList(l.id)}
+                    style={{
+                      flex: 1, textAlign: 'left', padding: '0.75rem 1rem',
+                      fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
+                      background: activeList === l.id ? 'rgba(192,120,24,0.1)' : 'transparent',
+                      color: activeList === l.id ? 'var(--amber)' : 'var(--cream)',
+                      border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                    }}
+                  >
+                    {activeList === l.id && <Check size={12} />}
+                    {l.name.toUpperCase()}
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(`${window.location.origin}/share/${l.id}`)
+                        .catch(() => {})
+                      window.open(`/share/${l.id}`, '_blank', 'noopener')
+                    }}
+                    title="Share list"
+                    style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                  >
+                    <Share2 size={12} />
+                  </button>
+                  <button
+                    onClick={() => onRequestDelete(l.id)}
+                    title="Delete list"
+                    style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+
+          {/* New list */}
+          <div style={{ borderTop: '1px solid var(--border)' }}>
+            {showNewList ? (
+              <div style={{ padding: '0.75rem 1rem', display: 'flex', gap: 6 }}>
+                <input
+                  autoFocus
+                  value={newListName}
+                  onChange={e => onNewListNameChange(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') onCreateList(); if (e.key === 'Escape') onCancelNewList() }}
+                  placeholder="List name..."
+                  style={{
+                    flex: 1, background: 'var(--raised)', border: '1px solid var(--amber-dim)',
+                    borderRadius: 2, color: 'var(--cream)', fontFamily: 'var(--font-mono)',
+                    fontSize: 16, padding: '0.3rem 0.5rem', outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={onCreateList}
+                  style={{
+                    background: 'var(--amber)', border: 'none', borderRadius: 2,
+                    color: 'var(--bg)', fontFamily: 'var(--font-mono)', fontSize: 11,
+                    padding: '0.3rem 0.6rem', cursor: 'pointer', fontWeight: 700,
+                  }}
+                >
+                  CREATE
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onShowNewList}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
+                  fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
+                  background: 'transparent', color: 'var(--amber)', border: 'none', cursor: 'pointer',
+                }}
+              >
+                ＋ NEW LIST
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const toast = useToast()
   const markWatched = useMarkWatched()
@@ -468,158 +686,24 @@ export default function HomePage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
 
-        {/* List selector dropdown */}
-        <div ref={selectorRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowSelector(s => !s)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20,
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: 2,
-            }}
-          >
-            {activeListName}
-            <ChevronDown size={16} style={{
-              opacity: 0.7,
-              transform: showSelector ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.2s',
-            }} />
-          </button>
-
-          {showSelector && (
-            <div style={{
-              position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 40,
-              background: 'var(--surface)', border: '1px solid var(--amber-dim)',
-              borderRadius: 4, minWidth: 220, maxWidth: 'calc(100vw - 2rem)',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden',
-            }}>
-              {/* Queue */}
-              <button
-                onClick={() => switchList('queue')}
-                style={{
-                  width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
-                  fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
-                  background: activeList === 'queue' ? 'rgba(192,120,24,0.1)' : 'transparent',
-                  color: activeList === 'queue' ? 'var(--amber)' : 'var(--cream)',
-                  border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                }}
-              >
-                {activeList === 'queue' && <Check size={12} />}
-                MY QUEUE
-              </button>
-
-              {lists.length > 0 && <div style={{ height: 1, background: 'var(--border)' }} />}
-
-              {/* Custom lists */}
-              {lists.map(l => (
-                <div key={l.id} style={{ display: 'flex', alignItems: 'center', borderTop: '1px solid var(--border)' }}>
-                  {pendingDelete === l.id ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 1rem', gap: 8 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f87171', letterSpacing: 1 }}>
-                        DELETE {l.name.toUpperCase()}?
-                      </span>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button
-                          onClick={() => { deleteList(l.id); setPendingDelete(null) }}
-                          style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
-                            background: '#f87171', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontWeight: 700,
-                          }}
-                        >YES</button>
-                        <button
-                          onClick={() => setPendingDelete(null)}
-                          style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.25rem 0.6rem',
-                            background: 'var(--raised)', color: 'var(--cream-dim)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer',
-                          }}
-                        >NO</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => switchList(l.id)}
-                        style={{
-                          flex: 1, textAlign: 'left', padding: '0.75rem 1rem',
-                          fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
-                          background: activeList === l.id ? 'rgba(192,120,24,0.1)' : 'transparent',
-                          color: activeList === l.id ? 'var(--amber)' : 'var(--cream)',
-                          border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                        }}
-                      >
-                        {activeList === l.id && <Check size={12} />}
-                        {l.name.toUpperCase()}
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard?.writeText(`${window.location.origin}/share/${l.id}`)
-                            .catch(() => {})
-                          window.open(`/share/${l.id}`, '_blank', 'noopener')
-                        }}
-                        title="Share list"
-                        style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-                      >
-                        <Share2 size={12} />
-                      </button>
-                      <button
-                        onClick={() => setPendingDelete(l.id)}
-                        title="Delete list"
-                        style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
-
-              {/* New list */}
-              <div style={{ borderTop: '1px solid var(--border)' }}>
-                {showNewList ? (
-                  <div style={{ padding: '0.75rem 1rem', display: 'flex', gap: 6 }}>
-                    <input
-                      autoFocus
-                      value={newListName}
-                      onChange={e => setNewListName(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') createList(); if (e.key === 'Escape') setShowNewList(false) }}
-                      placeholder="List name..."
-                      style={{
-                        flex: 1, background: 'var(--raised)', border: '1px solid var(--amber-dim)',
-                        borderRadius: 2, color: 'var(--cream)', fontFamily: 'var(--font-mono)',
-                        fontSize: 16, padding: '0.3rem 0.5rem', outline: 'none',
-                      }}
-                    />
-                    <button
-                      onClick={createList}
-                      style={{
-                        background: 'var(--amber)', border: 'none', borderRadius: 2,
-                        color: 'var(--bg)', fontFamily: 'var(--font-mono)', fontSize: 11,
-                        padding: '0.3rem 0.6rem', cursor: 'pointer', fontWeight: 700,
-                      }}
-                    >
-                      CREATE
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowNewList(true)}
-                    style={{
-                      width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
-                      fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: 1,
-                      background: 'transparent', color: 'var(--amber)', border: 'none', cursor: 'pointer',
-                    }}
-                  >
-                    ＋ NEW LIST
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <ListSelectorDropdown
+          containerRef={selectorRef}
+          activeListName={activeListName}
+          activeList={activeList}
+          lists={lists}
+          showSelector={showSelector}
+          onToggleSelector={() => setShowSelector(s => !s)}
+          onSwitchList={switchList}
+          pendingDelete={pendingDelete}
+          onRequestDelete={setPendingDelete}
+          onDeleteList={deleteList}
+          showNewList={showNewList}
+          onShowNewList={() => setShowNewList(true)}
+          newListName={newListName}
+          onNewListNameChange={setNewListName}
+          onCreateList={createList}
+          onCancelNewList={() => setShowNewList(false)}
+        />
 
         {/* Spin */}
         <div style={{ display: 'flex', gap: 8 }}>
@@ -753,34 +837,16 @@ export default function HomePage() {
       )}
 
       {/* Trending (queue only) */}
-      {activeList === 'queue' && (trending.movies.length > 0 || trending.shows.length > 0) && (
-        <section style={{ marginTop: '3rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
-            <TrendingUp size={16} color="var(--amber)" />
-            <h2 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 16, margin: 0, letterSpacing: 2 }}>TRENDING NOW</h2>
-          </div>
-          <div className="hscroll" style={{ overflowX: 'auto', paddingBottom: 8 }}>
-            <div style={{ display: 'flex', gap: '1rem', minWidth: 'max-content' }}>
-              {[...trending.movies, ...trending.shows].map((item, idx) => (
-                <div key={idx} style={{ width: 140, flexShrink: 0 }}>
-                  <VHSCard
-                    tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
-                    mediaType={item.mediaType === 'tv' ? 'tv' : 'movie'}
-                    runtime={item.runtime} releaseYear={item.releaseYear}
-                    imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}
-                    isTrending trendingCount={item.watchers}
-                    providerData={providersMap[`${item.mediaType === 'tv' ? 'tv' : 'movie'}:${item.tmdbId}`]} batchManaged
-                    onAddToQueue={() => addToQueue({
-                      tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
-                      mediaType: item.mediaType, genreIds: item.genreIds, runtime: item.runtime,
-                      overview: item.overview,
-                    })}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      {activeList === 'queue' && (
+        <TrendingShelf
+          trending={trending}
+          providersMap={providersMap}
+          onAddToQueue={item => addToQueue({
+            tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
+            mediaType: item.mediaType, genreIds: item.genreIds, runtime: item.runtime,
+            overview: item.overview,
+          })}
+        />
       )}
 
       {/* FAB */}
