@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const tmdb_id    = body.tmdb_id    ?? body.tmdbId
   const raw_type   = body.media_type ?? body.mediaType ?? 'movie'
-  const media_type = (raw_type === 'tv' || raw_type === 'show') ? 'tv' : 'movie'
+  const media_type = raw_type === 'tv' ? 'tv' : 'movie'
   const { title, poster_path, posterPath, genre_ids, genreIds } = body
 
   if (!isFiniteNumber(tmdb_id)) return badRequest('tmdb_id is required')
@@ -154,7 +154,7 @@ export async function DELETE(req: NextRequest) {
   const body = await req.json()
   const tmdb_id    = body.tmdb_id    ?? body.tmdbId
   const raw_del    = body.media_type ?? body.mediaType ?? 'movie'
-  const media_type = (raw_del === 'tv' || raw_del === 'show') ? 'tv' : 'movie'
+  const media_type = raw_del === 'tv' ? 'tv' : 'movie'
 
   if (!isFiniteNumber(tmdb_id)) return badRequest('tmdb_id is required')
 

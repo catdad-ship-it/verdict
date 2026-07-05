@@ -40,7 +40,7 @@ export async function POST(
   const body = await req.json()
   const tmdb_id    = body.tmdbId    ?? body.tmdb_id
   const raw_type   = body.mediaType ?? body.media_type ?? 'movie'
-  const media_type = (raw_type === 'tv' || raw_type === 'show') ? 'tv' : 'movie'
+  const media_type = raw_type === 'tv' ? 'tv' : 'movie'
   const { title, posterPath, poster_path, genreIds, genre_ids, overview } = body
 
   let runtime     = body.runtime     ?? null
@@ -87,7 +87,7 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { tmdbId, mediaType } = await req.json()
-  const media_type = (mediaType === 'tv' || mediaType === 'show') ? 'tv' : 'movie'
+  const media_type = mediaType === 'tv' ? 'tv' : 'movie'
 
   const { error } = await supabase
     .from('list_items')

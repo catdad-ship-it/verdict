@@ -361,7 +361,7 @@ export default function HomePage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        media_type:  postWatch.mediaType === 'tv' ? 'show' : 'movie',
+        media_type:  postWatch.mediaType,
         tmdb_id:     postWatch.tmdbId,
         title:       postWatch.title,
         poster_path: postWatch.posterPath,

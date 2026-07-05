@@ -207,7 +207,7 @@ export interface PersonCreditItem {
   posterPath: string | null
   releaseYear: number | null
   genreIds: number[]
-  mediaType: 'movie' | 'show'
+  mediaType: 'movie' | 'tv'
   role: string        // job (director/writer/...) or character name
   popularity: number
 }
@@ -223,7 +223,7 @@ export async function getPersonCredits(personId: number): Promise<PersonCreditIt
   const merged = new Map<string, PersonCreditItem>()
   const upsert = (raw: TMDBPersonCastCredit | TMDBPersonCrewCredit, role: string) => {
     if (raw.media_type !== 'movie' && raw.media_type !== 'tv') return
-    const mediaType: 'movie' | 'show' = raw.media_type === 'tv' ? 'show' : 'movie'
+    const mediaType: 'movie' | 'tv' = raw.media_type === 'tv' ? 'tv' : 'movie'
     const key = `${mediaType}:${raw.id}`
     const dateStr = raw.release_date || raw.first_air_date
     const existing = merged.get(key)

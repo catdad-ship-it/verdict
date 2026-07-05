@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
           user_rating, what_worked, want_more, notes, is_rewatch,
           status, current_season, total_seasons } = body
 
-  if (media_type === 'show') {
+  if (media_type === 'tv') {
     const { error } = await supabase.from('watched_shows').upsert({
       user_id: user.id,
       tmdb_id, title, poster_path, genre_ids, status,

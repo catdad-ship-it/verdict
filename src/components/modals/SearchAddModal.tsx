@@ -15,7 +15,7 @@ interface SearchResult {
   genres?: number[]
   imdbRating?: number | null
   rtScore?: number | null
-  mediaType?: 'movie' | 'show'
+  mediaType?: 'movie' | 'tv'
 }
 
 interface RawSearchItem {
@@ -36,7 +36,7 @@ type RatingFilter = 'all' | 'high'
 
 interface Props {
   onClose: () => void
-  onAdd: (item: SearchResult & { mediaType: 'movie' | 'show' }) => Promise<void>
+  onAdd: (item: SearchResult & { mediaType: 'movie' | 'tv' }) => Promise<void>
 }
 
 export default function SearchAddModal({ onClose, onAdd }: Props) {
@@ -149,7 +149,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
   const handleAdd = async (item: SearchResult) => {
     setAdding(item.tmdbId)
     try {
-      await onAdd({ ...item, mediaType: item.mediaType ?? (tab === 'show' ? 'show' : 'movie') })
+      await onAdd({ ...item, mediaType: item.mediaType ?? (tab === 'show' ? 'tv' : 'movie') })
     } finally {
       setAdding(null)
     }
@@ -308,7 +308,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ color: 'var(--cream)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{credit.title}</span>
-                      {credit.mediaType === 'show' && <Tv size={11} color="var(--amber-dim)" />}
+                      {credit.mediaType === 'tv' && <Tv size={11} color="var(--amber-dim)" />}
                     </div>
                     <div style={{ color: 'var(--cream-dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {credit.releaseYear ?? '—'}

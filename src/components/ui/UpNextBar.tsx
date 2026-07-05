@@ -50,7 +50,7 @@ export default function UpNextBar() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        media_type:  item.mediaType === 'tv' ? 'show' : 'movie',
+        media_type:  item.mediaType,
         tmdb_id:     item.tmdbId,
         title:       item.title,
         poster_path: item.posterPath,
