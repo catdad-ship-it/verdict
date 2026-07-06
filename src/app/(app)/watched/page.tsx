@@ -115,6 +115,7 @@ export default function WatchedPage() {
         fetch('/api/watched', {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ movieIds: ids }),
+          keepalive: true,
         })
       }, { onUndo: () => setMovies(ms => [...toDelete, ...ms]) })
     } else {
@@ -127,6 +128,7 @@ export default function WatchedPage() {
         fetch('/api/watched', {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ showIds: ids }),
+          keepalive: true,
         })
       }, { onUndo: () => setShows(ss => [...toDelete, ...ss]) })
     }

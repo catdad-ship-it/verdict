@@ -490,6 +490,7 @@ export default function HomePage() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tmdbId, mediaType }),
+        keepalive: true,
       })
     }, { onUndo: () => { if (original) setQueue(q => [original, ...q]) } })
     // In case this was the pinned "Up Next" item — let the layout's bar re-sync.
@@ -504,6 +505,7 @@ export default function HomePage() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tmdbId, mediaType }),
+        keepalive: true,
       })
     }, { onUndo: () => { if (original) setListItems(items => [original, ...items]) } })
   }
@@ -548,6 +550,7 @@ export default function HomePage() {
         originals.forEach(o => fetch('/api/queue', {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tmdbId: o.tmdbId, mediaType: o.mediaType }),
+          keepalive: true,
         }))
       }, { onUndo: () => setQueue(q => [...originals, ...q]) })
     } else {
@@ -558,6 +561,7 @@ export default function HomePage() {
         originals.forEach(o => fetch(`/api/lists/${listId}/items`, {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tmdbId: o.tmdb_id, mediaType: o.media_type }),
+          keepalive: true,
         }))
       }, { onUndo: () => setListItems(items => [...originals, ...items]) })
     }

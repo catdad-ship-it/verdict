@@ -131,6 +131,7 @@ export default function SuggestionsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tmdb_id: id, genre_ids: genreIds }),
+        keepalive: true,
       })
     }, {
       onUndo: () => {

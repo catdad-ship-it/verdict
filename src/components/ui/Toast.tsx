@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 interface ToastItem {
   id: number
@@ -37,17 +37,22 @@ let nextId = 1
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  // showUndo's deferred commits, keyed by toast id, not yet fired (or
+  // canceled via UNDO) — flushed immediately if the tab is hidden/closed
+  // so the setTimeout below doesn't just silently never run.
+  const pendingCommits = useRef<Map<number, () => void>>(new Map())
 
   const dismiss = useCallback((id: number) => {
     setToasts(t => t.filter(x => x.id !== id))
     const timer = timers.current.get(id)
     if (timer) { clearTimeout(timer); timers.current.delete(id) }
+    pendingCommits.current.delete(id)
   }, [])
 
   const show = useCallback((message: string, opts?: { actionLabel?: string; onAction?: () => void; duration?: number }) => {
     const id = nextId++
     const duration = opts?.duration ?? 3200
-    setToasts(t => [...t.slice(-1), { id, message, actionLabel: opts?.actionLabel, onAction: opts?.onAction, duration }])
+    setToasts(t => [...t, { id, message, actionLabel: opts?.actionLabel, onAction: opts?.onAction, duration }])
     timers.current.set(id, setTimeout(() => dismiss(id), duration))
   }, [dismiss])
 
@@ -55,16 +60,38 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const duration = opts?.duration ?? 4500
     const id = nextId++
     let committed = false
-    setToasts(t => [...t.slice(-1), {
+    const fire = () => {
+      if (committed) return
+      committed = true
+      commit()
+    }
+    pendingCommits.current.set(id, fire)
+    setToasts(t => [...t, {
       id, message, duration,
       actionLabel: opts?.actionLabel ?? 'UNDO',
       onAction: () => { committed = true; opts?.onUndo?.() },
     }])
-    timers.current.set(id, setTimeout(() => {
-      if (!committed) commit()
-      dismiss(id)
-    }, duration))
+    timers.current.set(id, setTimeout(() => { fire(); dismiss(id) }, duration))
   }, [dismiss])
+
+  // A tab close/navigation within the undo window used to mean the
+  // deferred commit's setTimeout never got a chance to run, so the
+  // server-side change silently never happened and the item reappeared
+  // next visit. Flushing every pending commit here fires them immediately
+  // instead — the fetch calls themselves use `keepalive: true` so they can
+  // outlive the page. `pagehide` covers actual navigation/unload;
+  // `visibilitychange` covers the tab being backgrounded (mobile Safari
+  // may suspend/kill a backgrounded tab without ever firing pagehide).
+  useEffect(() => {
+    const flushAll = () => { pendingCommits.current.forEach(fire => fire()) }
+    const handleVisibility = () => { if (document.visibilityState === 'hidden') flushAll() }
+    window.addEventListener('pagehide', flushAll)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('pagehide', flushAll)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   return (
     <ToastContext.Provider value={{ show, showUndo }}>
