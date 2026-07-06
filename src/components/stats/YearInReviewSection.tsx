@@ -1,15 +1,45 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Share2 } from 'lucide-react'
 import type { YearData } from '@/lib/stats'
+
+const CARD_URL = '/api/year-review-card'
 
 // The only genuinely interactive piece of the Stats page (expand/collapse)
 // — split out so the rest of the page can be a plain server component.
 export default function YearInReviewSection({ yearData }: { yearData: YearData }) {
   const [yearOpen, setYearOpen] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   if (yearData.movieCount + yearData.showCount === 0) return null
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (sharing) return
+    setSharing(true)
+    try {
+      // Prefer the OS share sheet with the actual image attached (mobile
+      // Safari/Chrome); fall back to just opening it so the user can
+      // save/share manually wherever navigator.share (or file sharing)
+      // isn't supported.
+      const canShareFiles = typeof navigator.canShare === 'function'
+      if (navigator.share && canShareFiles) {
+        const res = await fetch(CARD_URL)
+        const blob = await res.blob()
+        const file = new File([blob], 'verdict-year-review.png', { type: 'image/png' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: `${yearData.year} Year in Review` })
+          return
+        }
+      }
+      window.open(CARD_URL, '_blank', 'noopener')
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') window.open(CARD_URL, '_blank', 'noopener')
+    } finally {
+      setSharing(false)
+    }
+  }
 
   return (
     <div style={{ marginBottom: '0.625rem' }}>
@@ -101,6 +131,19 @@ export default function YearInReviewSection({ yearData }: { yearData: YearData }
               </span>
             )}
           </div>
+
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="vcr-btn-primary"
+            style={{
+              width: '100%', marginTop: '0.875rem', fontSize: 12, padding: '0.6rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              opacity: sharing ? 0.6 : 1,
+            }}
+          >
+            <Share2 size={13} /> {sharing ? 'PREPARING…' : 'SHARE YOUR REWIND'}
+          </button>
         </div>
       )}
     </div>
