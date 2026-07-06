@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { BarChart2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ErrorState } from '@/components/ui/EmptyState'
+import { apiFetch } from '@/lib/utils'
 
 interface StatsData {
   movieCount: number
@@ -122,12 +124,21 @@ function HeatmapCalendar({ days }: { days: { date: string; count: number }[] }) 
 export default function StatsPage() {
   const [stats, setStats]       = useState<StatsData | null>(null)
   const [loading, setLoading]   = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [yearData, setYearData] = useState<YearData | null>(null)
   const [yearOpen, setYearOpen] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/stats').then(r => r.json()).then(setStats).finally(() => setLoading(false))
+  const loadStats = () => {
+    setLoading(true)
+    apiFetch('/api/stats').then(r => r.json()).then(d => { setStats(d); setLoadError(false) })
+      .catch(err => { console.error('loadStats failed:', err); setLoadError(true) })
+      .finally(() => setLoading(false))
     fetch('/api/stats/year').then(r => r.json()).then(setYearData).catch(() => {})
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadStats()
   }, [])
 
   if (loading) {
@@ -138,7 +149,7 @@ export default function StatsPage() {
     )
   }
 
-  if (!stats) return null
+  if (loadError || !stats) return <ErrorState onRetry={loadStats} />
 
   const totalHours  = Math.round(stats.totalRuntimeMinutes / 60)
   const ratedCount  = stats.ratingDistribution.reduce((a, b) => a + b.count, 0)

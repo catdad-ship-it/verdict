@@ -5,11 +5,12 @@ import Image from 'next/image'
 import { posterUrl } from '@/lib/utils'
 import PostWatchModal from '@/components/modals/PostWatchModal'
 import { WatchedListSkeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { useBulkSelect } from '@/hooks/useBulkSelect'
 import BulkActionBar, { BulkActionButton, SelectModeToggle } from '@/components/ui/BulkActionBar'
+import { apiFetch } from '@/lib/utils'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface WatchedMovie {
@@ -45,6 +46,7 @@ export default function WatchedPage() {
   const [shows, setShows]         = useState<WatchedShow[]>([])
   const [tab, setTab]             = useState<'movies' | 'shows'>('movies')
   const [loading, setLoading]     = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [replayTarget, setReplayTarget] = useState<ReplayTarget | null>(null)
   const [expandedId, setExpandedId]     = useState<number | null>(null)
 
@@ -59,9 +61,10 @@ export default function WatchedPage() {
   // intentionally doesn't flip it back on, so the list updates in place
   // instead of flashing the skeleton over content already on screen.
   const loadData = () => {
-    fetch('/api/watched')
+    apiFetch('/api/watched')
       .then(r => r.json())
-      .then(d => { setMovies(d.movies ?? []); setShows(d.shows ?? []) })
+      .then(d => { setMovies(d.movies ?? []); setShows(d.shows ?? []); setLoadError(false) })
+      .catch(err => { console.error('loadData failed:', err); setLoadError(true) })
       .finally(() => setLoading(false))
   }
 
@@ -181,6 +184,8 @@ export default function WatchedPage() {
 
       {loading ? (
         <WatchedListSkeleton count={5} />
+      ) : loadError ? (
+        <ErrorState onRetry={loadData} />
       ) : tab === 'movies' ? (
         movieGroups.length === 0
           ? <EmptyState title="NO MOVIES YET" subtitle="Mark a movie watched and it'll show up here." />

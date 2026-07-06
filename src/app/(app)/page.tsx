@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { useBulkSelect } from '@/hooks/useBulkSelect'
 import { RowListSkeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import type { QueueItem, PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -286,6 +286,7 @@ export default function HomePage() {
   const [showNewList, setShowNewList]       = useState(false)
   const [newListName, setNewListName]       = useState('')
   const [loading, setLoading]       = useState(true)
+  const [loadError, setLoadError]   = useState(false)
   const [filter, setFilter]         = useState<'all' | 'movie' | 'tv'>('all')
   const [sort, setSort]             = useState<'added' | 'runtime' | 'title' | 'year' | 'rating'>('added')
   const [defaultSort, setDefaultSort] = useState<'added' | 'runtime' | 'title' | 'year' | 'rating'>('added')
@@ -324,8 +325,10 @@ export default function HomePage() {
     try {
       const data = await apiFetch('/api/queue').then(r => r.json())
       setQueue(Array.isArray(data) ? data : [])
+      setLoadError(false)
     } catch (err) {
       console.error('fetchQueue failed:', err)
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -355,9 +358,11 @@ export default function HomePage() {
       const data = await apiFetch(`/api/lists/${listId}/items`).then(r => r.json())
       if (listItemsRequestRef.current !== listId) return
       setListItems(Array.isArray(data) ? data : [])
+      setLoadError(false)
     } catch (err) {
       if (listItemsRequestRef.current !== listId) return
       console.error('fetchListItems failed:', err)
+      setLoadError(true)
     } finally {
       if (listItemsRequestRef.current === listId) setLoading(false)
     }
@@ -815,6 +820,8 @@ export default function HomePage() {
       {/* List */}
       {loading ? (
         <RowListSkeleton count={5} />
+      ) : loadError ? (
+        <ErrorState onRetry={() => (activeList === 'queue' ? fetchQueue() : fetchListItems(activeList))} />
       ) : displayItems.length === 0 ? (
         sourceItems.length === 0 ? (
           <EmptyState

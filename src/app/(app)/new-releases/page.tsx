@@ -4,12 +4,12 @@ import { Film } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
-import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { usePickList } from '@/hooks/usePickList'
 import { ShelfSkeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface Movie {
@@ -72,6 +72,7 @@ export default function NewReleasesPage() {
   const [upcoming, setUpcoming]       = useState<Movie[]>([])
   const [streaming, setStreaming]     = useState<Movie[]>([])
   const [loading, setLoading]         = useState(true)
+  const [loadError, setLoadError]     = useState(false)
   const [postWatch, setPostWatch]     = useState<Movie | null>(null)
   const [dismissed, setDismissed]     = useState<Set<number>>(new Set())
   const [lists, setLists]             = useState<UserList[]>([])
@@ -79,9 +80,10 @@ export default function NewReleasesPage() {
   const [addedIds, setAddedIds]       = useState<Set<number>>(new Set())
   const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
 
-  useEffect(() => {
+  const loadData = () => {
+    setLoading(true)
     fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
-    fetch('/api/new-releases')
+    apiFetch('/api/new-releases')
       .then(r => r.json())
       .then(d => {
         const map = (m: Record<string, unknown> & { id: number; genreIds?: number[] }) =>
@@ -92,13 +94,20 @@ export default function NewReleasesPage() {
         setNowPlaying(now)
         setUpcoming(soon)
         setStreaming(stream)
+        setLoadError(false)
         // Batch every shelf's provider lookups into one request instead of
         // one fetch per card (these shelves can run 20+ titles each).
         const all: Movie[] = [...now, ...soon, ...stream]
         fetchProvidersBatch(all.map(m => ({ tmdbId: m.tmdbId!, mediaType: 'movie' as const })))
           .then(result => setProvidersMap(prev => ({ ...prev, ...result })))
       })
+      .catch(err => { console.error('loadData failed:', err); setLoadError(true) })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData()
   }, [])
 
   const handlePickList = async (listId: 'queue' | string) => {
@@ -158,6 +167,8 @@ export default function NewReleasesPage() {
           <div style={{ height: '2rem' }} />
           <ShelfSkeleton count={5} />
         </>
+      ) : loadError ? (
+        <ErrorState onRetry={loadData} />
       ) : [...nowPlaying, ...upcoming, ...streaming].every(m => dismissed.has(m.tmdbId!)) ? (
         <EmptyState
           title="NOTHING NEW RIGHT NOW"

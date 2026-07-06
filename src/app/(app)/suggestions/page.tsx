@@ -4,13 +4,13 @@ import { Zap } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
-import { fetchProvidersBatch, type ProviderData } from '@/lib/utils'
+import { apiFetch, fetchProvidersBatch, type ProviderData } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 import { useMarkWatched } from '@/hooks/useMarkWatched'
 import { usePickList } from '@/hooks/usePickList'
 import { CardGridSkeleton } from '@/components/ui/Skeleton'
 import FilterChips from '@/components/ui/FilterChips'
-import { EmptyState } from '@/components/ui/EmptyState'
+import { EmptyState, ErrorState } from '@/components/ui/EmptyState'
 import type { PostWatchAnswers } from '@/lib/types'
 
 interface UserList { id: string; name: string }
@@ -41,6 +41,7 @@ export default function SuggestionsPage() {
   const pickList = usePickList()
   const [state, setState]         = useState<SuggestState>({ pool: [], visible: [], topGenreNames: [] })
   const [loading, setLoading]     = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [postWatch, setPostWatch] = useState<Movie | null>(null)
   const [addedIds, setAddedIds]   = useState<Set<number>>(new Set())
   const [lists, setLists]         = useState<UserList[]>([])
@@ -54,20 +55,28 @@ export default function SuggestionsPage() {
   const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>('all')
   const [ratingFilter, setRatingFilter]   = useState<RatingFilter>('all')
 
-  useEffect(() => {
+  const loadData = () => {
+    setLoading(true)
     fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
-    fetch('/api/suggestions')
+    apiFetch('/api/suggestions')
       .then(r => r.json())
       .then((d: { movies: Movie[]; topGenreNames: string[] } | Movie[]) => {
         const movies = Array.isArray(d) ? d : (d.movies ?? [])
         const topGenreNames = Array.isArray(d) ? [] : (d.topGenreNames ?? [])
         setState({ pool: movies.slice(VISIBLE), visible: movies.slice(0, VISIBLE), topGenreNames })
+        setLoadError(false)
         // One batched request for every card on the page instead of each
         // VHSCard firing its own /api/providers call.
         fetchProvidersBatch(movies.map(m => ({ tmdbId: m.id, mediaType: 'movie' as const })))
           .then(map => setProvidersMap(prev => ({ ...prev, ...map })))
       })
+      .catch(err => { console.error('loadData failed:', err); setLoadError(true) })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData()
   }, [])
 
   const fetchMore = async (allSeenIds: number[]) => {
@@ -203,6 +212,8 @@ export default function SuggestionsPage() {
       )}
       {loading ? (
         <CardGridSkeleton count={VISIBLE} />
+      ) : loadError ? (
+        <ErrorState onRetry={loadData} />
       ) : state.visible.length === 0 ? (
         <EmptyState
           title="NO SUGGESTIONS RIGHT NOW"
