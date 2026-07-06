@@ -52,6 +52,7 @@ function Shelf({
                 isNew={!soon && !stream} isSoon={soon}
                 isInQueue={addedIds.has(m.tmdbId!)}
                 onAddToQueue={addedIds.has(m.tmdbId!) ? undefined : () => onAddToQueue(m)}
+                usesPickerFlow
                 onMarkWatched={!soon ? () => onMarkWatched(m) : undefined}
                 onDismiss={() => onDismiss(m)}
               />

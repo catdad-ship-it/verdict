@@ -32,6 +32,10 @@ interface TitleDetailModalProps {
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
   onClose: () => void
+  // See VHSCard's prop of the same name — when onAddToQueue only opens a
+  // destination picker rather than adding immediately, don't optimistically
+  // flip to "ADDED" here either.
+  usesPickerFlow?: boolean
 }
 
 // The click-to-expand detail sheet. Card-level info (poster, title, year,
@@ -47,7 +51,7 @@ export default function TitleDetailModal({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview, matchReason, currentSeason, totalSeasons,
   isInQueue, isWatched, isSoon, isPinned, onPin,
-  onAddToQueue, onMarkWatched, onRemoveFromQueue, onClose,
+  onAddToQueue, onMarkWatched, onRemoveFromQueue, onClose, usesPickerFlow,
 }: TitleDetailModalProps) {
   const imgUrl = posterUrl(posterPath, 'w500')
   const [details, setDetails] = useState<TitleDetails | null>(null)
@@ -115,7 +119,7 @@ export default function TitleDetailModal({
     }
   }
 
-  const handleAdd = () => { setLocalAdded(true); onAddToQueue?.() }
+  const handleAdd = () => { if (!usesPickerFlow) setLocalAdded(true); onAddToQueue?.() }
   const inQueue = isInQueue || localAdded
 
   // Swipe-down-to-dismiss, engaged only from the drag handle strip so it

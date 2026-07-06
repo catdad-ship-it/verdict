@@ -224,6 +224,7 @@ export default function SuggestionsPage() {
               matchReason={m.matchReason}
               providerData={providersMap[`movie:${m.id}`]} batchManaged
               onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
+              usesPickerFlow
               onMarkWatched={() => setPostWatch(m)}
               onDismiss={() => handleDismiss(m.id, m.genreIds ?? [], m.title)}
             />

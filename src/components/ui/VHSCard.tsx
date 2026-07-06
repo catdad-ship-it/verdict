@@ -31,6 +31,13 @@ interface VHSCardProps {
   onRemoveFromQueue?: () => void
   onDismiss?: () => void
   onClick?: () => void
+  // When the parent's onAddToQueue only opens a destination picker (queue
+  // vs. a named list) rather than adding immediately, the card can't
+  // optimistically flip to "ADDED" — canceling the picker would leave it
+  // stuck showing ADDED (and a later tap would fire a bogus queue DELETE).
+  // Added state is driven by isInQueue alone until the parent's addedIds
+  // actually updates post-pick.
+  usesPickerFlow?: boolean
   // Pass pre-fetched provider data from a parent that batched the request
   // (see /api/providers/batch). When omitted, the card falls back to its
   // own fetch — keep that fallback for any callers that don't batch yet.
@@ -48,7 +55,7 @@ export default function VHSCard({
   isNew, isSoon, isTrending, trendingCount,
   isInQueue, isWatched, currentSeason, totalSeasons, matchReason,
   onAddToQueue, onMarkWatched, onRemoveFromQueue, onDismiss, onClick,
-  providerData, batchManaged,
+  providerData, batchManaged, usesPickerFlow,
 }: VHSCardProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
@@ -93,7 +100,7 @@ export default function VHSCard({
 
   const handleAddToQueue = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setLocalAdded(true)
+    if (!usesPickerFlow) setLocalAdded(true)
     onAddToQueue?.()
   }
 
@@ -345,10 +352,11 @@ export default function VHSCard({
         overview={overview} matchReason={matchReason}
         currentSeason={currentSeason} totalSeasons={totalSeasons}
         isInQueue={inQueue} isWatched={isWatched} isSoon={isSoon}
-        onAddToQueue={onAddToQueue ? () => { setLocalAdded(true); onAddToQueue() } : undefined}
+        onAddToQueue={onAddToQueue ? () => { if (!usesPickerFlow) setLocalAdded(true); onAddToQueue() } : undefined}
         onMarkWatched={onMarkWatched}
         onRemoveFromQueue={onRemoveFromQueue}
         onClose={() => setDetailOpen(false)}
+        usesPickerFlow={usesPickerFlow}
       />
     )}
     </>
