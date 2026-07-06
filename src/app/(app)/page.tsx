@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
@@ -267,6 +268,8 @@ function ListSelectorDropdown({
 
 export default function HomePage() {
   const toast = useToast()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const markWatched = useMarkWatched()
   const [queue, setQueue]           = useState<QueueItem[]>([])
   const [lists, setLists]           = useState<UserList[]>([])
@@ -338,6 +341,42 @@ export default function HomePage() {
       setLoading(false)
     }
   }, [])
+
+  // The global command palette (mounted in the layout, so it's reachable
+  // from any page) can't hold queue-dependent modal state itself — it
+  // dispatches these events (when already on Home) and jumps to Home via
+  // this event-bus pattern otherwise.
+  useEffect(() => {
+    const openSpin = () => setShowSpin(true)
+    const openWatchTonight = () => setShowWatchTonight(true)
+    const onQueueChanged = () => fetchQueue()
+    window.addEventListener('verdict:open-spin', openSpin)
+    window.addEventListener('verdict:open-watch-tonight', openWatchTonight)
+    window.addEventListener('verdict:queue-changed', onQueueChanged)
+    return () => {
+      window.removeEventListener('verdict:open-spin', openSpin)
+      window.removeEventListener('verdict:open-watch-tonight', openWatchTonight)
+      window.removeEventListener('verdict:queue-changed', onQueueChanged)
+    }
+  }, [fetchQueue])
+
+  // Jumping here *from* another page (command palette quick action) can't
+  // use the window-event bus above — router.push() doesn't wait for this
+  // component to mount, so a same-tick dispatchEvent would fire before this
+  // effect's listeners exist. A `?quickAction=` query param survives the
+  // navigation instead; setState is deferred into a timeout callback here
+  // (rather than called directly in the effect body) since it's reacting to
+  // that external URL state, not just re-deriving it.
+  useEffect(() => {
+    const action = searchParams.get('quickAction')
+    if (!action) return
+    const t = setTimeout(() => {
+      if (action === 'spin') setShowSpin(true)
+      else if (action === 'watch-tonight') setShowWatchTonight(true)
+    }, 0)
+    router.replace('/', { scroll: false })
+    return () => clearTimeout(t)
+  }, [searchParams, router])
 
   const fetchLists = useCallback(async () => {
     try {
