@@ -103,6 +103,8 @@ function ListSelectorDropdown({
     <div ref={containerRef} style={{ position: 'relative' }}>
       <button
         onClick={onToggleSelector}
+        aria-expanded={showSelector}
+        aria-haspopup="menu"
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20,
@@ -118,7 +120,17 @@ function ListSelectorDropdown({
       </button>
 
       {showSelector && (
-        <div style={{
+        <div
+          role="menu"
+          onKeyDown={e => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+            e.preventDefault()
+            const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+            const idx = items.indexOf(document.activeElement as HTMLElement)
+            const next = e.key === 'ArrowDown' ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length
+            items[next]?.focus()
+          }}
+          style={{
           position: 'absolute', top: '100%', left: 0, marginTop: 8, zIndex: 40,
           background: 'var(--surface)', border: '1px solid var(--amber-dim)',
           borderRadius: 4, minWidth: 220, maxWidth: 'calc(100vw - 2rem)',
@@ -126,6 +138,7 @@ function ListSelectorDropdown({
         }}>
           {/* Queue */}
           <button
+            role="menuitem"
             onClick={() => onSwitchList('queue')}
             style={{
               width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
@@ -169,6 +182,7 @@ function ListSelectorDropdown({
               ) : (
                 <>
                   <button
+                    role="menuitem"
                     onClick={() => onSwitchList(l.id)}
                     style={{
                       flex: 1, textAlign: 'left', padding: '0.75rem 1rem',

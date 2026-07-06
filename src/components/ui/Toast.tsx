@@ -69,11 +69,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show, showUndo }}>
       {children}
-      <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-        zIndex: 9500, pointerEvents: 'none', padding: '0 1rem',
-      }}>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          zIndex: 9500, pointerEvents: 'none', padding: '0 1rem',
+        }}>
         {toasts.map(t => (
           <div key={t.id} style={{
             pointerEvents: 'auto',

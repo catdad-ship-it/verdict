@@ -125,7 +125,21 @@ export default function VHSCard({
     <div
       className="rounded-sm overflow-hidden cursor-pointer group vhs-card-hover"
       style={{ background: 'var(--card)' }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${title}`}
       onClick={() => { onClick?.(); setDetailOpen(true) }}
+      onKeyDown={e => {
+        // Only when the card itself is focused — inner buttons (ADD,
+        // WATCHED, dismiss, ...) already handle their own Enter/Space
+        // natively and this must not also open the detail modal then.
+        if (e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+          setDetailOpen(true)
+        }
+      }}
     >
       {/* Poster */}
       <div className="relative" style={{ aspectRatio: '2/3', background: 'var(--raised)' }}>

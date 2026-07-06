@@ -4,6 +4,7 @@ import { X, Search, Plus, Tv, ChevronLeft, User } from 'lucide-react'
 import { posterUrl } from '@/lib/utils'
 import type { PersonResult, PersonCreditItem } from '@/lib/tmdb'
 import FilterChips from '@/components/ui/FilterChips'
+import ModalShell from '@/components/ui/ModalShell'
 import Image from 'next/image'
 
 interface SearchResult {
@@ -178,7 +179,9 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
       className="fixed inset-0 flex flex-col md:items-center md:justify-center md:p-4"
       style={{ background: 'rgba(0,0,0,0.8)', paddingTop: 'env(safe-area-inset-top)', zIndex: 60 }}
     >
-      <div
+      <ModalShell
+        onClose={onClose}
+        label="Search and add"
         className="flex flex-col flex-1 md:flex-none w-full md:max-w-xl md:rounded"
         style={{
           background: 'var(--surface)',
@@ -398,7 +401,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
             </>
           )}
         </div>
-      </div>
+      </ModalShell>
     </div>
   )
 }

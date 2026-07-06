@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface UserList { id: string; name: string }
 
@@ -60,7 +61,7 @@ export default function ListPickerSheet({ lists, onPick, onClose, onListCreated 
       />
 
       {/* Sheet */}
-      <div style={{
+      <ModalShell onClose={onClose} label="Add to list" style={{
         position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 201,
         background: 'var(--surface)', borderTop: '2px solid var(--amber-dim)',
         borderRadius: '12px 12px 0 0', padding: '1.25rem 1rem 2rem',
@@ -153,7 +154,7 @@ export default function ListPickerSheet({ lists, onPick, onClose, onListCreated 
             </button>
           )}
         </div>
-      </div>
+      </ModalShell>
     </>
   )
 }

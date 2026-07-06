@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { WHAT_WORKED_OPTIONS, PostWatchAnswers } from '@/lib/types'
 import ConfettiBurst from '@/components/ui/ConfettiBurst'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface Props {
   title: string
@@ -44,7 +45,9 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
       style={{ background: 'rgba(0,0,0,0.88)', zIndex: 60 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div
+      <ModalShell
+        onClose={onClose}
+        label={isRewatch ? 'Rewatch details' : mediaType === 'tv' ? 'Season finished' : 'Movie finished'}
         className="w-full md:max-w-md rounded-t-2xl md:rounded-sm relative overflow-y-auto"
         style={{
           background: 'var(--surface)',
@@ -90,6 +93,8 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
                   onClick={() => { setRating(n); if (n === 5) setShowConfetti(true) }}
                   onMouseEnter={() => setHovered(n)}
                   onMouseLeave={() => setHovered(0)}
+                  aria-label={`${n} star${n > 1 ? 's' : ''} — ${ratingLabels[n]}`}
+                  aria-pressed={rating === n}
                   className="text-2xl w-10 h-10 rounded-sm transition-all"
                   style={{
                     background: n <= (hovered || rating) ? 'rgba(192,120,24,0.15)' : 'var(--card)',
@@ -177,7 +182,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
             ⏏ SAVE &amp; REWIND →
           </button>
         </div>
-      </div>
+      </ModalShell>
     </div>
   )
 }

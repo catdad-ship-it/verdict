@@ -213,6 +213,19 @@ export default function QueueRow({
       {/* Main row — tap anywhere except buttons to expand (or toggle selection in select mode) */}
       <div
         onClick={selectable ? onToggleSelect : handleExpand}
+        role="button"
+        tabIndex={0}
+        aria-label={selectable ? `${isSelected ? 'Deselect' : 'Select'} ${title}` : `View details for ${title}`}
+        onKeyDown={e => {
+          // Only when the row itself is focused — the WATCHED/remove
+          // buttons handle their own Enter/Space and must not also
+          // expand/toggle-select the row.
+          if (e.target !== e.currentTarget) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            ;(selectable ? onToggleSelect : handleExpand)?.()
+          }
+        }}
         style={{ display: 'flex', gap: 12, padding: '10px 0', cursor: 'pointer', alignItems: selectable ? 'center' : undefined }}
       >
         {selectable && (

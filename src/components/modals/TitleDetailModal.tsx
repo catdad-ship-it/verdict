@@ -5,6 +5,7 @@ import { Play, Plus, Check, X, Tv, Pin, PinOff } from 'lucide-react'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import type { TitleDetails } from '@/lib/tmdb'
 import type { ContentWarning } from '@/lib/dtdd'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface StreamProvider { providerId: number; providerName: string; logoPath: string }
 
@@ -169,7 +170,9 @@ export default function TitleDetailModal({
       style={{ background: 'rgba(0,0,0,0.88)', zIndex: 60 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div
+      <ModalShell
+        onClose={onClose}
+        label={title}
         className="w-full md:max-w-lg rounded-t-2xl md:rounded-sm relative overflow-y-auto"
         style={{
           background: 'var(--surface)',
@@ -425,7 +428,7 @@ export default function TitleDetailModal({
             </button>
           )}
         </div>
-      </div>
+      </ModalShell>
     </div>
   )
 }

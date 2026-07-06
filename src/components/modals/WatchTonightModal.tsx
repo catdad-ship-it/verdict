@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { X, RefreshCw, Pin } from 'lucide-react'
 import { posterUrl } from '@/lib/utils'
 import type { QueueItem } from '@/lib/types'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface Props {
   items: QueueItem[]
@@ -72,7 +73,9 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
       style={{ background: 'rgba(0,0,0,0.88)', zIndex: 60 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div
+      <ModalShell
+        onClose={onClose}
+        label="Watch tonight"
         className="w-full md:max-w-sm rounded-t-2xl md:rounded-sm relative overflow-hidden"
         style={{
           background: 'var(--surface)',
@@ -216,7 +219,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
             </>
           )}
         </div>
-      </div>
+      </ModalShell>
     </div>
   )
 }
