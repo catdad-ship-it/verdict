@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import ServiceWorkerRegister from '@/components/ui/ServiceWorkerRegister'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -7,12 +8,20 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 export const metadata: Metadata = {
   title: 'Verdict ▶',
   description: 'Your personal video store',
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon.svg', apple: '/icon-192.png' },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Verdict',
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#0D0B07',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           background: 'radial-gradient(ellipse 100% 90% at 50% 50%, transparent 45%, rgba(0,0,0,0.28) 78%, rgba(0,0,0,0.6) 100%)',
         }} />
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   )

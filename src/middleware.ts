@@ -54,5 +54,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // manifest.webmanifest and sw.js are fetched by the browser's PWA
+  // machinery (install prompt, service worker registration) outside normal
+  // page navigation — they need to resolve to the real file regardless of
+  // auth state, not get redirected to /login.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
