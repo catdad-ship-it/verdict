@@ -16,6 +16,12 @@ interface Props {
   onClose: () => void
 }
 
+const STATUS_OPTIONS: { key: 'watching' | 'finished' | 'dropped'; label: string }[] = [
+  { key: 'watching', label: 'STILL WATCHING' },
+  { key: 'finished', label: 'FINISHED SERIES' },
+  { key: 'dropped',  label: 'DROPPED IT' },
+]
+
 export default function PostWatchModal({ title, runtime, year, mediaType, seasonNumber, isRewatch, onSave, onClose }: Props) {
   const [rating, setRating]     = useState(0)
   const [hovered, setHovered]   = useState(0)
@@ -24,6 +30,8 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
   const [notes, setNotes]       = useState('')
   const [showConfetti, setShowConfetti] = useState(false)
   const [saving, setSaving]     = useState(false)
+  const [season, setSeason]     = useState(seasonNumber ?? 1)
+  const [showStatus, setShowStatus] = useState<'watching' | 'finished' | 'dropped'>('watching')
 
   const ratingLabels = ['', 'Skip it', 'Eh, okay', 'Worth watching', 'Really good', 'Masterpiece']
 
@@ -35,15 +43,16 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
     if (!rating || saving) return
     setSaving(true)
     try {
-      await onSave({ userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true, notes: notes.trim() || undefined })
+      await onSave({
+        userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true, notes: notes.trim() || undefined,
+        ...(mediaType === 'tv' ? { seasonNumber: season, showStatus } : {}),
+      })
     } finally {
       setSaving(false)
     }
   }
 
-  const subtitle = mediaType === 'tv' && seasonNumber
-    ? `Season ${seasonNumber}`
-    : year ? String(year) : ''
+  const subtitle = year ? String(year) : ''
 
   return (
     <div
@@ -89,6 +98,42 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
               </p>}
             </div>
           </div>
+
+          {/* TV: season + series status — the rating below gets attached to
+              this season number (season_ratings), and the status decides
+              whether this show keeps showing up as "in progress" or not. */}
+          {mediaType === 'tv' && (
+            <div className="mb-5">
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'var(--cream-dim)' }}>Season</p>
+                <input
+                  type="number" min={0} max={100} value={season}
+                  onChange={e => setSeason(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                  style={{
+                    width: 56, background: 'var(--card)', border: '1px solid var(--border)',
+                    borderRadius: 3, color: 'var(--cream)', fontFamily: 'var(--font-mono)',
+                    fontSize: 16, padding: '0.3rem 0.5rem', outline: 'none', textAlign: 'center',
+                  }}
+                />
+              </div>
+              <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>Where are you with the series?</p>
+              <div className="flex gap-2 flex-wrap">
+                {STATUS_OPTIONS.map(({ key, label }) => (
+                  <button key={key}
+                    onClick={() => setShowStatus(key)}
+                    className="flex-1 text-xs font-semibold tracking-wide uppercase py-2.5 rounded-sm transition-all"
+                    style={{
+                      minWidth: 100,
+                      background: showStatus === key ? 'rgba(192,120,24,0.1)' : 'var(--card)',
+                      border: `1px solid ${showStatus === key ? 'var(--amber)' : 'var(--border)'}`,
+                      color: showStatus === key ? 'var(--amber)' : 'var(--cream-dim)',
+                    }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Rating */}
           <div className="mb-5">

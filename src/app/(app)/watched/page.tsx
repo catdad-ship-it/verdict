@@ -21,8 +21,15 @@ interface WatchedMovie {
 interface SeasonRating { season_number: number; user_rating: number | null; what_worked: string[] }
 interface WatchedShow {
   id: string; tmdb_id: number; title: string; poster_path: string | null
+  genre_ids: number[] | null
   status: string; updated_at: string; season_ratings: SeasonRating[]
 }
+
+const SHOW_STATUSES: { key: string; label: string }[] = [
+  { key: 'watching', label: 'WATCHING' },
+  { key: 'finished', label: 'FINISHED' },
+  { key: 'dropped',  label: 'DROPPED' },
+]
 interface ReplayTarget {
   tmdbId: number; title: string; posterPath: string | null; runtime: number | null
 }
@@ -82,6 +89,53 @@ export default function WatchedPage() {
     }, answers)
     setReplayTarget(null)
     loadData()
+  }
+
+  // Cycles a show's status without going through PostWatchModal. Resends
+  // the show's own already-known fields alongside the new status — the
+  // upsert this hits requires them (title is NOT NULL), so a bare
+  // {tmdb_id, status} body would fail the insert-path constraint check
+  // even though this is really just an update.
+  const cycleShowStatus = async (show: WatchedShow) => {
+    const idx = SHOW_STATUSES.findIndex(s => s.key === show.status)
+    const next = SHOW_STATUSES[(idx + 1) % SHOW_STATUSES.length].key
+    setShows(ss => ss.map(s => s.id === show.id ? { ...s, status: next } : s))
+    await fetch('/api/watched', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media_type: 'tv', tmdb_id: show.tmdb_id, title: show.title,
+        poster_path: show.poster_path, genre_ids: show.genre_ids ?? [],
+        status: next,
+      }),
+    })
+    toast.show(`${show.title.toUpperCase()} — ${next.toUpperCase()}`)
+  }
+
+  // Inline "rate a season" entry — retroactively rate a season without
+  // going through the mark-watched flow (e.g. rating an earlier season
+  // after finishing a later one).
+  const [ratingShowId, setRatingShowId] = useState<string | null>(null)
+  const [ratingSeason, setRatingSeason] = useState(1)
+  const [ratingStars, setRatingStars]   = useState(0)
+  const [ratingSaving, setRatingSaving] = useState(false)
+
+  const submitSeasonRating = async (show: WatchedShow) => {
+    if (!ratingStars || ratingSaving) return
+    setRatingSaving(true)
+    try {
+      await fetch('/api/season-ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ show_tmdb_id: show.tmdb_id, season_number: ratingSeason, user_rating: ratingStars }),
+      })
+      toast.show(`RATED SEASON ${ratingSeason}`)
+      setRatingShowId(null)
+      setRatingStars(0)
+      loadData()
+    } finally {
+      setRatingSaving(false)
+    }
   }
 
   // Group movies by tmdb_id, sort each group newest-first
@@ -330,12 +384,15 @@ export default function WatchedPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ color: 'var(--cream)', fontWeight: 700, fontSize: 14 }}>{s.title}</span>
-                      <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.5rem', borderRadius: 2,
-                        background: s.status==='watching' ? 'rgba(192,120,24,0.2)' : s.status==='finished' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                        color: s.status==='watching' ? 'var(--amber)' : s.status==='finished' ? '#4ade80' : '#f87171',
-                        border: `1px solid ${s.status==='watching' ? 'var(--amber-dim)' : s.status==='finished' ? '#4ade80' : '#f87171'}`,
-                      }}>{s.status.toUpperCase()}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); cycleShowStatus(s) }}
+                        title="Click to change status"
+                        style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.5rem', borderRadius: 2, cursor: 'pointer',
+                          background: s.status==='watching' ? 'rgba(192,120,24,0.2)' : s.status==='finished' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: s.status==='watching' ? 'var(--amber)' : s.status==='finished' ? '#4ade80' : '#f87171',
+                          border: `1px solid ${s.status==='watching' ? 'var(--amber-dim)' : s.status==='finished' ? '#4ade80' : '#f87171'}`,
+                        }}>{s.status.toUpperCase()}</button>
                     </div>
                     {s.season_ratings?.length > 0 && (
                       <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -346,6 +403,48 @@ export default function WatchedPage() {
                           </div>
                         ))}
                       </div>
+                    )}
+                    {!selectMode && (
+                      ratingShowId === s.id ? (
+                        <div onClick={e => e.stopPropagation()} style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>S</span>
+                          <input
+                            type="number" min={0} max={100} value={ratingSeason}
+                            onChange={e => setRatingSeason(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                            style={{
+                              width: 44, background: 'var(--card)', border: '1px solid var(--border)',
+                              borderRadius: 3, color: 'var(--cream)', fontFamily: 'var(--font-mono)',
+                              fontSize: 16, padding: '0.25rem 0.4rem', outline: 'none', textAlign: 'center',
+                            }}
+                          />
+                          {[1,2,3,4,5].map(n => (
+                            <button key={n} onClick={() => setRatingStars(n)} aria-label={`${n} stars`} aria-pressed={ratingStars === n}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: n <= ratingStars ? 'var(--amber)' : 'var(--very-muted)' }}>★</button>
+                          ))}
+                          <button onClick={() => submitSeasonRating(s)} disabled={!ratingStars || ratingSaving}
+                            className="vcr-btn" style={{ fontSize: 11, padding: '0.3rem 0.6rem', opacity: ratingStars ? 1 : 0.5 }}>
+                            {ratingSaving ? '...' : 'SAVE'}
+                          </button>
+                          <button onClick={() => { setRatingShowId(null); setRatingStars(0) }}
+                            style={{ background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                            CANCEL
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); setRatingShowId(s.id); setRatingSeason(1); setRatingStars(0) }}
+                          style={{
+                            marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5,
+                            background: 'none', border: '1px solid var(--border)', borderRadius: 2,
+                            color: 'var(--cream-dim)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                            fontSize: 11, letterSpacing: 1, padding: '4px 8px',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--amber)'; e.currentTarget.style.color = 'var(--amber)' }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--cream-dim)' }}
+                        >
+                          + RATE A SEASON
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

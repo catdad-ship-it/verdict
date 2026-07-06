@@ -19,6 +19,8 @@ export interface MarkWatchedAnswers {
   whatWorked: string[]
   wantMoreLikeThis: boolean
   notes?: string
+  seasonNumber?: number
+  showStatus?: 'watching' | 'finished' | 'dropped'
 }
 
 // POST /api/watched — shared by every "mark as watched" / rewatch flow
@@ -38,7 +40,10 @@ export function useMarkWatched() {
       notes:       answers.notes ?? null,
     }
     if (item.genreIds !== undefined) body.genre_ids = item.genreIds
-    if (item.mediaType === 'tv') body.status = 'watching'
+    if (item.mediaType === 'tv') {
+      body.status = answers.showStatus ?? 'watching'
+      if (answers.seasonNumber !== undefined) body.season_number = answers.seasonNumber
+    }
     if (item.isRewatch) body.is_rewatch = true
 
     return fetch('/api/watched', {

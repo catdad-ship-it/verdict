@@ -85,6 +85,12 @@ export interface PostWatchAnswers {
   whatWorked: string[]
   wantMoreLikeThis: boolean
   notes?: string
+  // TV only — which season this rating is for, and whether the user is
+  // still watching, finished the series, or dropped it. Previously a show
+  // was always silently marked 'watching' with the rating discarded
+  // entirely (watched_shows has no rating column; ratings are per-season).
+  seasonNumber?: number
+  showStatus?: 'watching' | 'finished' | 'dropped'
 }
 
 // TMDB genre map

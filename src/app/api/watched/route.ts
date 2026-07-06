@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { isIntInRange, badRequest } from '@/lib/validate'
 import { NextRequest, NextResponse } from 'next/server'
 
+const SHOW_STATUSES = ['watching', 'finished', 'dropped']
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -23,19 +25,37 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { media_type, tmdb_id, title, poster_path, genre_ids, runtime,
           user_rating, what_worked, want_more, notes, is_rewatch,
-          status, current_season, total_seasons } = body
+          status, current_season, total_seasons, season_number } = body
 
   if (media_type === 'tv') {
-    const { error } = await supabase.from('watched_shows').upsert({
+    if (!SHOW_STATUSES.includes(status)) return badRequest('status must be one of watching, finished, dropped')
+
+    const { data: showRow, error } = await supabase.from('watched_shows').upsert({
       user_id: user.id,
       tmdb_id, title, poster_path, genre_ids, status,
-      current_season, total_seasons,
+      current_season: season_number ?? current_season,
+      total_seasons,
       updated_at: new Date().toISOString(),
       ...(runtime != null ? { episode_runtime: runtime } : {}),
-    }, { onConflict: 'user_id,tmdb_id' })
+    }, { onConflict: 'user_id,tmdb_id' }).select('id').single()
     if (error) {
       console.error('Watched shows insert error:', JSON.stringify(error))
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // A rating only means something tied to a specific season — watched_shows
+    // itself has no rating column. Previously the rating/what-worked/notes
+    // the user entered for a show were silently discarded here.
+    if (showRow && isIntInRange(season_number, 0, 100) && isIntInRange(user_rating, 1, 5)) {
+      const { error: ratingError } = await supabase.from('season_ratings').upsert({
+        watched_show_id: showRow.id,
+        season_number,
+        user_rating,
+        what_worked: what_worked ?? [],
+        want_more_like_this: want_more ?? true,
+        notes: notes ?? null,
+      }, { onConflict: 'watched_show_id,season_number' })
+      if (ratingError) console.error('Season rating upsert error:', JSON.stringify(ratingError))
     }
 
     // Remove from queue (only on first watch)
