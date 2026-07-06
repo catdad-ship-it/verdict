@@ -1,8 +1,11 @@
 import { BarChart2 } from 'lucide-react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { computeStats, computeYearStats } from '@/lib/stats'
+import { computeStats, computeYearStats, computeTasteInsights } from '@/lib/stats'
 import YearInReviewSection from '@/components/stats/YearInReviewSection'
+
+const DECADE_LABEL = (decade: number) => `${decade}s`
 
 function BentoCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -103,9 +106,10 @@ export default async function StatsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [stats, yearData] = await Promise.all([
+  const [stats, yearData, taste] = await Promise.all([
     computeStats(supabase, user.id),
     computeYearStats(supabase, user.id),
+    computeTasteInsights(supabase, user.id),
   ])
 
   const totalHours  = Math.round(stats.totalRuntimeMinutes / 60)
@@ -230,6 +234,81 @@ export default async function StatsPage() {
           )}
         </BentoCard>
       </div>
+
+      {/* ── YOUR TASTE ── */}
+      <BentoCard style={{ marginBottom: '0.625rem' }}>
+        <CardLabel>Your Taste</CardLabel>
+        {taste.topRatedGenres.length === 0 && taste.mostWatchedGenres.length === 0 ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>
+            Rate a few more movies to unlock this.
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 6 }}>RATED HIGHEST</div>
+                {taste.topRatedGenres.length > 0 ? taste.topRatedGenres.map(g => (
+                  <div key={g.genreId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--cream)', marginBottom: 4 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                    <span style={{ color: 'var(--amber)', flexShrink: 0 }}>{g.avgRating.toFixed(1)}★</span>
+                  </div>
+                )) : (
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>Not enough ratings yet</div>
+                )}
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 6 }}>MOST WATCHED</div>
+                {taste.mostWatchedGenres.map(g => (
+                  <div key={g.genreId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--cream)', marginBottom: 4 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                    <span style={{ color: 'var(--cream-dim)', flexShrink: 0 }}>{g.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {taste.decades.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 6 }}>DECADES</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {taste.decades.map(d => (
+                    <span key={d.decade} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)',
+                      background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, padding: '3px 7px',
+                    }}>
+                      {DECADE_LABEL(d.decade)} · {d.count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(taste.preferredGenres.length > 0 || taste.excludedGenres.length > 0) && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cream-dim)', letterSpacing: 1, marginBottom: 6 }}>SUGGESTER IS TUNED FOR</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {taste.preferredGenres.map(name => (
+                    <span key={name} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)',
+                      background: 'rgba(192,120,24,0.12)', border: '1px solid var(--amber)', borderRadius: 3, padding: '3px 7px',
+                    }}>+ {name}</span>
+                  ))}
+                  {taste.excludedGenres.map(name => (
+                    <span key={name} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, color: '#E08070',
+                      background: 'rgba(154,48,40,0.15)', border: '1px solid #9A3028', borderRadius: 3, padding: '3px 7px',
+                    }}>− {name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Link href="/settings#genre-tuning" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1 }}>
+              ADJUST IN SETTINGS →
+            </Link>
+          </>
+        )}
+      </BentoCard>
 
       {/* ── WHAT WORKED — tag cloud ── */}
       {sortedTags.length > 0 && (

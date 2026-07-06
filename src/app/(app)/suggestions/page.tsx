@@ -178,6 +178,7 @@ export default function SuggestionsPage() {
       posterPath: postWatch.posterPath,
       genreIds:   postWatch.genreIds ?? [],
       runtime:    postWatch.runtime,
+      releaseYear: postWatch.releaseYear,
     }, answers)
     setPostWatch(null)
   }

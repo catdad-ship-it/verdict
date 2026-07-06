@@ -312,7 +312,7 @@ export default function SettingsPage() {
           </section>
 
           {/* ── Suggestions genre tuning ── */}
-          <section style={{ marginBottom: '2.5rem', paddingBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
+          <section id="genre-tuning" style={{ marginBottom: '2.5rem', paddingBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
             <SectionHeader icon={<Sparkles size={15} color="var(--amber)" />} title="SUGGESTIONS" />
             <p style={{ color: 'var(--cream-dim)', fontSize: 12, marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
               Tap a genre to boost it, tap again to hide it entirely, tap once more to clear.

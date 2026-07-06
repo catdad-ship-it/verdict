@@ -710,6 +710,7 @@ export default function HomePage() {
       posterPath:  postWatch.posterPath,
       genreIds:    postWatch.genreIds,
       runtime:     postWatch.runtime,
+      releaseYear: postWatch.releaseYear,
     }, answers)
     if (activeList === 'queue') await fetchQueue()
     else await fetchListItems(activeList, { silent: true })

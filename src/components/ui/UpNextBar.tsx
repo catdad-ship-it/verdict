@@ -62,6 +62,7 @@ export default function UpNextBar() {
       posterPath:  item.posterPath,
       genreIds:    item.genreIds,
       runtime:     item.runtime,
+      releaseYear: item.releaseYear,
     }, answers)
     localStorage.removeItem(PIN_KEY)
     setPostWatch(false)

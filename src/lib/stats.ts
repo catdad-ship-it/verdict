@@ -13,6 +13,14 @@ export interface StatsData {
   heatmapDays: { date: string; count: number }[]
 }
 
+export interface TasteInsights {
+  topRatedGenres: { genreId: number; name: string; avgRating: number; count: number }[]
+  mostWatchedGenres: { genreId: number; name: string; count: number }[]
+  decades: { decade: number; count: number }[]
+  preferredGenres: string[]
+  excludedGenres: string[]
+}
+
 export interface YearData {
   year: number
   movieCount: number
@@ -113,6 +121,62 @@ export async function computeStats(supabase: SupabaseClient, userId: string): Pr
     movieCount, showCount, totalRuntimeMinutes, avgRating,
     ratingDistribution, topGenres, whatWorkedTags, monthlyActivity, heatmapDays,
   }
+}
+
+// Surfaces the signal the suggester actually uses: what you rate highest
+// vs. what you watch most (deriveGenrePreferences in suggestions.ts merges
+// both into one opaque score — this recomputes them separately from raw
+// watched rows so they can be shown side by side) plus the explicit
+// preferred/excluded overrides already stored in taste_profiles.
+export async function computeTasteInsights(supabase: SupabaseClient, userId: string): Promise<TasteInsights> {
+  const [{ data: movies }, { data: profile }] = await Promise.all([
+    supabase.from('watched_movies').select('genre_ids, user_rating, release_year').eq('user_id', userId),
+    supabase.from('taste_profiles').select('preferred_genre_ids, excluded_genre_ids').eq('user_id', userId).maybeSingle(),
+  ])
+  const m = movies ?? []
+
+  const genreRatings: Record<number, number[]> = {}
+  const genreCounts: Record<number, number> = {}
+  for (const mov of m) {
+    for (const g of mov.genre_ids ?? []) {
+      genreCounts[g] = (genreCounts[g] ?? 0) + 1
+      if (mov.user_rating != null) (genreRatings[g] ??= []).push(mov.user_rating)
+    }
+  }
+
+  // Genres with a single rating would otherwise dominate this list on one
+  // lucky (or unlucky) pick — require at least 2 to smooth that out.
+  const topRatedGenres = Object.entries(genreRatings)
+    .map(([id, ratings]) => ({
+      genreId: parseInt(id),
+      name: TMDB_GENRES[parseInt(id)] ?? 'Other',
+      avgRating: ratings.reduce((a, b) => a + b, 0) / ratings.length,
+      count: ratings.length,
+    }))
+    .filter(g => g.count >= 2)
+    .sort((a, b) => b.avgRating - a.avgRating)
+    .slice(0, 5)
+
+  const mostWatchedGenres = Object.entries(genreCounts)
+    .map(([id, count]) => ({ genreId: parseInt(id), name: TMDB_GENRES[parseInt(id)] ?? 'Other', count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  const decadeCounts: Record<number, number> = {}
+  for (const mov of m) {
+    if (mov.release_year) {
+      const decade = Math.floor(mov.release_year / 10) * 10
+      decadeCounts[decade] = (decadeCounts[decade] ?? 0) + 1
+    }
+  }
+  const decades = Object.entries(decadeCounts)
+    .map(([d, count]) => ({ decade: parseInt(d), count }))
+    .sort((a, b) => a.decade - b.decade)
+
+  const preferredGenres = ((profile?.preferred_genre_ids as number[] | null) ?? []).map(id => TMDB_GENRES[id]).filter(Boolean)
+  const excludedGenres = ((profile?.excluded_genre_ids as number[] | null) ?? []).map(id => TMDB_GENRES[id]).filter(Boolean)
+
+  return { topRatedGenres, mostWatchedGenres, decades, preferredGenres, excludedGenres }
 }
 
 export async function computeYearStats(supabase: SupabaseClient, userId: string): Promise<YearData> {

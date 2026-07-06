@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { media_type, tmdb_id, title, poster_path, genre_ids, runtime,
+  const { media_type, tmdb_id, title, poster_path, genre_ids, runtime, release_year,
           user_rating, what_worked, want_more, notes, is_rewatch,
           status, current_season, total_seasons, season_number } = body
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabase.from('watched_movies').insert({
       user_id: user.id,
-      tmdb_id, title, poster_path, genre_ids, runtime,
+      tmdb_id, title, poster_path, genre_ids, runtime, release_year,
       user_rating,
       what_worked: what_worked ?? [],
       want_more_like_this: want_more ?? true,

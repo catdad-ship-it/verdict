@@ -156,6 +156,7 @@ export default function NewReleasesPage() {
       posterPath: postWatch.posterPath,
       genreIds:   postWatch.genreIds ?? [],
       runtime:    postWatch.runtime,
+      releaseYear: postWatch.releaseYear,
     }, answers)
     setPostWatch(null)
   }
