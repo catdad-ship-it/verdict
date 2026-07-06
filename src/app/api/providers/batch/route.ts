@@ -1,48 +1,12 @@
-import { canonicalizeAndDedupe } from '@/lib/streamingServices'
-import { getOwnedIds } from '@/lib/providers'
-import type { StreamProvider } from '@/lib/providers'
+import { getOwnedIds, fetchProviders } from '@/lib/providers'
+import type { ProviderResult } from '@/lib/providers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BASE = 'https://api.themoviedb.org/3'
-const KEY  = process.env.TMDB_API_KEY
+const KEY = process.env.TMDB_API_KEY
 
 interface BatchEntry {
   tmdbId: number
   mediaType: 'movie' | 'tv'
-}
-
-interface ProviderResult {
-  providers: StreamProvider[]
-  ownedProviders: StreamProvider[]
-  hasRent: boolean
-  hasBuy: boolean
-}
-
-async function fetchOne(tmdbId: number, mediaType: 'movie' | 'tv', ownedIds: Set<number>): Promise<ProviderResult> {
-  const path = mediaType === 'tv' ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
-  const url  = `${BASE}${path}?api_key=${KEY}`
-
-  try {
-    const data = await fetch(url, { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) }).then(r => r.json())
-    const us   = data?.results?.US
-
-    type RawProvider = { provider_id: number; provider_name: string; logo_path: string; display_priority: number }
-
-    // Canonicalize + dedupe — see streamingServices.ts / /api/providers.
-    const raw = ((us?.flatrate ?? []) as RawProvider[]).sort((a, b) => a.display_priority - b.display_priority)
-    const providers: StreamProvider[] = canonicalizeAndDedupe(
-      raw.map(p => ({ providerId: p.provider_id, providerName: p.provider_name, logoPath: p.logo_path }))
-    )
-
-    return {
-      providers,
-      ownedProviders: providers.filter(p => ownedIds.has(p.providerId)),
-      hasRent: !!(us?.rent?.length),
-      hasBuy:  !!(us?.buy?.length),
-    }
-  } catch {
-    return { providers: [], ownedProviders: [], hasRent: false, hasBuy: false }
-  }
 }
 
 // POST /api/providers/batch  { items: [{ tmdbId, mediaType }, ...] }
@@ -80,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   const entries = Array.from(seen.entries()).slice(0, MAX_ENTRIES)
   const ownedIds = await getOwnedIds()
-  const settled = await Promise.all(entries.map(([, e]) => fetchOne(e.tmdbId, e.mediaType, ownedIds)))
+  const settled = await Promise.all(entries.map(([, e]) => fetchProviders(e.tmdbId, e.mediaType, ownedIds)))
 
   const results: Record<string, ProviderResult> = {}
   entries.forEach(([key], i) => {

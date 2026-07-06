@@ -398,6 +398,28 @@ export default function HomePage() {
       }))
       fetchProvidersBatch(items).then(map => setProvidersMap(prev => ({ ...prev, ...map })))
     }).catch(() => {})
+    // Piggyback on this load to diff queue items' owned-provider snapshot
+    // (throttled server-side to ~once/20h per item) — surfaces "NOW ON X"
+    // / "no longer on X" without any cron job. Best-effort: a failure here
+    // shouldn't affect anything else on the page.
+    fetch('/api/queue/availability').then(r => r.json()).then((d: {
+      becameAvailable: { tmdbId: number; title: string; providerName?: string }[]
+      noLongerAvailable: { tmdbId: number; title: string }[]
+    }) => {
+      d.becameAvailable?.forEach(item => {
+        toast.show(`"${item.title.toUpperCase()}" IS NOW ON ${(item.providerName ?? 'A SERVICE YOU HAVE').toUpperCase()}`)
+      })
+      d.noLongerAvailable?.forEach(item => {
+        toast.show(`"${item.title.toUpperCase()}" LEFT YOUR SERVICES`)
+      })
+    }).catch(() => {})
+    // toast's context value is a new object every ToastProvider render
+    // (its own `toasts` state changing) even though .show/.showUndo
+    // themselves are stable — depending on it would re-run this whole
+    // mount effect (refetching queue/lists/trending/preferences) every
+    // time any toast fires anywhere, including the ones this effect
+    // itself shows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchQueue, fetchLists])
 
   useEffect(() => {
