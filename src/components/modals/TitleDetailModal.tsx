@@ -2,7 +2,8 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { Play, Plus, Check, X, Tv, Pin, PinOff } from 'lucide-react'
-import { posterUrl, formatRuntime } from '@/lib/utils'
+import { posterUrl, formatRuntime, type ProviderData } from '@/lib/utils'
+import { cachedFetch } from '@/lib/requestCache'
 import type { TitleDetails } from '@/lib/tmdb'
 import type { ContentWarning } from '@/lib/dtdd'
 import ModalShell from '@/components/ui/ModalShell'
@@ -37,6 +38,10 @@ interface TitleDetailModalProps {
   // destination picker rather than adding immediately, don't optimistically
   // flip to "ADDED" here either.
   usesPickerFlow?: boolean
+  // Pass the card's already-resolved provider data (self-fetched or from
+  // a batch) so this modal doesn't re-fetch /api/providers for a title
+  // whose card is right there on screen.
+  providerData?: ProviderData
 }
 
 // The click-to-expand detail sheet. Card-level info (poster, title, year,
@@ -52,16 +57,23 @@ export default function TitleDetailModal({
   tmdbId, title, posterPath, mediaType, runtime, releaseYear,
   imdbRating, rtScore, overview, matchReason, currentSeason, totalSeasons,
   isInQueue, isWatched, isSoon, isPinned, onPin,
-  onAddToQueue, onMarkWatched, onRemoveFromQueue, onClose, usesPickerFlow,
+  onAddToQueue, onMarkWatched, onRemoveFromQueue, onClose, usesPickerFlow, providerData,
 }: TitleDetailModalProps) {
   const imgUrl = posterUrl(posterPath, 'w500')
   const [details, setDetails] = useState<TitleDetails | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(true)
-  const [providers, setProviders] = useState<StreamProvider[]>([])
-  const [ownedProviders, setOwnedProviders] = useState<StreamProvider[]>([])
-  const [hasRent, setHasRent] = useState(false)
-  const [hasBuy, setHasBuy] = useState(false)
-  const [providersLoaded, setProvidersLoaded] = useState(false)
+  const [fetchedProviders, setFetchedProviders] = useState<StreamProvider[]>([])
+  const [fetchedOwnedProviders, setFetchedOwnedProviders] = useState<StreamProvider[]>([])
+  const [fetchedHasRent, setFetchedHasRent] = useState(false)
+  const [fetchedHasBuy, setFetchedHasBuy] = useState(false)
+  const [fetchedProvidersLoaded, setFetchedProvidersLoaded] = useState(false)
+  // Prefer the card's already-resolved data over this modal's own fetch —
+  // see the providerData prop doc above.
+  const providers      = providerData ? providerData.providers      : fetchedProviders
+  const ownedProviders = providerData ? providerData.ownedProviders : fetchedOwnedProviders
+  const hasRent        = providerData ? providerData.hasRent        : fetchedHasRent
+  const hasBuy         = providerData ? providerData.hasBuy         : fetchedHasBuy
+  const providersLoaded = providerData ? true : fetchedProvidersLoaded
   const [trailerLoading, setTrailerLoading] = useState(false)
   const [localAdded, setLocalAdded] = useState(false)
   // Transparent title-logo art (fanart.tv) — falls back to the plain text
@@ -74,32 +86,35 @@ export default function TitleDetailModal({
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/details?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-      .then(r => r.json())
+    const key = `${mediaType}:${tmdbId}`
+    cachedFetch(`details:${key}`, () => fetch(`/api/details?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json()))
       .then(d => { if (!cancelled) setDetails(d) })
       .catch(() => { /* non-fatal — fall back to card-level overview below */ })
       .finally(() => { if (!cancelled) setDetailsLoading(false) })
-    fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-      .then(r => r.json())
-      .then(d => {
-        if (cancelled) return
-        setProviders(d.providers ?? [])
-        setOwnedProviders(d.ownedProviders ?? [])
-        setHasRent(d.hasRent ?? false)
-        setHasBuy(d.hasBuy ?? false)
-        setProvidersLoaded(true)
-      })
-      .catch(() => !cancelled && setProvidersLoaded(true))
-    fetch(`/api/logo?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-      .then(r => r.json())
+
+    // Skip the fetch entirely when the card that opened this modal already
+    // resolved provider data (its own self-fetch or a parent's batch).
+    if (!providerData) {
+      cachedFetch(`providers:${key}`, () => fetch(`/api/providers?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json()))
+        .then(d => {
+          if (cancelled) return
+          setFetchedProviders(d.providers ?? [])
+          setFetchedOwnedProviders(d.ownedProviders ?? [])
+          setFetchedHasRent(d.hasRent ?? false)
+          setFetchedHasBuy(d.hasBuy ?? false)
+          setFetchedProvidersLoaded(true)
+        })
+        .catch(() => !cancelled && setFetchedProvidersLoaded(true))
+    }
+
+    cachedFetch(`logo:${key}`, () => fetch(`/api/logo?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json()))
       .then(d => { if (!cancelled) setLogoUrl(d.logoUrl ?? null) })
       .catch(() => { /* non-fatal — plain text title stays */ })
-    fetch(`/api/content-warnings?tmdbId=${tmdbId}&mediaType=${mediaType}`)
-      .then(r => r.json())
+    cachedFetch(`warnings:${key}`, () => fetch(`/api/content-warnings?tmdbId=${tmdbId}&mediaType=${mediaType}`).then(r => r.json()))
       .then(d => { if (!cancelled) setWarnings(d.warnings ?? []) })
       .catch(() => { /* non-fatal — section just doesn't render */ })
     return () => { cancelled = true }
-  }, [tmdbId, mediaType])
+  }, [tmdbId, mediaType, providerData])
 
   // Trailer plays inline (a YouTube iframe embed dropped into the sheet)
   // instead of punting the user out to youtube.com — the whole point of

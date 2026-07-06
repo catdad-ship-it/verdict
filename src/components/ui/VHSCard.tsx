@@ -371,6 +371,7 @@ export default function VHSCard({
         onRemoveFromQueue={onRemoveFromQueue}
         onClose={() => setDetailOpen(false)}
         usesPickerFlow={usesPickerFlow}
+        providerData={providersLoaded ? { providers, ownedProviders, hasRent, hasBuy } : undefined}
       />
     )}
     </>
