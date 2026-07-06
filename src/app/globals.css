@@ -47,6 +47,18 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Card lift-on-hover — CSS-driven (not inline JS) so the @media (hover:
+   none) guard below can actually cancel it; a JS onMouseEnter/onMouseLeave
+   pair has no hover media query to key off, so it stuck applied after a
+   tap on iOS Safari (a synthetic hover fires on touch before touchend). */
+.vhs-card-hover {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.vhs-card-hover:hover {
+  transform: translateY(-5px) scale(1.015);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.7), 0 0 20px rgba(192,120,24,0.12);
+}
+
 /* Prevent hover transforms from sticking on touch devices */
 @media (hover: none) {
   .vhs-card-hover { transform: none !important; box-shadow: none !important; }

@@ -111,28 +111,13 @@ export default function VHSCard({
     }
   }
 
-  const handleCardMouseEnter = (e: React.MouseEvent) => {
-    ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-5px) scale(1.015)'
-    ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 16px 36px rgba(0,0,0,0.7), 0 0 20px rgba(192,120,24,0.12)'
-  }
-
-  const handleCardMouseLeave = (e: React.MouseEvent) => {
-    ;(e.currentTarget as HTMLDivElement).style.transform = ''
-    ;(e.currentTarget as HTMLDivElement).style.boxShadow = ''
-  }
-
   const inQueue = isInQueue || localAdded
 
   return (
     <>
     <div
-      className="rounded-sm overflow-hidden cursor-pointer group"
-      style={{
-        background: 'var(--card)',
-        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
-      }}
-      onMouseEnter={handleCardMouseEnter}
-      onMouseLeave={handleCardMouseLeave}
+      className="rounded-sm overflow-hidden cursor-pointer group vhs-card-hover"
+      style={{ background: 'var(--card)' }}
       onClick={() => { onClick?.(); setDetailOpen(true) }}
     >
       {/* Poster */}
