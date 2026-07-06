@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcFinishTime, formatRuntime } from './finishTime'
+import { calcFinishTime, formatRuntime, minutesUntilClockTime } from './finishTime'
 
 describe('formatRuntime', () => {
   it('formats hours and minutes', () => {
@@ -42,5 +42,22 @@ describe('calcFinishTime', () => {
   it('treats Monday-Thursday as a weeknight', () => {
     const monday = new Date('2026-01-05T19:00:00')
     expect(calcFinishTime(30, monday).isWeeknight).toBe(true)
+  })
+})
+
+describe('minutesUntilClockTime', () => {
+  it('computes minutes remaining until a later time today', () => {
+    const now = new Date('2026-01-06T19:00:00')
+    expect(minutesUntilClockTime(21, 30, now)).toBe(150)
+  })
+
+  it('returns 0 when the target time has already passed today', () => {
+    const now = new Date('2026-01-06T23:00:00')
+    expect(minutesUntilClockTime(21, 0, now)).toBe(0)
+  })
+
+  it('returns 0 exactly at the target time', () => {
+    const now = new Date('2026-01-06T21:00:00')
+    expect(minutesUntilClockTime(21, 0, now)).toBe(0)
   })
 })

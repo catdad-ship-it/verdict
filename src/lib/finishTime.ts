@@ -29,6 +29,17 @@ export function calcFinishTime(runtimeMinutes: number, startDate?: Date): Finish
   }
 }
 
+// Minutes remaining from `now` until the next occurrence of a clock time
+// today — for "I have until 11pm" mode. A target already passed today
+// returns 0 (nothing fits) rather than rolling into tomorrow; "watch
+// tonight" is inherently same-day.
+export function minutesUntilClockTime(targetHour: number, targetMinute: number, now?: Date): number {
+  const start = now ?? new Date()
+  const target = new Date(start)
+  target.setHours(targetHour, targetMinute, 0, 0)
+  return Math.max(0, Math.round((target.getTime() - start.getTime()) / 60000))
+}
+
 export function formatRuntime(minutes: number): string {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60

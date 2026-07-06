@@ -461,6 +461,20 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchQueue, fetchLists])
 
+  // Backs the Spin wheel's "ON MY SERVICES ONLY" filter — provider data for
+  // queue items isn't fetched anywhere else (VHSCard fetches it lazily per
+  // card only when actually rendered, and queue items render as QueueRow,
+  // which doesn't). Only fetches for items not already in providersMap, so
+  // this settles out after the first pass instead of refetching on every
+  // queue change.
+  useEffect(() => {
+    const unfetched = queue
+      .filter(i => i.mediaType === 'movie' && !(`movie:${i.tmdbId}` in providersMap))
+      .map(i => ({ tmdbId: i.tmdbId, mediaType: 'movie' as const }))
+    if (unfetched.length === 0) return
+    fetchProvidersBatch(unfetched).then(map => setProvidersMap(prev => ({ ...prev, ...map })))
+  }, [queue, providersMap])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (activeList !== 'queue') fetchListItems(activeList)
@@ -991,7 +1005,7 @@ export default function HomePage() {
       )}
 
       {/* Modals */}
-      {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} />}
+      {showSpin && <SpinWheelModal items={movieItems} onClose={() => setShowSpin(false)} providersMap={providersMap} />}
       {showWatchTonight && (
         <WatchTonightModal
           items={queue}

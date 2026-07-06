@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { X, RefreshCw, Pin } from 'lucide-react'
-import { posterUrl } from '@/lib/utils'
+import { posterUrl, formatRuntime } from '@/lib/utils'
+import { minutesUntilClockTime } from '@/lib/finishTime'
 import type { QueueItem } from '@/lib/types'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -30,10 +31,25 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function WatchTonightModal({ items, onPin, onClose }: Props) {
+  const [mode, setMode]             = useState<'duration' | 'clock'>('duration')
   const [limit, setLimit]           = useState<number | null>(null)
+  const [clockTime, setClockTime]   = useState('')
   const [candidates, setCandidates] = useState<QueueItem[]>([])
   const [pickIdx, setPickIdx]       = useState(0)
   const [pinned, setPinned]         = useState(false)
+
+  const switchMode = (next: 'duration' | 'clock') => {
+    setMode(next)
+    setLimit(null)
+    setClockTime('')
+  }
+
+  const handleClockChange = (value: string) => {
+    setClockTime(value)
+    if (!value) { setLimit(null); return }
+    const [h, m] = value.split(':').map(Number)
+    setLimit(minutesUntilClockTime(h, m))
+  }
 
   // Recompute candidates whenever limit changes. This has to be an effect
   // rather than a plain derived value: shuffle() uses Math.random(), so
@@ -104,21 +120,56 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
             Pick your window — I&apos;ll find something that fits.
           </p>
 
-          {/* Time selector */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-            {TIME_OPTIONS.map(({ label, minutes }) => {
-              const active = limit === minutes
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: '0.75rem' }}>
+            {(['duration', 'clock'] as const).map(m => {
+              const active = mode === m
               return (
-                <button key={label} onClick={() => setLimit(minutes)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.4rem 0.75rem',
-                  background: active ? 'var(--amber)' : 'var(--raised)',
-                  color: active ? 'var(--bg)' : 'var(--cream-dim)',
-                  border: `1px solid ${active ? 'var(--amber)' : 'var(--border)'}`,
-                  borderRadius: 3, cursor: 'pointer', letterSpacing: 1, fontWeight: active ? 700 : 400,
-                }}>{label}</button>
+                <button key={m} onClick={() => switchMode(m)} style={{
+                  flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.4rem 0.5rem',
+                  background: active ? 'var(--amber-dim)' : 'transparent',
+                  color: active ? 'var(--amber)' : 'var(--cream-dim)',
+                  border: '1px solid var(--amber-dim)', borderRadius: 3, cursor: 'pointer', letterSpacing: 1,
+                }}>{m === 'duration' ? 'HOW LONG' : 'FINISH BY'}</button>
               )
             })}
           </div>
+
+          {/* Time selector */}
+          {mode === 'duration' ? (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+              {TIME_OPTIONS.map(({ label, minutes }) => {
+                const active = limit === minutes
+                return (
+                  <button key={label} onClick={() => setLimit(minutes)} style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.4rem 0.75rem',
+                    background: active ? 'var(--amber)' : 'var(--raised)',
+                    color: active ? 'var(--bg)' : 'var(--cream-dim)',
+                    border: `1px solid ${active ? 'var(--amber)' : 'var(--border)'}`,
+                    borderRadius: 3, cursor: 'pointer', letterSpacing: 1, fontWeight: active ? 700 : 400,
+                  }}>{label}</button>
+                )
+              })}
+            </div>
+          ) : (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <input
+                type="time"
+                value={clockTime}
+                onChange={e => handleClockChange(e.target.value)}
+                style={{
+                  width: '100%', fontFamily: 'var(--font-mono)', fontSize: 16, padding: '0.6rem 0.75rem',
+                  background: 'var(--raised)', color: 'var(--cream)',
+                  border: '1px solid var(--border)', borderRadius: 3,
+                }}
+              />
+              {clockTime && limit !== null && (
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)', marginTop: 6 }}>
+                  {limit > 0 ? `THAT'S ${formatRuntime(limit).toUpperCase()} FROM NOW` : "THAT'S ALREADY PASSED"}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Pick result */}
           {limit !== null && (

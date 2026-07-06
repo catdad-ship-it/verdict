@@ -1,13 +1,15 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { QueueItem } from '@/lib/types'
-import { formatRuntime } from '@/lib/utils'
+import { formatRuntime, type ProviderData } from '@/lib/utils'
+import FilterChips from '@/components/ui/FilterChips'
 import ModalShell from '@/components/ui/ModalShell'
 
 interface Props {
   items: QueueItem[]
   onClose: () => void
+  providersMap?: Record<string, ProviderData>
 }
 
 const SLICE_COLORS = [
@@ -15,14 +17,47 @@ const SLICE_COLORS = [
   '#181614','#200C38','#38081C','#181410',
 ]
 
-export default function SpinWheelModal({ items, onClose }: Props) {
+const RUNTIME_OPTIONS = [
+  ['any', 'ANY LENGTH'],
+  ['90', '≤ 90 MIN'],
+  ['120', '≤ 2 HRS'],
+] as const
+type RuntimeFilter = (typeof RUNTIME_OPTIONS)[number][0]
+
+// A curated subset of TMDB_GENRES worth spinning by mood — the full genre
+// list has too much overlap/noise (e.g. "TV Movie", "War") to make good
+// filter chips.
+const MOOD_GENRES: Record<string, number> = {
+  COMEDY: 35, ACTION: 28, HORROR: 27, DRAMA: 18, THRILLER: 53, 'SCI-FI': 878,
+}
+
+export default function SpinWheelModal({ items, onClose, providersMap = {} }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rotRef    = useRef(0)
   const rafRef    = useRef<number | null>(null)
   const [spinning, setSpinning]   = useState(false)
   const [result, setResult]       = useState<QueueItem | null>(null)
+  const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>('any')
+  const [servicesOnly, setServicesOnly]   = useState(false)
+  const [moodFilter, setMoodFilter]       = useState<string>('any')
 
-  const movies = items.filter(i => i.mediaType === 'movie').slice(0, 12)
+  const allMovies = items.filter(i => i.mediaType === 'movie')
+
+  const availableMoods = useMemo(
+    () => Object.entries(MOOD_GENRES).filter(([, genreId]) => allMovies.some(m => m.genreIds.includes(genreId))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items]
+  )
+  const moodOptions: [string, string][] = [['any', 'ANY MOOD'], ...availableMoods.map(([name]): [string, string] => [name, name])]
+
+  const movies = useMemo(() => allMovies.filter(m => {
+    if (runtimeFilter !== 'any' && (!m.runtime || m.runtime > Number(runtimeFilter))) return false
+    if (servicesOnly && !(providersMap[`movie:${m.tmdbId}`]?.ownedProviders.length)) return false
+    if (moodFilter !== 'any' && !m.genreIds.includes(MOOD_GENRES[moodFilter])) return false
+    return true
+  }).slice(0, 12),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [items, runtimeFilter, servicesOnly, moodFilter, providersMap])
 
   function draw(rot: number) {
     const cv = canvasRef.current
@@ -54,10 +89,10 @@ export default function SpinWheelModal({ items, onClose }: Props) {
   }
 
   // draw is redefined every render (it closes over movies), so adding it here
-  // would fire this effect on every render — only movies.length actually
-  // matters for when the wheel needs to be redrawn from scratch.
+  // would fire this effect on every render — `movies` itself (memoized above)
+  // already only changes identity when the filtered set actually changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { draw(rotRef.current) }, [movies.length])
+  useEffect(() => { draw(rotRef.current) }, [movies])
 
   useEffect(() => () => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
@@ -84,7 +119,7 @@ export default function SpinWheelModal({ items, onClose }: Props) {
     rafRef.current = requestAnimationFrame(frame)
   }
 
-  if (movies.length === 0) return null
+  if (allMovies.length === 0) return null
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4 z-50"
@@ -100,36 +135,66 @@ export default function SpinWheelModal({ items, onClose }: Props) {
         <div className="inline-block mb-2" style={{ borderBottom: '2px solid var(--amber)', paddingBottom: '6px' }}>
           <span className="font-bold text-lg tracking-wider uppercase" style={{ color: 'var(--amber)' }}>SPIN THE WHEEL</span>
         </div>
-        <p className="text-xs mb-5" style={{ color: 'var(--cream-dim)' }}>Can&apos;t decide? Let fate pick from your queue.</p>
+        <p className="text-xs mb-3" style={{ color: 'var(--cream-dim)' }}>Can&apos;t decide? Let fate pick from your queue.</p>
 
-        {/* Wheel */}
-        <div className="relative inline-block mb-3">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
-               style={{ color: 'var(--amber)', fontSize: '1.2rem', lineHeight: 1, textShadow: '0 0 8px rgba(192,120,24,0.6)' }}>▼</div>
-          <canvas ref={canvasRef} width={240} height={240} style={{ display: 'block' }} />
+        {/* Filters */}
+        <div className="flex flex-col items-center gap-1.5 mb-4">
+          <FilterChips
+            options={RUNTIME_OPTIONS}
+            active={runtimeFilter}
+            onChange={v => { setRuntimeFilter(v); setResult(null) }}
+            compact
+          />
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+            <FilterChips options={moodOptions} active={moodFilter} onChange={v => { setMoodFilter(v); setResult(null) }} compact />
+            <button
+              onClick={() => { setServicesOnly(s => !s); setResult(null) }}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.15rem 0.4rem',
+                background: servicesOnly ? 'var(--amber-dim)' : 'transparent',
+                color: servicesOnly ? 'var(--amber)' : 'var(--cream-dim)',
+                border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
+              }}
+            >ON MY SERVICES</button>
+          </div>
         </div>
 
-        {result && (
-          <div className="rounded-sm p-4 mb-4"
-               style={{ background: 'var(--card)', border: '1px solid var(--amber)', boxShadow: '0 0 20px rgba(192,120,24,0.15)' }}>
-            <p className="text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--amber)' }}>TONIGHT&apos;S PICK</p>
-            <p className="font-bold text-xl leading-tight mb-1" style={{ color: 'var(--cream)' }}>{result.title}</p>
-            <p className="text-xs" style={{ color: 'var(--cream-dim)' }}>
-              {result.releaseYear}{result.runtime ? ` · ${formatRuntime(result.runtime)}` : ''}
-            </p>
+        {movies.length === 0 ? (
+          <div className="rounded-sm p-4 mb-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--cream-dim)' }}>No queued movies match those filters.</p>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Wheel */}
+            <div className="relative inline-block mb-3">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
+                   style={{ color: 'var(--amber)', fontSize: '1.2rem', lineHeight: 1, textShadow: '0 0 8px rgba(192,120,24,0.6)' }}>▼</div>
+              <canvas ref={canvasRef} width={240} height={240} style={{ display: 'block' }} />
+            </div>
 
-        <button onClick={spin} disabled={spinning}
-          className="w-full py-3 text-sm font-semibold tracking-widest uppercase rounded-sm"
-          style={{
-            background: 'linear-gradient(170deg, #8A4028, #6A2818)',
-            border: '1px solid #A04830', borderBottomColor: '#3A1008',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 0 #280C04, 0 3px 8px rgba(0,0,0,0.4)',
-            color: '#F0C898', cursor: spinning ? 'not-allowed' : 'pointer',
-          }}>
-          {spinning ? '⏩  SPINNING…' : result ? '🎲  SPIN AGAIN' : '🎲  SPIN IT'}
-        </button>
+            {result && (
+              <div className="rounded-sm p-4 mb-4"
+                   style={{ background: 'var(--card)', border: '1px solid var(--amber)', boxShadow: '0 0 20px rgba(192,120,24,0.15)' }}>
+                <p className="text-xs font-semibold tracking-widest uppercase mb-1.5" style={{ color: 'var(--amber)' }}>TONIGHT&apos;S PICK</p>
+                <p className="font-bold text-xl leading-tight mb-1" style={{ color: 'var(--cream)' }}>{result.title}</p>
+                <p className="text-xs" style={{ color: 'var(--cream-dim)' }}>
+                  {result.releaseYear}{result.runtime ? ` · ${formatRuntime(result.runtime)}` : ''}
+                </p>
+              </div>
+            )}
+
+            <button onClick={spin} disabled={spinning}
+              className="w-full py-3 text-sm font-semibold tracking-widest uppercase rounded-sm"
+              style={{
+                background: 'linear-gradient(170deg, #8A4028, #6A2818)',
+                border: '1px solid #A04830', borderBottomColor: '#3A1008',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 0 #280C04, 0 3px 8px rgba(0,0,0,0.4)',
+                color: '#F0C898', cursor: spinning ? 'not-allowed' : 'pointer',
+              }}>
+              {spinning ? '⏩  SPINNING…' : result ? '🎲  SPIN AGAIN' : '🎲  SPIN IT'}
+            </button>
+          </>
+        )}
       </ModalShell>
     </div>
   )
