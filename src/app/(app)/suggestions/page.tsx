@@ -107,6 +107,8 @@ export default function SuggestionsPage() {
       imdbRating: m.imdbRating, rtScore: m.rtScore, overview: m.overview,
     })
     setAddedIds(s => new Set([...s, m.id]))
+    const destName = listId === 'queue' ? 'QUEUE' : (lists.find(l => l.id === listId)?.name.toUpperCase() ?? 'LIST')
+    toast.show(`ADDED "${m.title.toUpperCase()}" TO ${destName}`)
   }
 
   const handleDismiss = (id: number, genreIds: number[], title: string) => {

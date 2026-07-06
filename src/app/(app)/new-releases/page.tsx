@@ -122,6 +122,8 @@ export default function NewReleasesPage() {
       imdbRating: m.imdbRating, rtScore: m.rtScore, overview: m.overview,
     })
     setAddedIds(s => new Set([...s, tmdbId]))
+    const destName = listId === 'queue' ? 'QUEUE' : (lists.find(l => l.id === listId)?.name.toUpperCase() ?? 'LIST')
+    toast.show(`ADDED "${m.title.toUpperCase()}" TO ${destName}`)
   }
 
   const handleDismiss = (m: Movie) => {

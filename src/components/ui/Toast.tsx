@@ -37,6 +37,14 @@ let nextId = 1
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  // UpNextBar anchors at the same bottom offset as the toast list — shift
+  // up while it's showing a pinned title so a toast doesn't overlap it.
+  const [upNextVisible, setUpNextVisible] = useState(false)
+  useEffect(() => {
+    const handler = (e: Event) => setUpNextVisible(!!(e as CustomEvent<boolean>).detail)
+    window.addEventListener('verdict:upnext-visible', handler)
+    return () => window.removeEventListener('verdict:upnext-visible', handler)
+  }, [])
   // showUndo's deferred commits, keyed by toast id, not yet fired (or
   // canceled via UNDO) — flushed immediately if the tab is hidden/closed
   // so the setTimeout below doesn't just silently never run.
@@ -100,7 +108,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         role="status"
         aria-live="polite"
         style={{
-          position: 'fixed', left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))',
+          position: 'fixed', left: 0, right: 0,
+          bottom: upNextVisible ? 'calc(142px + env(safe-area-inset-bottom))' : 'calc(70px + env(safe-area-inset-bottom))',
+          transition: 'bottom 0.2s ease',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           zIndex: 9500, pointerEvents: 'none', padding: '0 1rem',
         }}>

@@ -32,15 +32,13 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }
   )
 }
 
-function SaveButton({ onClick, saving, saved }: { onClick: () => void; saving: boolean; saved: boolean }) {
+// These prefs auto-save on toggle (no separate SAVE button) — this just
+// gives quiet feedback that the tap actually persisted.
+function SaveStatus({ saving, saved }: { saving: boolean; saved: boolean }) {
+  if (!saving && !saved) return null
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: '0.9rem' }}>
-      <button onClick={onClick} disabled={saving} className="vcr-btn-primary" style={{ fontSize: 11, padding: '0.5rem 1.3rem', opacity: saving ? 0.6 : 1 }}>
-        {saving ? 'SAVING...' : 'SAVE'}
-      </button>
-      {saved && (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--amber)', letterSpacing: 1 }}>✓ SAVED</span>
-      )}
+    <div style={{ marginTop: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--amber)' }}>
+      {saving ? 'SAVING...' : '✓ SAVED'}
     </div>
   )
 }
@@ -102,24 +100,14 @@ export default function SettingsPage() {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ''))
   }, [])
 
-  const toggleService = (id: number) => {
-    setSavedServices(false)
-    setSelectedServices(s => {
-      const next = new Set(s)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const saveServices = async () => {
+  const saveServices = async (ids: Set<number>) => {
     setSavingServices(true)
     setSavedServices(false)
     try {
       await fetch('/api/settings/streaming-services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ providerIds: Array.from(selectedServices) }),
+        body: JSON.stringify({ providerIds: Array.from(ids) }),
       })
       setSavedServices(true)
     } finally {
@@ -127,24 +115,22 @@ export default function SettingsPage() {
     }
   }
 
-  const toggleShelf = (key: string) => {
-    setSavedShelves(false)
-    setHiddenShelves(s => {
-      const next = new Set(s)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+  const toggleService = (id: number) => {
+    const next = new Set(selectedServices)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedServices(next)
+    saveServices(next)
   }
 
-  const saveShelves = async () => {
+  const saveShelves = async (hidden: Set<string>) => {
     setSavingShelves(true)
     setSavedShelves(false)
     try {
       await fetch('/api/settings/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hiddenShelves: Array.from(hiddenShelves) }),
+        body: JSON.stringify({ hiddenShelves: Array.from(hidden) }),
       })
       setSavedShelves(true)
     } finally {
@@ -152,21 +138,20 @@ export default function SettingsPage() {
     }
   }
 
-  const cycleGenre = (id: number) => {
-    setSavedGenres(false)
-    setGenreStates(s => {
-      const current = s[id] ?? null
-      const next: GenreState = current === null ? 'preferred' : current === 'preferred' ? 'excluded' : null
-      return { ...s, [id]: next }
-    })
+  const toggleShelf = (key: string) => {
+    const next = new Set(hiddenShelves)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setHiddenShelves(next)
+    saveShelves(next)
   }
 
-  const saveGenres = async () => {
+  const saveGenres = async (states: Record<number, GenreState>) => {
     setSavingGenres(true)
     setSavedGenres(false)
     try {
-      const preferredGenreIds = Object.entries(genreStates).filter(([, v]) => v === 'preferred').map(([id]) => Number(id))
-      const excludedGenreIds  = Object.entries(genreStates).filter(([, v]) => v === 'excluded').map(([id]) => Number(id))
+      const preferredGenreIds = Object.entries(states).filter(([, v]) => v === 'preferred').map(([id]) => Number(id))
+      const excludedGenreIds  = Object.entries(states).filter(([, v]) => v === 'excluded').map(([id]) => Number(id))
       await fetch('/api/settings/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,14 +163,22 @@ export default function SettingsPage() {
     }
   }
 
-  const saveSort = async () => {
+  const cycleGenre = (id: number) => {
+    const current = genreStates[id] ?? null
+    const nextState: GenreState = current === null ? 'preferred' : current === 'preferred' ? 'excluded' : null
+    const next = { ...genreStates, [id]: nextState }
+    setGenreStates(next)
+    saveGenres(next)
+  }
+
+  const saveSort = async (sortKey: string) => {
     setSavingSort(true)
     setSavedSort(false)
     try {
       await fetch('/api/settings/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultQueueSort: defaultSort }),
+        body: JSON.stringify({ defaultQueueSort: sortKey }),
       })
       setSavedSort(true)
     } finally {
@@ -278,7 +271,7 @@ export default function SettingsPage() {
                 )
               })}
             </div>
-            <SaveButton onClick={saveServices} saving={savingServices} saved={savedServices} />
+            <SaveStatus saving={savingServices} saved={savedServices} />
           </section>
 
           {/* ── New Releases shelves ── */}
@@ -315,7 +308,7 @@ export default function SettingsPage() {
                 )
               })}
             </div>
-            <SaveButton onClick={saveShelves} saving={savingShelves} saved={savedShelves} />
+            <SaveStatus saving={savingShelves} saved={savedShelves} />
           </section>
 
           {/* ── Suggestions genre tuning ── */}
@@ -348,7 +341,7 @@ export default function SettingsPage() {
                 )
               })}
             </div>
-            <SaveButton onClick={saveGenres} saving={savingGenres} saved={savedGenres} />
+            <SaveStatus saving={savingGenres} saved={savedGenres} />
           </section>
 
           {/* ── Queue default sort ── */}
@@ -361,7 +354,7 @@ export default function SettingsPage() {
               {SORT_OPTIONS.map(opt => (
                 <button
                   key={opt.key}
-                  onClick={() => { setDefaultSort(opt.key); setSavedSort(false) }}
+                  onClick={() => { setDefaultSort(opt.key); saveSort(opt.key) }}
                   style={{
                     fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.4rem 0.8rem',
                     background: defaultSort === opt.key ? 'var(--amber)' : 'transparent',
@@ -373,7 +366,7 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
-            <SaveButton onClick={saveSort} saving={savingSort} saved={savedSort} />
+            <SaveStatus saving={savingSort} saved={savedSort} />
           </section>
 
           {/* ── Account ── */}

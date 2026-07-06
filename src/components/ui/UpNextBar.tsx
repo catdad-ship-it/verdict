@@ -20,6 +20,13 @@ export default function UpNextBar() {
   const [postWatch, setPostWatch] = useState(false)
   const markWatched = useMarkWatched()
 
+  // Toast (mounted higher up, in the layout) anchors at the same bottom
+  // offset as this bar — tell it when to shift up so a toast doesn't sit
+  // underneath/overlapping the pinned title.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('verdict:upnext-visible', { detail: !!item }))
+  }, [item])
+
   const sync = useCallback(async () => {
     const pinnedKey = typeof window !== 'undefined' ? localStorage.getItem(PIN_KEY) : null
     if (!pinnedKey) { setItem(null); return }

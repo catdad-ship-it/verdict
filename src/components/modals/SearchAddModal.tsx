@@ -39,9 +39,13 @@ type RatingFilter = 'all' | 'high'
 interface Props {
   onClose: () => void
   onAdd: (item: SearchResult & { mediaType: 'movie' | 'tv' }) => Promise<void>
+  // The list/queue the picker flow already chose as the add destination —
+  // shown in the header instead of an always-"QUEUE" label that lies once
+  // the user picked a named list.
+  destinationLabel?: string
 }
 
-export default function SearchAddModal({ onClose, onAdd }: Props) {
+export default function SearchAddModal({ onClose, onAdd, destinationLabel = 'QUEUE' }: Props) {
   const [query, setQuery]     = useState('')
   const [tab, setTab]         = useState<Tab>('movie')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -206,7 +210,7 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
           ) : (
             <>
               <Search size={16} color="var(--amber)" />
-              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 14, flex: 1 }}>SEARCH &amp; ADD TO QUEUE</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 14, flex: 1 }}>SEARCH &amp; ADD TO {destinationLabel}</span>
             </>
           )}
           <button
@@ -324,6 +328,10 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--amber)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                 SEARCHING...
               </div>
+            ) : query.trim() && peopleResults.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                NO RESULTS FOR &quot;{query}&quot;.
+              </div>
             ) : (
               peopleResults.map(person => (
                 <button
@@ -361,6 +369,11 @@ export default function SearchAddModal({ onClose, onAdd }: Props) {
               {loading && (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--amber)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                   SEARCHING...
+                </div>
+              )}
+              {!loading && query.trim() && results.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                  NO RESULTS FOR &quot;{query}&quot;.
                 </div>
               )}
               {!loading && results.length > 0 && filteredResults.length === 0 && (

@@ -12,7 +12,7 @@ interface Props {
   mediaType: 'movie' | 'tv'
   seasonNumber?: number
   isRewatch?: boolean
-  onSave: (answers: PostWatchAnswers) => void
+  onSave: (answers: PostWatchAnswers) => void | Promise<void>
   onClose: () => void
 }
 
@@ -23,6 +23,7 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
   const [wantMore, setWantMore] = useState<boolean | null>(null)
   const [notes, setNotes]       = useState('')
   const [showConfetti, setShowConfetti] = useState(false)
+  const [saving, setSaving]     = useState(false)
 
   const ratingLabels = ['', 'Skip it', 'Eh, okay', 'Worth watching', 'Really good', 'Masterpiece']
 
@@ -30,9 +31,14 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
     setWorked(w => w.includes(tag) ? w.filter(x => x !== tag) : [...w, tag])
   }
 
-  function handleSave() {
-    if (!rating) return
-    onSave({ userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true, notes: notes.trim() || undefined })
+  async function handleSave() {
+    if (!rating || saving) return
+    setSaving(true)
+    try {
+      await onSave({ userRating: rating, whatWorked: worked, wantMoreLikeThis: wantMore ?? true, notes: notes.trim() || undefined })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const subtitle = mediaType === 'tv' && seasonNumber
@@ -176,10 +182,10 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
             />
           </div>
 
-          <button onClick={handleSave} disabled={!rating}
+          <button onClick={handleSave} disabled={!rating || saving}
             className="vcr-btn-primary w-full py-4 text-sm"
-            style={{ opacity: rating ? 1 : 0.5, cursor: rating ? 'pointer' : 'not-allowed' }}>
-            ⏏ SAVE &amp; REWIND →
+            style={{ opacity: rating && !saving ? 1 : 0.5, cursor: rating && !saving ? 'pointer' : 'not-allowed' }}>
+            {saving ? '⏏ SAVING…' : <>⏏ SAVE &amp; REWIND →</>}
           </button>
         </div>
       </ModalShell>

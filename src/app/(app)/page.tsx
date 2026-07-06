@@ -85,6 +85,7 @@ interface ListSelectorDropdownProps {
   pendingDelete: string | null
   onRequestDelete: (id: string | null) => void
   onDeleteList: (id: string) => void
+  onShareList: (id: string) => void
   showNewList: boolean
   onShowNewList: () => void
   newListName: string
@@ -96,7 +97,7 @@ interface ListSelectorDropdownProps {
 // Same module-scope rationale as TrendingShelf above.
 function ListSelectorDropdown({
   containerRef, activeListName, activeList, lists, showSelector, onToggleSelector,
-  onSwitchList, pendingDelete, onRequestDelete, onDeleteList,
+  onSwitchList, pendingDelete, onRequestDelete, onDeleteList, onShareList,
   showNewList, onShowNewList, newListName, onNewListNameChange, onCreateList, onCancelNewList,
 }: ListSelectorDropdownProps) {
   return (
@@ -196,11 +197,7 @@ function ListSelectorDropdown({
                     {l.name.toUpperCase()}
                   </button>
                   <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(`${window.location.origin}/share/${l.id}`)
-                        .catch(() => {})
-                      window.open(`/share/${l.id}`, '_blank', 'noopener')
-                    }}
+                    onClick={() => onShareList(l.id)}
                     title="Share list"
                     style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
@@ -296,6 +293,14 @@ export default function HomePage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const selectorRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  // Set once the user picks a sort chip themselves — guards against the
+  // preferences fetch (which can resolve after that interaction) clobbering
+  // their choice back to the saved default.
+  const sortTouchedRef = useRef(false)
+  const handleSortChange = (s: typeof sort) => {
+    sortTouchedRef.current = true
+    setSort(s)
+  }
 
   // Multi-select bulk actions
   const [selectMode, setSelectMode] = useState(false)
@@ -348,12 +353,15 @@ export default function HomePage() {
   // — a faster response for the list actually on screen.
   const listItemsRequestRef = useRef<string | null>(null)
 
-  const fetchListItems = useCallback(async (listId: string) => {
+  const fetchListItems = useCallback(async (listId: string, opts?: { silent?: boolean }) => {
     listItemsRequestRef.current = listId
     // listItems is one shared array reused across whichever list is active —
     // without this, switching lists would flash the *previous* list's items
-    // under the new tab's label until the fetch resolves.
-    setLoading(true)
+    // under the new tab's label until the fetch resolves. Skipped for a
+    // refresh after a mutation on the list already on screen (add/mark
+    // watched) — the content isn't changing wholesale, so a full-skeleton
+    // swap there is just jarring.
+    if (!opts?.silent) setLoading(true)
     try {
       const data = await apiFetch(`/api/lists/${listId}/items`).then(r => r.json())
       if (listItemsRequestRef.current !== listId) return
@@ -379,7 +387,7 @@ export default function HomePage() {
     fetch('/api/settings/preferences').then(r => r.json()).then((d: { defaultQueueSort?: typeof sort }) => {
       if (d.defaultQueueSort) {
         setDefaultSort(d.defaultQueueSort)
-        setSort(d.defaultQueueSort)
+        if (!sortTouchedRef.current) setSort(d.defaultQueueSort)
       }
     }).catch(() => {})
     fetch('/api/trending').then(r => r.json()).then((d: { movies: TrendingItem[]; shows: TrendingItem[] }) => {
@@ -451,28 +459,50 @@ export default function HomePage() {
     if (activeList === listId) switchList('queue')
   }
 
+  const handleShareList = (listId: string) => {
+    navigator.clipboard?.writeText(`${window.location.origin}/share/${listId}`)
+      .then(() => toast.show('LINK COPIED'))
+      .catch(() => toast.show('COULD NOT COPY LINK'))
+    window.open(`/share/${listId}`, '_blank', 'noopener')
+  }
+
   const addToQueue = async (item: {
     tmdbId: number; title: string; posterPath: string | null
     mediaType?: string; genreIds?: number[]; runtime?: number | null; overview?: string
-  }) => {
+  }, opts?: { silent?: boolean }) => {
+    const mediaType = item.mediaType === 'tv' ? 'tv' : 'movie'
+    if (queue.some(q => q.tmdbId === item.tmdbId && q.mediaType === mediaType)) {
+      if (!opts?.silent) toast.show('ALREADY IN QUEUE')
+      return
+    }
     await fetch('/api/queue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
     if (activeList === 'queue') await fetchQueue()
+    if (!opts?.silent) toast.show(`ADDED "${item.title.toUpperCase()}" TO QUEUE`)
   }
 
   const addToList = async (listId: string, item: {
     tmdbId: number; title: string; posterPath: string | null
     mediaType?: string; genreIds?: number[]; runtime?: number | null; overview?: string | null
-  }) => {
+  }, opts?: { silent?: boolean }) => {
+    const mediaType = item.mediaType === 'tv' ? 'tv' : 'movie'
+    if (activeList === listId && listItems.some(li => li.tmdb_id === item.tmdbId && li.media_type === mediaType)) {
+      if (!opts?.silent) toast.show('ALREADY IN THIS LIST')
+      return
+    }
     await fetch(`/api/lists/${listId}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
-    if (activeList === listId) await fetchListItems(listId)
+    if (activeList === listId) await fetchListItems(listId, { silent: true })
+    if (!opts?.silent) {
+      const destName = lists.find(l => l.id === listId)?.name ?? 'list'
+      toast.show(`ADDED "${item.title.toUpperCase()}" TO ${destName.toUpperCase()}`)
+    }
   }
 
   const handleAdd = async (item: {
@@ -496,10 +526,14 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tmdbId, mediaType }),
         keepalive: true,
+      }).finally(() => {
+        // In case this was the pinned "Up Next" item — dispatched only now
+        // (not immediately) since the bar re-syncs from the server, which
+        // still has the row until this deferred delete actually commits;
+        // dispatching earlier just re-confirmed the stale pinned item.
+        window.dispatchEvent(new Event('verdict:pin-changed'))
       })
     }, { onUndo: () => { if (original) setQueue(q => [original, ...q]) } })
-    // In case this was the pinned "Up Next" item — let the layout's bar re-sync.
-    window.dispatchEvent(new Event('verdict:pin-changed'))
   }
 
   const removeFromList = (listId: string, tmdbId: number, mediaType: string) => {
@@ -552,11 +586,11 @@ export default function HomePage() {
       const originals = queue.filter(i => selected.has(selectionKey(i.tmdbId, i.mediaType)))
       setQueue(q => q.filter(i => !selected.has(selectionKey(i.tmdbId, i.mediaType))))
       toast.showUndo(`Removed ${count} title${count > 1 ? 's' : ''} from queue`, () => {
-        originals.forEach(o => fetch('/api/queue', {
+        Promise.allSettled(originals.map(o => fetch('/api/queue', {
           method: 'DELETE', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tmdbId: o.tmdbId, mediaType: o.mediaType }),
           keepalive: true,
-        }))
+        }))).then(() => window.dispatchEvent(new Event('verdict:pin-changed')))
       }, { onUndo: () => setQueue(q => [...originals, ...q]) })
     } else {
       const listId = activeList
@@ -584,7 +618,7 @@ export default function HomePage() {
         mediaType: i.mediaType, genreIds: i.genreIds, runtime: i.runtime,
         overview: i.overview ?? undefined,
       }
-      return targetListId === 'queue' ? addToQueue(payload) : addToList(targetListId, payload)
+      return targetListId === 'queue' ? addToQueue(payload, { silent: true }) : addToList(targetListId, payload, { silent: true })
     }))
     const destName = targetListId === 'queue' ? 'queue' : (lists.find(l => l.id === targetListId)?.name ?? 'list')
     toast.show(`Added ${items.length} title${items.length > 1 ? 's' : ''} to ${destName.toUpperCase()}`)
@@ -603,7 +637,7 @@ export default function HomePage() {
       runtime:     postWatch.runtime,
     }, answers)
     if (activeList === 'queue') await fetchQueue()
-    else await fetchListItems(activeList)
+    else await fetchListItems(activeList, { silent: true })
     setPostWatch(null)
     // In case this was the pinned "Up Next" item — let the layout's bar re-sync.
     window.dispatchEvent(new Event('verdict:pin-changed'))
@@ -720,6 +754,7 @@ export default function HomePage() {
           pendingDelete={pendingDelete}
           onRequestDelete={setPendingDelete}
           onDeleteList={deleteList}
+          onShareList={handleShareList}
           showNewList={showNewList}
           onShowNewList={() => setShowNewList(true)}
           newListName={newListName}
@@ -801,7 +836,7 @@ export default function HomePage() {
           <FilterChips
             label="SORT:"
             options={[['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const}
-            active={sort} onChange={setSort}
+            active={sort} onChange={handleSortChange}
           />
           {displayItems.length > 0 && (
             <SelectModeToggle active={selectMode} onClick={toggleSelectMode} compact />
@@ -913,6 +948,7 @@ export default function HomePage() {
       {showSearch && (
         <SearchAddModal
           onClose={() => setShowSearch(false)}
+          destinationLabel={addTarget === 'queue' ? 'QUEUE' : (lists.find(l => l.id === addTarget)?.name.toUpperCase() ?? 'LIST')}
           onAdd={async item => handleAdd({
             tmdbId: item.tmdbId, title: item.title, posterPath: item.posterPath,
             mediaType: item.mediaType, genreIds: item.genres, runtime: item.runtime,
