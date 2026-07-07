@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2 } from 'lucide-react'
+import { Dice3, Plus, TrendingUp, ChevronDown, Check, Trash2, X, Search, Clock, Share2, Film, Tv } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import QueueRow from '@/components/ui/QueueRow'
 import SpinWheelModal from '@/components/modals/SpinWheelModal'
@@ -200,18 +200,18 @@ function ListSelectorDropdown({
                   <button
                     onClick={() => onShareList(l.id)}
                     title="Share list"
-                    style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                    style={{ padding: '0.75rem 0.5rem', background: 'transparent', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--amber)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
                   >
                     <Share2 size={12} />
                   </button>
                   <button
                     onClick={() => onRequestDelete(l.id)}
                     title="Delete list"
-                    style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}
+                    style={{ padding: '0.75rem 0.75rem', background: 'transparent', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
                   >
                     <Trash2 size={12} />
                   </button>
@@ -854,7 +854,7 @@ export default function HomePage() {
       <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
         <Search size={13} style={{
           position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-          color: 'var(--muted)', pointerEvents: 'none',
+          color: 'var(--cream-dim)', pointerEvents: 'none',
         }} />
         <input
           ref={searchInputRef}
@@ -875,7 +875,7 @@ export default function HomePage() {
             onClick={() => setSearch('')}
             style={{
               position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
+              background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', padding: 2,
             }}
           >
@@ -886,18 +886,19 @@ export default function HomePage() {
 
       {/* Filter/sort */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        {([['all','ALL'],['movie','▶ MOVIES'],['tv','▣ SHOWS']] as const).map(([f, label]) => (
+        {([['all','ALL',null],['movie','MOVIES',Film],['tv','SHOWS',Tv]] as const).map(([f, label, Icon]) => (
           <button key={f} onClick={() => setFilter(f)} style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0.3rem 0.7rem',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--text-2xs)', padding: '0.3rem 0.7rem',
+            display: 'inline-flex', alignItems: 'center', gap: 5,
             background: filter === f ? 'var(--amber)' : 'transparent',
             color: filter === f ? 'var(--bg)' : 'var(--cream-dim)',
             border: '1px solid var(--amber-dim)', borderRadius: 2, cursor: 'pointer',
-          }}>{label}</button>
+          }}>{Icon && <Icon size={12} />}{label}</button>
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <FilterChips
             label="SORT:"
-            options={[['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','⭐']] as const}
+            options={[['added','DATE'],['title','A–Z'],['runtime','TIME'],['year','YEAR'],['rating','IMDb']] as const}
             active={sort} onChange={handleSortChange}
           />
           {displayItems.length > 0 && (
@@ -933,9 +934,10 @@ export default function HomePage() {
         )
       ) : (
         <div>
-          {displayItems.map(item => (
+          {displayItems.map((item, idx) => (
             <QueueRow
               key={`${item.tmdbId}-${item.mediaType}`}
+              coachHint={idx === 0}
               tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
               mediaType={item.mediaType} runtime={item.runtime} releaseYear={item.releaseYear}
               imdbRating={item.imdbRating} rtScore={item.rtScore} overview={item.overview}

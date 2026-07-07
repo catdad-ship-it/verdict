@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import { Clock, Plus, Check, Tv } from 'lucide-react'
+import { Clock, Plus, Check, Tv, Film, X } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime, type ProviderData } from '@/lib/utils'
 import TitleDetailModal from '@/components/modals/TitleDetailModal'
 
@@ -147,7 +147,7 @@ export default function VHSCard({
           <Image src={imgUrl} alt={title} fill className="object-cover" sizes="160px" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span style={{ fontSize: '2.5rem', opacity: 0.15 }}>🎬</span>
+            <Film size={40} style={{ opacity: 0.15, color: 'var(--cream-dim)' }} />
           </div>
         )}
 
@@ -189,13 +189,13 @@ export default function VHSCard({
         {(imdbRating || rtScore) && (
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
             {imdbRating && (
-              <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: '0.6875rem', padding: '1px 5px', borderRadius: '1px', letterSpacing: '0.04em' }}>
-                ★ {imdbRating}
+              <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: '0.6875rem', padding: '1px 5px', borderRadius: '1px', letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <b style={{ fontSize: '0.5625rem', fontWeight: 900, letterSpacing: '0.02em' }}>IMDb</b>{imdbRating}
               </span>
             )}
             {rtScore && (
-              <span style={{ fontWeight: 700, fontSize: '0.6875rem', color: '#D0603C' }}>
-                🍅 {rtScore}%
+              <span style={{ fontWeight: 700, fontSize: '0.6875rem', color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
+                <b style={{ background: '#D0603C', color: '#0A0800', fontSize: '0.5625rem', fontWeight: 900, padding: '0 3px', borderRadius: '1px' }}>RT</b>{rtScore}%
               </span>
             )}
           </div>
@@ -301,8 +301,8 @@ export default function VHSCard({
         <span className="absolute right-2 bottom-2 text-xs" style={{ color: '#1A1610', letterSpacing: '4px', fontSize: '0.4rem' }}>● ●</span>
 
         {isWatched ? (
-          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'var(--cream-dim)', fontSize: '0.6875rem' }}>
-            ✓ Watched
+          <span className="text-xs font-semibold tracking-widest uppercase inline-flex items-center gap-1" style={{ color: 'var(--cream-dim)', fontSize: '0.6875rem' }}>
+            <Check size={11} /> Watched
           </span>
         ) : localAdded && !isInQueue ? (
           <button
@@ -316,15 +316,15 @@ export default function VHSCard({
         ) : isInQueue ? (
           <>
             <button onClick={e => { e.stopPropagation(); onMarkWatched?.() }}
-              className="vcr-btn text-xs px-2 py-2 flex-1" style={{ fontSize: '0.6875rem' }}>
-              ✓ WATCHED
+              className="vcr-btn text-xs px-2 py-2 flex-1 inline-flex items-center justify-center gap-1" style={{ fontSize: '0.6875rem' }}>
+              <Check size={11} /> WATCHED
             </button>
             {onRemoveFromQueue && (
               <button onClick={e => { e.stopPropagation(); onRemoveFromQueue?.() }}
                 className="flex items-center justify-center w-9 h-9 rounded-sm"
                 style={{ background: 'var(--raised)', border: '1px solid var(--border)', color: 'var(--cream-dim)' }}
-                title="Remove from queue">
-                ✕
+                title="Remove from queue" aria-label="Remove from queue">
+                <X size={14} />
               </button>
             )}
           </>
@@ -355,7 +355,7 @@ export default function VHSCard({
           onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
         >
-          ✕ not for me
+          <span className="inline-flex items-center gap-1"><X size={11} /> not for me</span>
         </button>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { Play, Plus, Check, X, Tv, Pin, PinOff } from 'lucide-react'
+import { Play, Plus, Check, X, Tv, Pin, PinOff, Film } from 'lucide-react'
 import { posterUrl, formatRuntime, type ProviderData } from '@/lib/utils'
 import { cachedFetch } from '@/lib/requestCache'
 import type { TitleDetails } from '@/lib/tmdb'
@@ -223,7 +223,7 @@ export default function TitleDetailModal({
               {imgUrl ? (
                 <Image src={imgUrl} alt={title} fill className="object-cover" sizes="84px" />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center"><span style={{ fontSize: '1.75rem', opacity: 0.15 }}>🎬</span></div>
+                <div className="absolute inset-0 flex items-center justify-center"><Film size={30} style={{ opacity: 0.15, color: 'var(--cream-dim)' }} /></div>
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -239,11 +239,11 @@ export default function TitleDetailModal({
               <div className="flex items-center gap-2 flex-wrap">
                 {imdbRating != null && (
                   <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 12, padding: '2px 6px', borderRadius: 2 }}>
-                    ★ {imdbRating} <span style={{ fontWeight: 400 }}>IMDb</span>
+                    <span style={{ fontWeight: 900, fontSize: 10 }}>IMDb</span> {imdbRating}
                   </span>
                 )}
                 {rtScore != null && (
-                  <span style={{ fontWeight: 700, fontSize: 12, color: '#D0603C' }}>🍅 {rtScore}% <span style={{ fontWeight: 400, color: 'var(--cream-dim)' }}>RT</span></span>
+                  <span style={{ fontWeight: 700, fontSize: 12, color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 4 }}><b style={{ background: '#D0603C', color: '#0A0800', fontSize: 10, fontWeight: 900, padding: '0 4px', borderRadius: 2 }}>RT</b>{rtScore}%</span>
                 )}
                 {mediaType === 'tv' && (
                   <span className="flex items-center gap-1" style={{ background: 'var(--forest)', color: '#C0E8AC', fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: 2, fontWeight: 700 }}>
@@ -406,8 +406,8 @@ export default function TitleDetailModal({
           ) : inQueue ? (
             <div className="flex gap-2">
               {onMarkWatched && (
-                <button onClick={() => onMarkWatched()} className="vcr-btn flex-1 py-3" style={{ fontSize: 12 }}>
-                  ✓ MARK WATCHED
+                <button onClick={() => onMarkWatched()} className="vcr-btn flex-1 py-3 inline-flex items-center justify-center gap-1" style={{ fontSize: 12 }}>
+                  <Check size={13} /> MARK WATCHED
                 </button>
               )}
               {onPin && (
@@ -428,8 +428,8 @@ export default function TitleDetailModal({
                 </button>
               )}
               {onRemoveFromQueue && (
-                <button onClick={() => { onRemoveFromQueue(); onClose() }} className="flex items-center justify-center" style={{ width: 46, background: 'var(--raised)', border: '1px solid var(--border)', color: 'var(--cream-dim)', borderRadius: 3, cursor: 'pointer' }} title="Remove from queue">
-                  ✕
+                <button onClick={() => { onRemoveFromQueue(); onClose() }} className="flex items-center justify-center" style={{ width: 46, background: 'var(--raised)', border: '1px solid var(--border)', color: 'var(--cream-dim)', borderRadius: 3, cursor: 'pointer' }} title="Remove from queue" aria-label="Remove from queue">
+                  <X size={15} />
                 </button>
               )}
             </div>

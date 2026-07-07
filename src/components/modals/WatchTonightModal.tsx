@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { X, RefreshCw, Pin } from 'lucide-react'
+import { X, RefreshCw, Pin, Film, Check } from 'lucide-react'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import { minutesUntilClockTime } from '@/lib/finishTime'
 import type { QueueItem } from '@/lib/types'
@@ -108,7 +108,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
         </div>
 
         <button onClick={onClose} className="absolute top-3 right-4"
-          style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
+          style={{ background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer' }}>
           <X size={16} />
         </button>
 
@@ -202,7 +202,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
                       {imgUrl ? (
                         <Image src={imgUrl} alt={pick.title} fill className="object-cover" sizes="64px" />
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '1.5rem', opacity: 0.15 }}>🎬</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.15 }}><Film size={26} color="var(--cream-dim)" /></div>
                       )}
                     </div>
                     {/* Info */}
@@ -222,8 +222,8 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>runtime unknown</span>
                         )}
                         {pick.imdbRating && (
-                          <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 4px', borderRadius: 1 }}>
-                            ★ {pick.imdbRating}
+                          <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 5px', borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <b style={{ fontSize: 9, fontWeight: 900 }}>IMDb</b>{pick.imdbRating}
                           </span>
                         )}
                       </div>
@@ -263,7 +263,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
                       cursor: 'pointer', fontFamily: 'var(--font-mono)',
                       fontSize: 11, letterSpacing: 1, padding: '0.75rem', fontWeight: 700,
                     }}>
-                      {pinned ? '✓ LET\'S GO' : <><Pin size={12} /> ON DECK</>}
+                      {pinned ? <><Check size={12} /> LET&apos;S GO</> : <><Pin size={12} /> ON DECK</>}
                     </button>
                   </div>
                 </>

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Archive, RefreshCw, Check } from 'lucide-react'
+import { Archive, RefreshCw, Check, Film, Tv } from 'lucide-react'
 import Image from 'next/image'
 import { posterUrl } from '@/lib/utils'
 import PostWatchModal from '@/components/modals/PostWatchModal'
@@ -219,8 +219,9 @@ export default function WatchedPage() {
               background: tab === t ? 'var(--amber)' : 'transparent',
               color: tab === t ? 'var(--bg)' : 'var(--cream-dim)',
               border: 'none', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
             }}>
-              {t === 'movies' ? `▶ MOVIES (${movieGroups.length})` : `▣ SHOWS (${shows.length})`}
+              {t === 'movies' ? <><Film size={13} /> MOVIES ({movieGroups.length})</> : <><Tv size={13} /> SHOWS ({shows.length})</>}
             </button>
           ))}
         </div>

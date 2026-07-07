@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
-import { useState, useRef } from 'react'
-import { Clock, Check, X } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Clock, Check, X, Film } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
 import TitleDetailModal from '@/components/modals/TitleDetailModal'
 
@@ -27,6 +27,9 @@ interface QueueRowProps {
   selectable?: boolean
   isSelected?: boolean
   onToggleSelect?: () => void
+  // When true (set on the first queue row), plays a one-time animated nudge
+  // demonstrating the swipe gestures — shown once ever per browser.
+  coachHint?: boolean
 }
 
 export default function QueueRow({
@@ -36,6 +39,7 @@ export default function QueueRow({
   isPinned, onPin,
   onMarkWatched, onRemoveFromQueue,
   selectable, isSelected, onToggleSelect,
+  coachHint,
 }: QueueRowProps) {
   const imgUrl = posterUrl(posterPath)
   const finish = runtime ? calcFinishTime(runtime) : null
@@ -58,6 +62,24 @@ export default function QueueRow({
   const [dragX, setDragX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [exitingRemove, setExitingRemove] = useState(false)
+
+  // One-time swipe affordance: on the first queue row, nudge right (reveals
+  // WATCHED) then left (reveals DISMISS) then settle, so the gesture is
+  // discoverable. Reuses the live drag rendering, so the action backgrounds
+  // and their fade-in come for free. Remembered in localStorage — shown once.
+  useEffect(() => {
+    if (!coachHint || selectable) return
+    if (!onMarkWatched && !onRemoveFromQueue) return
+    if (typeof window === 'undefined') return
+    if (localStorage.getItem('verdict_swipe_hint_seen')) return
+    localStorage.setItem('verdict_swipe_hint_seen', '1')
+    const timers = [
+      setTimeout(() => setDragX(onMarkWatched ? 52 : -52), 650),
+      setTimeout(() => setDragX(onRemoveFromQueue ? -52 : 0), 1350),
+      setTimeout(() => setDragX(0), 2050),
+    ]
+    return () => timers.forEach(clearTimeout)
+  }, [coachHint, selectable, onMarkWatched, onRemoveFromQueue])
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (selectable || detailOpen || removing || exitingRemove) return
@@ -201,7 +223,7 @@ export default function QueueRow({
             <Image src={imgUrl} alt={title} fill className="object-cover" sizes="60px" />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: '1.25rem', opacity: 0.15 }}>🎬</span>
+              <Film size={20} style={{ opacity: 0.15, color: 'var(--cream-dim)' }} />
             </div>
           )}
           {mediaType === 'tv' && (
@@ -249,9 +271,9 @@ export default function QueueRow({
             </div>
           )}
           {(imdbRating || rtScore) && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {imdbRating && <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 4px', borderRadius: 1 }}>★ {imdbRating}</span>}
-              {rtScore    && <span style={{ fontWeight: 700, fontSize: 11, color: '#D0603C' }}>🍅 {rtScore}%</span>}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              {imdbRating && <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 5px', borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ fontSize: 9, fontWeight: 900 }}>IMDb</b>{imdbRating}</span>}
+              {rtScore    && <span style={{ fontWeight: 700, fontSize: 11, color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ background: '#D0603C', color: '#0A0800', fontSize: 9, fontWeight: 900, padding: '0 3px', borderRadius: 1 }}>RT</b>{rtScore}%</span>}
             </div>
           )}
         </div>
@@ -261,12 +283,12 @@ export default function QueueRow({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center', flexShrink: 0 }}>
             {onMarkWatched && (
               <button onClick={handleWatched} className="vcr-btn"
-                style={{ fontSize: 11, padding: '10px', letterSpacing: 1, whiteSpace: 'nowrap', minHeight: 44, minWidth: 44 }}>
-                ✓ WATCHED
+                style={{ fontSize: 11, padding: '10px', letterSpacing: 1, whiteSpace: 'nowrap', minHeight: 44, minWidth: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                <Check size={12} /> WATCHED
               </button>
             )}
             {onRemoveFromQueue && (
-              <button onClick={handleRemove}
+              <button onClick={handleRemove} aria-label="Remove from queue"
                 style={{
                   background: 'none', border: '1px solid var(--border)', borderRadius: 2,
                   color: 'var(--cream-dim)', cursor: 'pointer', fontSize: 14, padding: '10px',
@@ -275,7 +297,7 @@ export default function QueueRow({
                 }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
-              >✕</button>
+              ><X size={14} /></button>
             )}
           </div>
         )}

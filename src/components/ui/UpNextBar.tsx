@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, Check } from 'lucide-react'
 import Image from 'next/image'
 import { posterUrl, formatRuntime } from '@/lib/utils'
 import PostWatchModal from '@/components/modals/PostWatchModal'
@@ -103,10 +103,10 @@ export default function UpNextBar() {
           </div>
           <button
             onClick={() => setPostWatch(true)}
-            className="vcr-btn-primary"
+            className="vcr-btn-primary inline-flex items-center gap-1"
             style={{ fontSize: 10, padding: '0.5rem 0.75rem', flexShrink: 0, whiteSpace: 'nowrap' }}
           >
-            ✓ WATCHED
+            <Check size={11} /> WATCHED
           </button>
         </div>
       </div>

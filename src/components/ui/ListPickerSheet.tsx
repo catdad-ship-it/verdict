@@ -74,7 +74,7 @@ export default function ListPickerSheet({ lists, onPick, onClose, onListCreated 
           </span>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 4 }}
+            style={{ background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer', padding: 4 }}
           >
             <X size={16} />
           </button>

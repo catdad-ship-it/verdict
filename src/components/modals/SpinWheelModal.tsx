@@ -128,7 +128,7 @@ export default function SpinWheelModal({ items, onClose, providersMap = {} }: Pr
       <ModalShell onClose={onClose} label="Spin the wheel"
            className="w-full max-w-sm rounded-sm p-5 relative text-center"
            style={{ background: 'var(--surface)', border: '1px solid var(--amber)', boxShadow: '0 30px 70px rgba(0,0,0,0.7), 0 0 40px rgba(192,120,24,0.1)' }}>
-        <button onClick={onClose} className="absolute top-3 right-4" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
+        <button onClick={onClose} className="absolute top-3 right-4" style={{ background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer' }}>
           <X size={16} />
         </button>
 

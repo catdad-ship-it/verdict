@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, Film, FastForward, Rewind } from 'lucide-react'
 import { WHAT_WORKED_OPTIONS, PostWatchAnswers } from '@/lib/types'
 import ConfettiBurst from '@/components/ui/ConfettiBurst'
 import ModalShell from '@/components/ui/ModalShell'
@@ -79,15 +79,15 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
           <div className="w-8 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
-        <button onClick={onClose} className="absolute top-3 right-4" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
+        <button onClick={onClose} className="absolute top-3 right-4" style={{ background: 'none', border: 'none', color: 'var(--cream-dim)', cursor: 'pointer' }}>
           <X size={16} />
         </button>
 
         <div className="p-6 md:p-8">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6 pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
-            <div className="w-12 rounded-sm flex items-center justify-center text-2xl flex-shrink-0"
-                 style={{ background: 'var(--raised)', minHeight: '72px' }}>🎬</div>
+            <div className="w-12 rounded-sm flex items-center justify-center flex-shrink-0"
+                 style={{ background: 'var(--raised)', minHeight: '72px' }}><Film size={26} style={{ opacity: 0.5, color: 'var(--cream-dim)' }} /></div>
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--amber)' }}>
                 {isRewatch ? '◼ TAPE REWOUND' : mediaType === 'tv' ? '◼ SEASON ENDED' : '◼ TAPE ENDED'}
@@ -187,19 +187,19 @@ export default function PostWatchModal({ title, runtime, year, mediaType, season
             <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'var(--cream-dim)' }}>More of this, or switch it up?</p>
             <div className="flex gap-2 flex-wrap">
               {[
-                { val: true,  label: '▶▶ MORE' },
-                { val: false, label: '◀◀ SWITCH' },
-              ].map(({ val, label }) => (
+                { val: true,  label: 'MORE',   Icon: FastForward },
+                { val: false, label: 'SWITCH', Icon: Rewind },
+              ].map(({ val, label, Icon }) => (
                 <button key={String(val)}
                   onClick={() => setWantMore(val)}
-                  className="flex-1 text-xs font-semibold tracking-wide uppercase py-3 rounded-sm transition-all"
+                  className="flex-1 text-xs font-semibold tracking-wide uppercase py-3 rounded-sm transition-all inline-flex items-center justify-center gap-2"
                   style={{
                     minWidth: 120,
                     background: wantMore === val ? 'rgba(192,120,24,0.1)' : 'var(--card)',
                     border: `1px solid ${wantMore === val ? 'var(--amber)' : 'var(--border)'}`,
                     color: wantMore === val ? 'var(--amber)' : 'var(--cream-dim)',
                   }}>
-                  {label}
+                  <Icon size={13} /> {label}
                 </button>
               ))}
             </div>

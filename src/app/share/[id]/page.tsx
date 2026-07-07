@@ -98,8 +98,8 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
                     </div>
                     {(item.imdb_rating || item.rt_score) && (
                       <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-                        {item.imdb_rating && <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 4px', borderRadius: 1 }}>★ {item.imdb_rating}</span>}
-                        {item.rt_score && <span style={{ fontWeight: 700, fontSize: 11, color: '#D0603C' }}>🍅 {item.rt_score}%</span>}
+                        {item.imdb_rating && <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 5px', borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ fontSize: 9, fontWeight: 900 }}>IMDb</b>{item.imdb_rating}</span>}
+                        {item.rt_score && <span style={{ fontWeight: 700, fontSize: 11, color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ background: '#D0603C', color: '#0A0800', fontSize: 9, fontWeight: 900, padding: '0 3px', borderRadius: 1 }}>RT</b>{item.rt_score}%</span>}
                       </div>
                     )}
                   </div>

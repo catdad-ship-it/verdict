@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, Search, Plus, Tv, ChevronLeft, User } from 'lucide-react'
+import { X, Search, Plus, Tv, ChevronLeft, User, Film } from 'lucide-react'
 import { posterUrl } from '@/lib/utils'
 import type { PersonResult, PersonCreditItem } from '@/lib/tmdb'
 import FilterChips from '@/components/ui/FilterChips'
@@ -235,9 +235,10 @@ export default function SearchAddModal({ onClose, onAdd, destinationLabel = 'QUE
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >
+                {t === 'movie' && <Film size={13} />}
                 {t === 'show' && <Tv size={13} />}
                 {t === 'people' && <User size={13} />}
-                {t === 'movie' ? '▶ MOVIES' : t === 'show' ? '📺 TV SHOWS' : 'PEOPLE'}
+                {t === 'movie' ? 'MOVIES' : t === 'show' ? 'TV SHOWS' : 'PEOPLE'}
               </button>
             ))}
           </div>
@@ -271,7 +272,7 @@ export default function SearchAddModal({ onClose, onAdd, destinationLabel = 'QUE
             />
             <FilterChips
               label="RATING:" compact
-              options={[['all','ALL'],['high','7+ ★']] as const}
+              options={[['all','ALL'],['high','IMDb 7+']] as const}
               active={ratingFilter} onChange={setRatingFilter}
             />
           </div>
@@ -360,7 +361,7 @@ export default function SearchAddModal({ onClose, onAdd, destinationLabel = 'QUE
                       {person.knownFor.length > 0 && <span style={{ color: 'var(--cream-dim)' }}> · {person.knownFor.join(', ')}</span>}
                     </div>
                   </div>
-                  <ChevronLeft size={16} color="var(--muted)" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
+                  <ChevronLeft size={16} color="var(--cream-dim)" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
                 </button>
               ))
             )
@@ -397,7 +398,7 @@ export default function SearchAddModal({ onClose, onAdd, destinationLabel = 'QUE
                     <div style={{ color: 'var(--cream)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
                     <div style={{ color: 'var(--cream-dim)', fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 3 }}>
                       {item.releaseYear}
-                      {item.imdbRating && <span style={{ marginLeft: 8, color: 'var(--amber)' }}>★ {item.imdbRating}</span>}
+                      {item.imdbRating && <span style={{ marginLeft: 8, color: 'var(--amber)' }}><b style={{ fontWeight: 900, fontSize: 10 }}>IMDb</b> {item.imdbRating}</span>}
                     </div>
                   </div>
                   <button

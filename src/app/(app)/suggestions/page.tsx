@@ -242,7 +242,7 @@ export default function SuggestionsPage() {
           />
           <FilterChips
             label="RATING:"
-            options={[['all','ALL'],['high','7+ ★']] as const}
+            options={[['all','ALL'],['high','IMDb 7+']] as const}
             active={ratingFilter} onChange={setRatingFilter}
           />
         </div>
