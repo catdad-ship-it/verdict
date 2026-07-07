@@ -14,6 +14,7 @@ interface Props {
 }
 
 const TIME_OPTIONS = [
+  { label: '30 MIN',  minutes: 30 },
   { label: '60 MIN',  minutes: 60 },
   { label: '90 MIN',  minutes: 90 },
   { label: '2 HRS',   minutes: 120 },
