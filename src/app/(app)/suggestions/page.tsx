@@ -23,6 +23,26 @@ interface Movie {
   releaseYear?: number | null
   imdbRating?: number | null; rtScore?: number | null
   matchReason?: string
+  mediaType?: 'movie' | 'tv'
+}
+
+const MOODS = [
+  ['any',     'ANY'],
+  ['tense',   'TENSE'],
+  ['thinky',  'MADE ME THINK'],
+  ['noise',   'BACKGROUND NOISE'],
+  ['laugh',   'LAUGH'],
+  ['comfort', 'COMFORT REWATCH'],
+] as const
+type MoodKey = typeof MOODS[number][0]
+
+const MOOD_SUBTITLES: Record<MoodKey, string> = {
+  any:     '',
+  tense:   'Tense picks — thrillers, horror, mystery, crime.',
+  thinky:  'Something to chew on — drama, mystery, sci-fi, history.',
+  noise:   'Easy watching — light, familiar, low-commitment.',
+  laugh:   'Something funny — comedy, rom-com, feel-good.',
+  comfort: 'Favorites worth a rewatch — from your own history.',
 }
 
 interface SuggestState {
@@ -47,6 +67,7 @@ export default function SuggestionsPage() {
   const [lists, setLists]         = useState<UserList[]>([])
   const [pendingAdd, setPendingAdd] = useState<Movie | null>(null)
   const [providersMap, setProvidersMap] = useState<Record<string, ProviderData>>({})
+  const [mood, setMood]           = useState<MoodKey>('any')
   const fetchingMore              = useRef(false)
 
   // Client-side filter chips — everything's already fetched, so narrowing
@@ -55,10 +76,12 @@ export default function SuggestionsPage() {
   const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>('all')
   const [ratingFilter, setRatingFilter]   = useState<RatingFilter>('all')
 
+  const providerReq = (m: Movie) => ({ tmdbId: m.id, mediaType: m.mediaType ?? 'movie' as const })
+
   const loadData = () => {
     setLoading(true)
     fetch('/api/lists').then(r => r.json()).then(d => setLists(Array.isArray(d) ? d : [])).catch(() => {})
-    apiFetch('/api/suggestions')
+    apiFetch(`/api/suggestions?mood=${mood}`)
       .then(r => r.json())
       .then((d: { movies: Movie[]; topGenreNames: string[] } | Movie[]) => {
         const movies = Array.isArray(d) ? d : (d.movies ?? [])
@@ -67,7 +90,7 @@ export default function SuggestionsPage() {
         setLoadError(false)
         // One batched request for every card on the page instead of each
         // VHSCard firing its own /api/providers call.
-        fetchProvidersBatch(movies.map(m => ({ tmdbId: m.id, mediaType: 'movie' as const })))
+        fetchProvidersBatch(movies.map(providerReq))
           .then(map => setProvidersMap(prev => ({ ...prev, ...map })))
       })
       .catch(err => { console.error('loadData failed:', err); setLoadError(true) })
@@ -77,18 +100,22 @@ export default function SuggestionsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mood])
 
   const fetchMore = async (allSeenIds: number[]) => {
+    // Comfort rewatch is a finite set pulled straight from watch history and
+    // ignores excludeIds — paginating it would just re-serve dupes.
+    if (mood === 'comfort') return
     if (fetchingMore.current) return
     fetchingMore.current = true
     try {
-      const res = await fetch(`/api/suggestions?excludeIds=${allSeenIds.join(',')}`)
+      const res = await fetch(`/api/suggestions?mood=${mood}&excludeIds=${allSeenIds.join(',')}`)
       const d: { movies: Movie[]; topGenreNames: string[] } | Movie[] = await res.json()
       const data = Array.isArray(d) ? d : (d.movies ?? [])
       if (data.length > 0) {
         setState(s => ({ ...s, pool: [...s.pool, ...data] }))
-        fetchProvidersBatch(data.map(m => ({ tmdbId: m.id, mediaType: 'movie' as const })))
+        fetchProvidersBatch(data.map(providerReq))
           .then(map => setProvidersMap(prev => ({ ...prev, ...map })))
       }
     } finally {
@@ -103,6 +130,7 @@ export default function SuggestionsPage() {
 
     await pickList(listId, {
       tmdbId: m.id, title: m.title, posterPath: m.posterPath, genreIds: m.genreIds,
+      mediaType: m.mediaType ?? 'movie',
       runtime: m.runtime, releaseYear: m.releaseYear,
       imdbRating: m.imdbRating, rtScore: m.rtScore, overview: m.overview,
     })
@@ -172,7 +200,7 @@ export default function SuggestionsPage() {
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
     await markWatched({
-      mediaType:  'movie',
+      mediaType:  postWatch.mediaType ?? 'movie',
       tmdbId:     postWatch.id,
       title:      postWatch.title,
       posterPath: postWatch.posterPath,
@@ -189,11 +217,17 @@ export default function SuggestionsPage() {
         <Zap size={18} color="var(--amber)" />
         <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>SUGGESTED FOR YOU</h1>
       </div>
-      <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: '1.5rem', fontFamily: 'var(--font-mono)' }}>
-        {state.topGenreNames.length > 0
-          ? `Based on your taste profile — ${state.topGenreNames.map(g => g.toLowerCase()).join(', ')}.`
-          : 'Based on your taste profile.'}
+      <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: '1.25rem', fontFamily: 'var(--font-mono)' }}>
+        {mood !== 'any'
+          ? MOOD_SUBTITLES[mood]
+          : state.topGenreNames.length > 0
+            ? `Based on your taste profile — ${state.topGenreNames.map(g => g.toLowerCase()).join(', ')}.`
+            : 'Based on your taste profile.'}
       </p>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <FilterChips label="MOOD:" options={MOODS} active={mood} onChange={setMood} />
+      </div>
       {!loading && state.visible.length > 0 && (
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           <FilterChips
@@ -231,13 +265,13 @@ export default function SuggestionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
           {filteredVisible.map(m => (
             <VHSCard
-              key={m.id}
+              key={`${m.mediaType ?? 'movie'}:${m.id}`}
               tmdbId={m.id} title={m.title} posterPath={m.posterPath}
-              mediaType="movie" runtime={m.runtime} releaseYear={m.releaseYear}
+              mediaType={m.mediaType ?? 'movie'} runtime={m.runtime} releaseYear={m.releaseYear}
               imdbRating={m.imdbRating} rtScore={m.rtScore} overview={m.overview}
               isInQueue={addedIds.has(m.id)}
               matchReason={m.matchReason}
-              providerData={providersMap[`movie:${m.id}`]} batchManaged
+              providerData={providersMap[`${m.mediaType ?? 'movie'}:${m.id}`]} batchManaged
               onAddToQueue={addedIds.has(m.id) ? undefined : () => setPendingAdd(m)}
               usesPickerFlow
               onMarkWatched={() => setPostWatch(m)}
@@ -248,7 +282,7 @@ export default function SuggestionsPage() {
       )}
       {postWatch && (
         <PostWatchModal
-          title={postWatch.title} mediaType="movie" runtime={postWatch.runtime ?? undefined}
+          title={postWatch.title} mediaType={postWatch.mediaType ?? 'movie'} runtime={postWatch.runtime ?? undefined}
           onSave={handlePostWatchSave} onClose={() => setPostWatch(null)}
         />
       )}

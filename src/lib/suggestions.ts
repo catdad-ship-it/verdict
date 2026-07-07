@@ -22,6 +22,21 @@ export const SEED_PROFILE = {
   dislikedTmdbIds: [],
 }
 
+// Mood/vibe presets. Each maps to a set of TMDB genre IDs the suggestions
+// route boosts hard so results skew to that vibe — while the user's own taste
+// still ranks titles *within* the mood. 'comfort' is handled separately in the
+// route (it surfaces already-watched favorites rather than new discovery).
+// Genre IDs: 53=Thriller 27=Horror 9648=Mystery 80=Crime 18=Drama 878=Sci-Fi
+// 36=History 28=Action 12=Adventure 10751=Family 35=Comedy 10749=Romance
+export type Mood = 'tense' | 'thinky' | 'noise' | 'laugh'
+
+export const MOOD_GENRES: Record<Mood, number[]> = {
+  tense:  [53, 27, 9648, 80],
+  thinky: [18, 9648, 878, 36],
+  noise:  [28, 12, 10751, 35],
+  laugh:  [35, 10749, 10751],
+}
+
 // Fisher-Yates in-place shuffle
 function shuffleArray<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {

@@ -5,6 +5,7 @@ export interface PickListItem {
   tmdbId: number
   title: string
   posterPath: string | null
+  mediaType?: 'movie' | 'tv'
   genreIds?: number[]
   runtime?: number | null
   releaseYear?: number | null
@@ -20,7 +21,7 @@ export function usePickList() {
   return useCallback(async (listId: 'queue' | string, item: PickListItem) => {
     const body = {
       tmdbId:      item.tmdbId,
-      mediaType:   'movie',
+      mediaType:   item.mediaType ?? 'movie',
       title:       item.title,
       posterPath:  item.posterPath,
       genreIds:    item.genreIds ?? [],
