@@ -550,11 +550,15 @@ export default function HomePage() {
       if (!opts?.silent) toast.show('ALREADY IN QUEUE')
       return
     }
-    await fetch('/api/queue', {
+    const res = await fetch('/api/queue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
+    if (!res.ok) {
+      if (!opts?.silent) toast.show("COULDN'T ADD — TRY AGAIN")
+      return
+    }
     if (activeList === 'queue') await fetchQueue()
     if (!opts?.silent) toast.show(`ADDED "${item.title.toUpperCase()}" TO QUEUE`)
   }
@@ -568,11 +572,15 @@ export default function HomePage() {
       if (!opts?.silent) toast.show('ALREADY IN THIS LIST')
       return
     }
-    await fetch(`/api/lists/${listId}/items`, {
+    const res = await fetch(`/api/lists/${listId}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(item),
     })
+    if (!res.ok) {
+      if (!opts?.silent) toast.show("COULDN'T ADD — TRY AGAIN")
+      return
+    }
     if (activeList === listId) await fetchListItems(listId, { silent: true })
     if (!opts?.silent) {
       const destName = lists.find(l => l.id === listId)?.name ?? 'list'
