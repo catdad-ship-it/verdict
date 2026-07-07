@@ -34,6 +34,7 @@ export default function BottomNav() {
             href={href}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
             style={{
+              minWidth: 0,  // let flex-1 give every tab a truly equal width — without this, the widest label ("WATCHED") refuses to shrink and pushes the icons off their equal columns
               color: active ? 'var(--amber)' : 'var(--cream-dim)',
               borderTop: `2px solid ${active ? 'var(--amber)' : 'transparent'}`,
               marginTop: '-2px',
@@ -46,6 +47,10 @@ export default function BottomNav() {
               fontSize: '0.7rem',
               letterSpacing: '0.05em',
               lineHeight: 1,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}>
               {label}
             </span>

@@ -632,23 +632,6 @@ export default function HomePage() {
     }, { onUndo: () => { if (original) setListItems(items => [original, ...items]) } })
   }
 
-  // Drag-to-reorder — only meaningful in the queue's natural (unfiltered,
-  // "added" sort) order, so the indices line up with what's on screen.
-  // Not destructive, so this just fires the persist call without an undo toast.
-  const handleReorder = (fromIndex: number, toIndex: number) => {
-    setQueue(q => {
-      const next = [...q]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      fetch('/api/queue/reorder', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: next.map(i => i.id) }),
-      }).catch(() => {})
-      return next
-    })
-  }
-
   // Multi-select bulk actions — keys are normalized `${tmdbId}-${movie|tv}`
   // so they line up whether the row came from `queue` or `listItems`.
   const selectionKey = (tmdbId: number, mediaType: string) => `${tmdbId}-${mediaType === 'tv' ? 'tv' : 'movie'}`
@@ -766,11 +749,6 @@ export default function HomePage() {
       if (sort === 'rating')  return (b.imdbRating ?? 0) - (a.imdbRating ?? 0)
       return 0 // 'added' → API already returns newest-first
     }), [sourceItems, filter, search, pinnedKey, sort])
-
-  // Drag-to-reorder only makes sense when what's on screen is the queue's
-  // real, unfiltered order — otherwise a dragged index wouldn't map back to
-  // a sane position once the pin/filter/search/sort is removed.
-  const reorderEnabled = activeList === 'queue' && sort === 'added' && filter === 'all' && !search && !pinnedKey && !selectMode
 
   const movieItems = queue.filter(i => i.mediaType === 'movie')
   const anyModalOpen = !!(postWatch || showSpin || showSearch || showListPicker || showWatchTonight)
@@ -955,7 +933,7 @@ export default function HomePage() {
         )
       ) : (
         <div>
-          {displayItems.map((item, i) => (
+          {displayItems.map(item => (
             <QueueRow
               key={`${item.tmdbId}-${item.mediaType}`}
               tmdbId={item.tmdbId} title={item.title} posterPath={item.posterPath}
@@ -969,9 +947,6 @@ export default function HomePage() {
                   ? () => removeFromQueue(item.tmdbId, item.mediaType)
                   : () => removeFromList(activeList, item.tmdbId, item.mediaType)
               }
-              index={i}
-              reorderEnabled={reorderEnabled}
-              onReorder={handleReorder}
               selectable={selectMode}
               isSelected={selected.has(selectionKey(item.tmdbId, item.mediaType))}
               onToggleSelect={() => toggleSelect(selectionKey(item.tmdbId, item.mediaType))}

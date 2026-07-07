@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState, useRef } from 'react'
-import { Clock, Check, X, GripVertical } from 'lucide-react'
+import { Clock, Check, X } from 'lucide-react'
 import { posterUrl, formatRuntime, calcFinishTime } from '@/lib/utils'
 import TitleDetailModal from '@/components/modals/TitleDetailModal'
 
@@ -21,15 +21,9 @@ interface QueueRowProps {
   onPin?: () => void
   onMarkWatched?: () => void
   onRemoveFromQueue?: () => void
-  // Drag-to-reorder — only meaningful when the parent list is showing its
-  // natural (unsorted, unfiltered) order. `index` is this row's position in
-  // that list; onReorder(from, to) is called with both indices on drop.
-  index?: number
-  reorderEnabled?: boolean
-  onReorder?: (fromIndex: number, toIndex: number) => void
-  // Multi-select mode — mutually exclusive with drag-to-reorder. While
-  // selectable, tapping the row toggles selection instead of expanding, and
-  // swipe gestures + per-row quick actions are disabled.
+  // Multi-select mode. While selectable, tapping the row toggles selection
+  // instead of expanding, and swipe gestures + per-row quick actions are
+  // disabled.
   selectable?: boolean
   isSelected?: boolean
   onToggleSelect?: () => void
@@ -41,7 +35,6 @@ export default function QueueRow({
   currentSeason, totalSeasons,
   isPinned, onPin,
   onMarkWatched, onRemoveFromQueue,
-  index, reorderEnabled, onReorder,
   selectable, isSelected, onToggleSelect,
 }: QueueRowProps) {
   const imgUrl = posterUrl(posterPath)
@@ -128,54 +121,11 @@ export default function QueueRow({
     onMarkWatched?.()
   }
 
-  // Native HTML5 drag-and-drop: only the grip handle is `draggable`, but the
-  // whole row is a drop target, so dropping anywhere on a row reorders it —
-  // kept as a separate sibling from the Pointer-Events swipe layer below so
-  // the two gesture systems never see each other's events.
-  const [dragOver, setDragOver] = useState(false)
-
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(index))
-  }
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    if (!dragOver) setDragOver(true)
-  }
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const fromIndex = Number(e.dataTransfer.getData('text/plain'))
-    if (!Number.isNaN(fromIndex) && index != null && fromIndex !== index) onReorder?.(fromIndex, index)
-  }
-
   return (
     <>
-    <div
-      onDragOver={reorderEnabled ? handleDragOver : undefined}
-      onDragLeave={reorderEnabled ? () => setDragOver(false) : undefined}
-      onDrop={reorderEnabled ? handleDrop : undefined}
-      style={{ display: 'flex', alignItems: 'stretch' }}
-    >
-      {reorderEnabled && !selectable && (
-        <div
-          draggable
-          onDragStart={handleDragStart}
-          onDragEnd={() => setDragOver(false)}
-          title="Drag to reorder"
-          style={{
-            display: 'flex', alignItems: 'center', cursor: 'grab',
-            color: 'var(--muted)', flexShrink: 0, paddingRight: 4,
-          }}
-        >
-          <GripVertical size={14} />
-        </div>
-      )}
       <div style={{
-        position: 'relative', overflow: 'hidden', flex: 1, minWidth: 0,
+        position: 'relative', overflow: 'hidden',
         borderBottom: '1px solid var(--border)',
-        borderTop: dragOver ? '2px solid var(--amber)' : '2px solid transparent',
       }}>
       {/* Swipe action background — revealed as the row underneath slides away */}
       {dragX !== 0 && (
@@ -332,7 +282,6 @@ export default function QueueRow({
       </div>
       </div>
       </div>
-    </div>
     {detailOpen && (
       <TitleDetailModal
         tmdbId={tmdbId} title={title} posterPath={posterPath} mediaType={mediaType}
