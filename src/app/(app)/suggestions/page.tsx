@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Zap } from 'lucide-react'
+import Link from 'next/link'
+import { Zap, SlidersHorizontal } from 'lucide-react'
 import VHSCard from '@/components/ui/VHSCard'
 import ListPickerSheet from '@/components/ui/ListPickerSheet'
 import PostWatchModal from '@/components/modals/PostWatchModal'
@@ -75,6 +76,7 @@ export default function SuggestionsPage() {
   const [decadeFilter, setDecadeFilter]   = useState<DecadeFilter>('all')
   const [runtimeFilter, setRuntimeFilter] = useState<RuntimeFilter>('all')
   const [ratingFilter, setRatingFilter]   = useState<RatingFilter>('all')
+  const [showFilters, setShowFilters]     = useState(false)
 
   const providerReq = (m: Movie) => ({ tmdbId: m.id, mediaType: m.mediaType ?? 'movie' as const })
 
@@ -195,7 +197,8 @@ export default function SuggestionsPage() {
     return true
   }
   const filteredVisible = state.visible.filter(matchesFilters)
-  const filtersActive = decadeFilter !== 'all' || runtimeFilter !== 'all' || ratingFilter !== 'all'
+  const activeFilterCount = [decadeFilter, runtimeFilter, ratingFilter].filter(f => f !== 'all').length
+  const filtersActive = activeFilterCount > 0
 
   const handlePostWatchSave = async (answers: PostWatchAnswers) => {
     if (!postWatch) return
@@ -213,38 +216,57 @@ export default function SuggestionsPage() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
-        <Zap size={18} color="var(--amber)" />
-        <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>SUGGESTED FOR YOU</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Zap size={18} color="var(--amber)" />
+          <h1 style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)', fontSize: 20, margin: 0, letterSpacing: 2 }}>SUGGESTED FOR YOU</h1>
+        </div>
+        <Link href="/settings#genre-tuning" style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11, textDecoration: 'none',
+          padding: '0.2rem 0.5rem', color: 'var(--cream-dim)',
+          border: '1px solid var(--amber-dim)', borderRadius: 2,
+        }}>TUNE TASTE</Link>
       </div>
-      <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: '1.25rem', fontFamily: 'var(--font-mono)' }}>
-        {mood !== 'any'
-          ? MOOD_SUBTITLES[mood]
-          : state.topGenreNames.length > 0
-            ? `Based on your taste profile — ${state.topGenreNames.map(g => g.toLowerCase()).join(', ')}.`
-            : 'Based on your taste profile.'}
-      </p>
+      {mood !== 'any' && (
+        <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: '1rem', fontFamily: 'var(--font-mono)' }}>
+          {MOOD_SUBTITLES[mood]}
+        </p>
+      )}
 
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
         <FilterChips label="MOOD:" options={MOODS} active={mood} onChange={setMood} />
       </div>
       {!loading && state.visible.length > 0 && (
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          <FilterChips
-            label="DECADE:"
-            options={[['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const}
-            active={decadeFilter} onChange={setDecadeFilter}
-          />
-          <FilterChips
-            label="RUNTIME:"
-            options={[['all','ALL'],['short','UNDER 2H']] as const}
-            active={runtimeFilter} onChange={setRuntimeFilter}
-          />
-          <FilterChips
-            label="RATING:"
-            options={[['all','ALL'],['high','IMDb 7+']] as const}
-            active={ratingFilter} onChange={setRatingFilter}
-          />
+        <div style={{ marginBottom: '1.25rem' }}>
+          <button onClick={() => setShowFilters(s => !s)} style={{
+            display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11,
+            padding: '0.2rem 0.5rem', cursor: 'pointer', borderRadius: 2,
+            background: filtersActive ? 'var(--amber-dim)' : 'transparent',
+            color: filtersActive ? 'var(--amber)' : 'var(--cream-dim)',
+            border: '1px solid var(--amber-dim)',
+          }}>
+            <SlidersHorizontal size={12} />
+            FILTERS{filtersActive ? ` · ${activeFilterCount}` : ''}
+          </button>
+          {showFilters && (
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: '0.75rem' }}>
+              <FilterChips
+                label="DECADE:"
+                options={[['all','ALL'],['2020s','2020s'],['2010s','2010s'],['2000s','2000s'],['older','PRE-2000']] as const}
+                active={decadeFilter} onChange={setDecadeFilter}
+              />
+              <FilterChips
+                label="RUNTIME:"
+                options={[['all','ALL'],['short','UNDER 2H']] as const}
+                active={runtimeFilter} onChange={setRuntimeFilter}
+              />
+              <FilterChips
+                label="RATING:"
+                options={[['all','ALL'],['high','IMDb 7+']] as const}
+                active={ratingFilter} onChange={setRatingFilter}
+              />
+            </div>
+          )}
         </div>
       )}
       {loading ? (
