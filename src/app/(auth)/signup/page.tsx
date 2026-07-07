@@ -25,13 +25,9 @@ export default function SignupPage() {
   if (done) return (
     <div className="w-full max-w-sm text-center">
       <div className="flex justify-center mb-8">
-        <div className="flex items-stretch">
-          <div className="px-4 py-2 flex items-center" style={{ background: 'var(--amber)' }}>
-            <span className="font-black text-3xl tracking-tight" style={{ color: 'var(--bg)' }}>VERDICT</span>
-          </div>
-          <div className="px-3 py-2 flex items-center" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-            <PlayPauseBadge size={28} />
-          </div>
+        <div className="flex items-center gap-3">
+          <PlayPauseBadge size={38} />
+          <span className="font-black text-3xl tracking-tight" style={{ color: 'var(--cream)' }}>VERDICT</span>
         </div>
       </div>
       <div className="rounded-sm p-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -45,13 +41,9 @@ export default function SignupPage() {
   return (
     <div className="w-full max-w-sm">
       <div className="flex justify-center mb-10">
-        <div className="flex items-stretch">
-          <div className="px-4 py-2 flex items-center" style={{ background: 'var(--amber)' }}>
-            <span className="font-black text-4xl tracking-tight" style={{ color: 'var(--bg)' }}>VERDICT</span>
-          </div>
-          <div className="px-3 py-2 flex items-center" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-            <PlayPauseBadge size={32} />
-          </div>
+        <div className="flex items-center gap-3">
+          <PlayPauseBadge size={44} />
+          <span className="font-black text-4xl tracking-tight" style={{ color: 'var(--cream)' }}>VERDICT</span>
         </div>
       </div>
 

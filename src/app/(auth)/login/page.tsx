@@ -45,13 +45,9 @@ export default function LoginPage() {
 
       {/* Logo — same lockup as the signed-in NavBar, so branding matches before and after sign-in */}
       <div className="flex justify-center mb-10">
-        <div className="flex items-stretch">
-          <div className="px-4 py-2 flex items-center" style={{ background: 'var(--amber)' }}>
-            <span className="font-black text-4xl tracking-tight" style={{ color: 'var(--bg)', fontFamily: 'var(--font-inter)' }}>VERDICT</span>
-          </div>
-          <div className="px-3 py-2 flex items-center" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-            <PlayPauseBadge size={32} />
-          </div>
+        <div className="flex items-center gap-3">
+          <PlayPauseBadge size={44} />
+          <span className="font-black text-4xl tracking-tight" style={{ color: 'var(--cream)', fontFamily: 'var(--font-inter)' }}>VERDICT</span>
         </div>
       </div>
       <p className="text-center text-xs tracking-widest uppercase mb-8" style={{ color: 'var(--cream-dim)', fontFamily: 'monospace' }}>

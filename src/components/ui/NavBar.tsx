@@ -55,13 +55,9 @@ export default function NavBar({ queueCount = 0 }: NavBarProps) {
 
         {/* Logo + LED counter */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-stretch">
-            <div className="flex items-center px-3 py-1.5" style={{ background: 'var(--amber)' }}>
-              <span className="font-black text-xl tracking-tight" style={{ color: 'var(--bg)' }}>VERDICT</span>
-            </div>
-            <div className="flex items-center px-2.5 py-1" style={{ background: '#1A1510', borderLeft: '2px solid var(--bg)' }}>
-              <PlayPauseBadge size={26} />
-            </div>
+          <Link href="/" className="flex items-center gap-2.5">
+            <PlayPauseBadge size={30} />
+            <span className="font-black text-xl tracking-tight" style={{ color: 'var(--cream)' }}>VERDICT</span>
           </Link>
           {queueCount > 0 && (
             <div className="font-led text-xs px-2 py-0.5 rounded-sm hidden sm:block"

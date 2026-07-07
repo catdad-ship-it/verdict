@@ -1,16 +1,20 @@
-// Retro VCR play/pause badge — the app's logo mark, used in the signed-in
-// NavBar header and on the signed-out auth screens (login/signup) so the
-// branding matches everywhere. Built as inline SVG (not the Unicode ▶/⏏
-// characters — see the iOS gotcha in CLAUDE.md about those triggering
-// system media controls when placed in interactive elements).
+// Retro tape-reel mark — the app's logo, used in the signed-in NavBar header
+// and on the signed-out auth screens (login/signup) so the branding matches
+// everywhere. Built as inline SVG (not the Unicode ▶/⏏ characters — see the
+// iOS gotcha in CLAUDE.md about those triggering system media controls when
+// placed in interactive elements). Spins via the `.reel-mark` class in
+// globals.css, which honors prefers-reduced-motion.
 export default function PlayPauseBadge({ size = 26 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="20" r="18.5" fill="#171009" stroke="var(--amber)" strokeWidth="2" />
-      <circle cx="20" cy="20" r="14.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-      <path d="M9,11 L9,29 L20,20 Z" fill="var(--cream)" />
-      <rect x="22.5" y="10.5" width="3.6" height="19" rx="0.8" fill="var(--cream)" />
-      <rect x="28" y="10.5" width="3.6" height="19" rx="0.8" fill="var(--cream)" />
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className="reel-mark">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="var(--amber-lt)" strokeWidth="3" />
+      <circle cx="20" cy="20" r="5" fill="var(--amber-lt)" />
+      <g stroke="var(--amber-lt)" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="20" y1="4" x2="20" y2="11" />
+        <line x1="20" y1="29" x2="20" y2="36" />
+        <line x1="4" y1="20" x2="11" y2="20" />
+        <line x1="29" y1="20" x2="36" y2="20" />
+      </g>
     </svg>
   )
 }

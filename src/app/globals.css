@@ -267,3 +267,13 @@ a {
 }
 .vcr-fab:hover  { background: #D89828; }
 .vcr-fab:active { transform: scale(0.94); }
+
+/* Tape-reel logo mark (PlayPauseBadge) — slow continuous spin. */
+.reel-mark {
+  transform-origin: 50% 50%;
+  animation: reelspin 8s linear infinite;
+}
+@keyframes reelspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .reel-mark { animation: none; }
+}
