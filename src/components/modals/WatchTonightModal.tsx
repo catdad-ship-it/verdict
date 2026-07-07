@@ -222,9 +222,7 @@ export default function WatchTonightModal({ items, onPin, onClose }: Props) {
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>runtime unknown</span>
                         )}
                         {pick.imdbRating && (
-                          <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 5px', borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                            <b style={{ fontSize: 9, fontWeight: 900 }}>IMDb</b>{pick.imdbRating}
-                          </span>
+                          <span className="rating-imdb"><b className="wordmark">IMDb</b>{pick.imdbRating}</span>
                         )}
                       </div>
                       {pinned && (

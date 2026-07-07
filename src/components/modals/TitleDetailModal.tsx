@@ -238,12 +238,10 @@ export default function TitleDetailModal({
               {subtitle && <p style={{ color: 'var(--cream-dim)', fontSize: 13, marginBottom: 8 }}>{subtitle}</p>}
               <div className="flex items-center gap-2 flex-wrap">
                 {imdbRating != null && (
-                  <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 12, padding: '2px 6px', borderRadius: 2 }}>
-                    <span style={{ fontWeight: 900, fontSize: 10 }}>IMDb</span> {imdbRating}
-                  </span>
+                  <span className="rating-imdb rating-lg"><b className="wordmark">IMDb</b>{imdbRating}</span>
                 )}
                 {rtScore != null && (
-                  <span style={{ fontWeight: 700, fontSize: 12, color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 4 }}><b style={{ background: '#D0603C', color: '#0A0800', fontSize: 10, fontWeight: 900, padding: '0 4px', borderRadius: 2 }}>RT</b>{rtScore}%</span>
+                  <span className="rating-rt rating-lg"><b className="wordmark">RT</b>{rtScore}%</span>
                 )}
                 {mediaType === 'tv' && (
                   <span className="flex items-center gap-1" style={{ background: 'var(--forest)', color: '#C0E8AC', fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: 2, fontWeight: 700 }}>
