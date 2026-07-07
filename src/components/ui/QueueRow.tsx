@@ -256,10 +256,10 @@ export default function QueueRow({
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {releaseYear && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{releaseYear}</span>}
-            {runtime    && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>{formatRuntime(runtime)}</span>}
+            {releaseYear && <span className="meta">{releaseYear}</span>}
+            {runtime    && <span className="meta">{formatRuntime(runtime)}</span>}
             {mediaType === 'tv' && currentSeason && totalSeasons && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cream-dim)' }}>S{currentSeason}/{totalSeasons}</span>
+              <span className="meta">S{currentSeason}/{totalSeasons}</span>
             )}
           </div>
           {finish && mediaType !== 'tv' && (
@@ -272,8 +272,8 @@ export default function QueueRow({
           )}
           {(imdbRating || rtScore) && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              {imdbRating && <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: 11, padding: '1px 5px', borderRadius: 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ fontSize: 9, fontWeight: 900 }}>IMDb</b>{imdbRating}</span>}
-              {rtScore    && <span style={{ fontWeight: 700, fontSize: 11, color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 3 }}><b style={{ background: '#D0603C', color: '#0A0800', fontSize: 9, fontWeight: 900, padding: '0 3px', borderRadius: 1 }}>RT</b>{rtScore}%</span>}
+              {imdbRating && <span className="rating-imdb"><b className="wordmark">IMDb</b>{imdbRating}</span>}
+              {rtScore    && <span className="rating-rt"><b className="wordmark">RT</b>{rtScore}%</span>}
             </div>
           )}
         </div>

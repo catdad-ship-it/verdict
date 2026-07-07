@@ -189,14 +189,10 @@ export default function VHSCard({
         {(imdbRating || rtScore) && (
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
             {imdbRating && (
-              <span style={{ background: '#D4960A', color: '#0A0800', fontWeight: 700, fontSize: '0.6875rem', padding: '1px 5px', borderRadius: '1px', letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                <b style={{ fontSize: '0.5625rem', fontWeight: 900, letterSpacing: '0.02em' }}>IMDb</b>{imdbRating}
-              </span>
+              <span className="rating-imdb"><b className="wordmark">IMDb</b>{imdbRating}</span>
             )}
             {rtScore && (
-              <span style={{ fontWeight: 700, fontSize: '0.6875rem', color: '#D0603C', display: 'inline-flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
-                <b style={{ background: '#D0603C', color: '#0A0800', fontSize: '0.5625rem', fontWeight: 900, padding: '0 3px', borderRadius: '1px' }}>RT</b>{rtScore}%
-              </span>
+              <span className="rating-rt"><b className="wordmark">RT</b>{rtScore}%</span>
             )}
           </div>
         )}
@@ -230,11 +226,7 @@ export default function VHSCard({
       </div>
 
       {/* Provider strip — always rendered to normalize card heights */}
-      <div style={{
-        background: '#0E0C09', borderTop: '1px solid #1A1610',
-        padding: '4px 8px', display: 'flex', gap: 4, alignItems: 'center',
-        minHeight: 32,
-      }}>
+      <div className="provider-strip">
         {/* Own it: highlight the service they actually pay for */}
         {providersLoaded && ownedProviders.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

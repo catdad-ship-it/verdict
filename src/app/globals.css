@@ -131,6 +131,52 @@ a {
   padding: 1px 5px; border-radius: 2px;
 }
 
+/* Meta text — mono, secondary. Year / runtime / season labels. */
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--cream-dim);
+}
+
+/* Rating pills — IMDb (amber chip) and RT (tomato). Shared by cards,
+   queue rows, the detail modal, and the public share page. */
+.rating-imdb,
+.rating-rt {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  font-size: var(--text-2xs);
+}
+.rating-imdb {
+  background: #D4960A;
+  color: #0A0800;
+  padding: 1px 5px;
+  border-radius: 1px;
+  letter-spacing: 0.04em;
+}
+.rating-rt { color: #D0603C; }
+.wordmark { font-size: 9px; font-weight: 900; letter-spacing: 0.02em; }
+.rating-rt .wordmark {
+  background: #D0603C;
+  color: #0A0800;
+  padding: 0 3px;
+  border-radius: 1px;
+  letter-spacing: normal;
+}
+
+/* Provider availability strip on VHSCard — fixed min-height keeps every
+   card the same height whether or not a provider badge is shown. */
+.provider-strip {
+  background: #0E0C09;
+  border-top: 1px solid #1A1610;
+  padding: 4px 8px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 32px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar       { width: 6px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
