@@ -163,6 +163,8 @@ npm test           # vitest run — unit tests for pure logic (suggestions, fini
 
 CI (`.github/workflows/ci.yml`) runs all three on every push to `main` and every PR.
 
+`.github/workflows/supabase-keepalive.yml` makes one anon REST read (Mon + Thu) so the free-tier Supabase project doesn't auto-pause after 7 days of inactivity — it paused once (Sep 2026) and took the whole app down. Fly's warm machine doesn't prevent this since `/api/health` never touches the DB. It reads the URL/anon key from `fly.toml`, so no repo secret needed. A failed run means Supabase is unreachable (likely paused — restore it from the Supabase dashboard). GitHub disables scheduled workflows on public repos after 60 days without commits; re-enable from the Actions tab if that email arrives.
+
 ## Deploy
 
 ```bash
