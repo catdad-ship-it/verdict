@@ -1,0 +1,38 @@
+name: Supabase keep-alive
+
+# Supabase pauses free-tier projects after 7 days without API/database
+# activity. Fly's health check doesn't count — /api/health never touches the
+# DB — so a quiet week away from the app is enough to take it down. This makes
+# one tiny read twice a week (gaps of 3 and 4 days, both under the 7-day limit).
+#
+# The query runs as anon, so RLS returns an empty array — that's fine, it still
+# reaches Postgres. --fail means a paused/broken project fails the run, and
+# GitHub emails about the failure.
+#
+# Note: GitHub disables scheduled workflows in public repos after 60 days with
+# no commits. If that happens it emails too — re-enable from the Actions tab.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # URL and anon key come from fly.toml's build args (publishable, already
+      # committed) so there's no separate secret to keep in sync.
+      - name: Query Supabase
+        run: |
+          url=$(grep -oP 'NEXT_PUBLIC_SUPABASE_URL = "\K[^"]+' fly.toml)
+          key=$(grep -oP 'NEXT_PUBLIC_SUPABASE_ANON_KEY = "\K[^"]+' fly.toml)
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 30 --retry-all-errors \
+            "$url/rest/v1/lists?select=id&limit=1" \
+            -H "apikey: $key"
